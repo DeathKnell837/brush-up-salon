@@ -43,6 +43,70 @@ export default function Chatbot({ onOpenModal, currentUser, contextData }) {
   const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); };
   useEffect(() => { if (isOpen) scrollToBottom(); }, [messages, isOpen]);
 
+  // Active Alert System refs
+  const alertedCancel = useRef(new Set());
+  const alertedReminder = useRef(new Set());
+  const morningAlertSent = useRef(false);
+  const zeroBookingsSent = useRef(false);
+
+  useEffect(() => {
+    // Monitor local storage for live updates without a backend
+    const interval = setInterval(() => {
+      const allBookings = getBookings();
+      const today = new Date().toISOString().split('T')[0];
+      const nowH = new Date().getHours();
+
+      if (role === 'admin') {
+        // 1. Admin Cancellation Alert
+        const myCancelled = allBookings.filter(b => b.salonId === currentUser?.salonId && b.status === 'Cancelled');
+        myCancelled.forEach(b => {
+          if (!alertedCancel.current.has(b.id)) {
+            alertedCancel.current.add(b.id);
+            setMessages(prev => [...prev, { id: Date.now() + Math.random(), text: `⚠️ **Alert:** Customer **${b.customer}** just cancelled their ${b.service} appointment.`, isBot: true }]);
+            if (!isOpen) setIsOpen(true);
+          }
+        });
+
+        // 2. Admin Morning Reminder
+        if (nowH < 12 && !morningAlertSent.current) {
+          morningAlertSent.current = true;
+          const myToday = allBookings.filter(b => b.salonId === currentUser?.salonId && b.date === today && b.status === 'Approved');
+          if (myToday.length > 0) {
+            setMessages(prev => [...prev, { id: Date.now() + Math.random(), text: `🌅 **Morning Reminder:** You have **${myToday.length}** approved appointments today.`, isBot: true }]);
+          }
+        }
+      } else if (role === 'superadmin') {
+        // 3. Super Admin 3-day zero booking alert
+        if (!zeroBookingsSent.current) {
+          zeroBookingsSent.current = true;
+          const salons = getSalons();
+          const threeDaysAgo = new Date();
+          threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+          const recentBookings = allBookings.filter(b => new Date(b.date) >= threeDaysAgo);
+          
+          const underperforming = salons.filter(s => !recentBookings.some(b => b.salonId === s.id));
+          if (underperforming.length > 0) {
+             const names = underperforming.map(s => s.name).join(', ');
+             setMessages(prev => [...prev, { id: Date.now() + Math.random(), text: `🚨 **Network Alert:** The following shops have had ZERO bookings in the last 3 days: **${names}**.`, isBot: true }]);
+             if (!isOpen) setIsOpen(true);
+          }
+        }
+      } else if (role === 'customer') {
+        // 4. Customer Upcoming Reminder
+        const myToday = allBookings.filter(b => b.userId === currentUser?.user && b.date === today && b.status === 'Approved');
+        myToday.forEach(b => {
+          if (!alertedReminder.current.has(b.id)) {
+             alertedReminder.current.add(b.id);
+             setMessages(prev => [...prev, { id: Date.now() + Math.random(), text: `⏰ **Reminder:** You have your ${b.service} appointment today at ${b.time}. See you soon!`, isBot: true }]);
+             if (!isOpen) setIsOpen(true);
+          }
+        });
+      }
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [role, currentUser, isOpen]);
+
   const handleCancelBooking = (bookingId) => {
     const allBookings = getBookings();
     const idx = allBookings.findIndex(b => b.id === bookingId);
@@ -57,7 +121,14 @@ export default function Chatbot({ onOpenModal, currentUser, contextData }) {
     setIsTyping(true);
     try {
       const salons = getSalons();
-      const salonContext = salons.map(s => `ID: ${s.id} | Name: ${s.name} | Services: ${s.services.map(sv => `${sv.name} (${sv.price})`).join(', ')}`).join('\n');
+      const salonContext = salons.map(s => `ID: ${s.id}
+Name: ${s.name}
+Description/Vibe: ${s.description || s.desc || 'A premium salon experience.'}
+Visuals/Looks: The salon image (${s.image}) showcases its premium aesthetic fitting its description.
+Location: ${s.address || 'Various locations'}
+Contact: ${s.contact || 'Book via app'}
+Hours: ${s.hours || 'Standard operating hours'}
+Services: ${s.services.map(sv => `${sv.name} (${sv.price})`).join(', ')}`).join('\n\n');
 
       let systemPrompt = "";
       
