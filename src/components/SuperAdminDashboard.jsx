@@ -104,14 +104,20 @@ function SuperAdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalo
         </div>
       </nav>
 
-      {announcement && (
-        <div style={{ background: 'linear-gradient(90deg, rgba(201,168,76,0.08), rgba(201,168,76,0.02))', padding: '12px 24px', borderBottom: '1px solid rgba(201,168,76,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-          <AlertCircleIcon size={16} style={{ color: 'var(--gold)' }} />
-          <span style={{ fontSize: 13, color: 'var(--gold)', fontWeight: 500 }}><strong>BROADCAST:</strong> {announcement}</span>
-          <button className="btn small outline" onClick={handleSetAnnouncement} style={{ padding: '4px 10px', fontSize: 11, marginLeft: 16 }}>Edit</button>
-        </div>
-      )}
-
+      <div style={{ padding: '0 24px', maxWidth: 1200, margin: '0 auto', marginTop: '-12px' }}>
+        {getAnnouncements().map(a => (
+          <div key={a.id} className={`broadcast-banner ${a.type}`}>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+              <div className="broadcast-icon"><AlertCircleIcon size={20} /></div>
+              <div className="broadcast-content">
+                <h4>{a.title}</h4>
+                <p>{a.message}</p>
+              </div>
+            </div>
+            <span style={{ fontSize: 10, color: 'var(--text-dim)', alignSelf: 'flex-start' }}>{new Date(a.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+          </div>
+        ))}
+      </div>
       <section className="hero" style={{ backgroundImage: `linear-gradient(135deg, rgba(10,10,10,0.95), rgba(15,15,15,0.7)), url(/images/salon-bg.png)`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <div className="hero-content">
           <p className="hero-label" style={{ letterSpacing: 4 }}>NETWORK COMMAND CENTER</p>

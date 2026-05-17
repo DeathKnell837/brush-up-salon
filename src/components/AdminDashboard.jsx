@@ -147,14 +147,6 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
 
 
-  const handleSetAnnouncement = () => {
-    const msg = prompt("Enter announcement to broadcast to all salon managers:", announcement);
-    if (msg !== null) {
-      localStorage.setItem('brushup_announcement', msg);
-      setAnnouncement(msg);
-      showToast('Announcement broadcasted!');
-    }
-  };
 
   const total = bookingsState.length;
   const pending = bookingsState.filter(b => b.status === 'Pending').length;
