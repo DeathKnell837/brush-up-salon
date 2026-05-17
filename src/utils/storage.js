@@ -3,7 +3,8 @@ import { syncToFirebase } from './firebaseSync';
 // ─── In-memory fallback store ───
 const memoryStore = {
   luxuryUsers: [],
-  luxuryBookings: []
+  luxuryBookings: [],
+  luxuryAnnouncements: []
 };
 
 // ─── localStorage wrapper with in-memory fallback ───
@@ -29,6 +30,7 @@ export const storage = {
     if (key === 'luxuryUsers') syncToFirebase('users', value);
     if (key === 'luxuryBookings') syncToFirebase('bookings', value);
     if (key === 'luxurySalons') syncToFirebase('salons', value);
+    if (key === 'luxuryAnnouncements') syncToFirebase('announcements', value);
   }
 };
 
@@ -36,6 +38,10 @@ export const storage = {
 export const getSession = () => storage.get('luxurySession', null);
 export const setSession = (user) => storage.set('luxurySession', user);
 export const clearSession = () => storage.set('luxurySession', null);
+
+// ─── Announcements ───
+export const getAnnouncements = () => storage.get('luxuryAnnouncements', []);
+export const setAnnouncements = (data) => storage.set('luxuryAnnouncements', data);
 
 // ─── Audit Logs ───
 export const getAuditLogs = () => storage.get('luxuryAuditLogs', []);

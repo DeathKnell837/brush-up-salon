@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getBookings, setBookings, getUsers, getSalons, setSalons } from '../utils/storage';
+import { getBookings, setBookings, getUsers, getSalons, setSalons, getAnnouncements } from '../utils/storage';
 import BrushUpLogo from './BrushUpLogo';
 import Chatbot from './Chatbot';
 import {
@@ -18,6 +18,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const [bookingsState, setBookingsState] = useState([]);
   const [activeTab, setActiveTab] = useState('bookings');
   const [statusFilter, setStatusFilter] = useState('pending');
+  const [announcements, setAnnouncements] = useState([]);
 
   // Get current salon from dynamic data
   const getCurrentSalon = useCallback(() => {
@@ -52,7 +53,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [newStaffName, setNewStaffName] = useState('');
   const [newStaffRole, setNewStaffRole] = useState('Stylist');
-  const [announcement, setAnnouncement] = useState(localStorage.getItem('brushup_announcement') || '');
+
 
   const loadBookings = useCallback(() => {
     return getBookings().filter(b => b.salonId === currentUser.salonId);
@@ -60,6 +61,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
   useEffect(() => {
     setBookingsState(loadBookings());
+    setAnnouncements(getAnnouncements());
     const s = getCurrentSalon();
     setServices(s.services || []);
     setSalonName(s.name || '');
@@ -189,17 +191,19 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
         </div>
       </nav>
 
-      {announcement && (
-        <div style={{ background: 'var(--gold-dim)', padding: '12px 24px', borderBottom: '1px solid rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-          <AlertCircleIcon size={16} style={{ color: 'var(--gold)' }} />
-          <span style={{ fontSize: 13, color: 'var(--gold)', fontWeight: 500 }}>
-            <strong>NETWORK NOTICE:</strong> {announcement}
-          </span>
-          {currentUser.role === 'superadmin' && (
-            <button className="btn small outline" onClick={handleSetAnnouncement} style={{ padding: '4px 8px', fontSize: 11, marginLeft: 16 }}>Edit</button>
-          )}
+      {announcements.map(a => (
+        <div key={a.id} className={`broadcast-banner ${a.type}`}>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            <div className="broadcast-icon"><AlertCircleIcon size={20} /></div>
+            <div className="broadcast-content">
+              <h4>{a.title}</h4>
+              <p>{a.message}</p>
+            </div>
+          </div>
+          <span style={{ fontSize: 10, color: 'var(--text-dim)', alignSelf: 'flex-start' }}>{new Date(a.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
         </div>
-      )}
+      ))}
+
 
       <section className="hero" style={{
         backgroundImage: `linear-gradient(to right, rgba(15,15,15,0.93), rgba(15,15,15,0.6)), url(${salonImg || salon?.image})`,

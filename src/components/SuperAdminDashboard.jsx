@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getBookings, getUsers, getSalons, setSalons, setUsers as saveUsers, hashPassword, logAuditAction, getAuditLogs } from '../utils/storage';
+import { getBookings, getUsers, getSalons, setSalons, setUsers as saveUsers, hashPassword, logAuditAction, getAuditLogs, getAnnouncements, setAnnouncements } from '../utils/storage';
 import BrushUpLogo from './BrushUpLogo';
 import Chatbot from './Chatbot';
 import {
@@ -8,7 +8,9 @@ import {
 
 function SuperAdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, showToast, syncTick, onOpenProfile }) {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [announcement, setAnnouncement] = useState(localStorage.getItem('brushup_announcement') || '');
+  const [bType, setBType] = useState('info');
+  const [bTitle, setBTitle] = useState('');
+  const [bMsg, setBMsg] = useState('');
   const [ns, setNs] = useState({ name: '', desc: '', img: '', admin: '', pass: '' });
 
   const allBookings = getBookings();
@@ -29,14 +31,21 @@ function SuperAdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalo
   const pending = allBookings.filter(b => b.status === 'Pending').length;
   const completed = allBookings.filter(b => b.status === 'Completed').length;
 
-  const handleSetAnnouncement = () => {
-    const msg = prompt("Enter announcement to broadcast to all salon managers:", announcement);
-    if (msg !== null) {
-      localStorage.setItem('brushup_announcement', msg);
-      setAnnouncement(msg);
-      showToast('Announcement broadcasted!');
-      logAuditAction(currentUser.user, 'BROADCAST', `Announcement: ${msg}`);
-    }
+  const handleSetAnnouncement = (e) => {
+    e.preventDefault();
+    if (!bTitle || !bMsg) return;
+    const announcements = getAnnouncements();
+    const newA = { id: Date.now(), type: bType, title: bTitle, message: bMsg, timestamp: new Date().toISOString() };
+    announcements.unshift(newA);
+    setAnnouncements(announcements);
+    showToast('Announcement broadcasted!');
+    logAuditAction(currentUser.user, 'BROADCAST', `Published: ${bTitle}`);
+    setBTitle(''); setBMsg('');
+  };
+
+  const handleRemoveAnnouncement = (id) => {
+    setAnnouncements(getAnnouncements().filter(a => a.id !== id));
+    showToast('Broadcast removed.');
   };
 
   const handleAddSalon = async (e) => {
@@ -126,6 +135,7 @@ function SuperAdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalo
           { id: 'transactions', icon: <ListIcon size={15} />, label: 'Transactions', count: pending > 0 ? pending : null },
           { id: 'salons', icon: <StoreIcon size={15} />, label: 'Salons', count: salons.length },
           { id: 'admins', icon: <ShieldIcon size={15} />, label: 'Admins', count: adminUsers.length },
+          { id: 'broadcasts', icon: <AlertCircleIcon size={15} />, label: 'Broadcasts' },
           { id: 'audit', icon: <ClipboardIcon size={15} />, label: 'Audit Log' }
         ].map(t => (
           <button key={t.id} className={`tab-btn ${activeTab === t.id ? 'active' : ''}`} onClick={() => setActiveTab(t.id)}>
@@ -257,6 +267,53 @@ function SuperAdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalo
                 </div>
               );
             })}
+          </div>
+        </section>
+      )}
+
+      {/* ═══ BROADCASTS ═══ */}
+      {activeTab === 'broadcasts' && (
+        <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
+          <div className="section-header"><p className="section-label">COMMUNICATION</p><h2 className="section-heading">Network Broadcasts</h2></div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 24, alignItems: 'start' }}>
+            <div style={panelCard}>
+              <h3 style={{ fontSize: 16, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>New Broadcast</h3>
+              <form onSubmit={handleSetAnnouncement} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <label className="form-label">Broadcast Type</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {['info', 'warning', 'promo'].map(t => (
+                      <button key={t} type="button" onClick={() => setBType(t)} style={{ flex: 1, padding: '8px', borderRadius: 8, background: bType === t ? 'rgba(255,255,255,0.1)' : 'transparent', border: bType === t ? '1px solid rgba(255,255,255,0.2)' : '1px solid transparent', color: 'var(--text-white)', fontSize: 13, textTransform: 'capitalize' }}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div><label className="form-label">Headline</label><input required className="search-input" value={bTitle} onChange={e => setBTitle(e.target.value)} placeholder="e.g., Server Maintenance" /></div>
+                <div><label className="form-label">Message</label><textarea required className="search-input" value={bMsg} onChange={e => setBMsg(e.target.value)} placeholder="Full announcement details..." rows={4} style={{ resize: 'none' }} /></div>
+                <button type="submit" className="btn primary" style={{ marginTop: 8 }}>Publish Broadcast</button>
+              </form>
+            </div>
+
+            <div style={panelCard}>
+              <h3 style={{ fontSize: 16, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Active Broadcasts</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {getAnnouncements().length === 0 ? <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>No active broadcasts.</p> : getAnnouncements().map(a => (
+                  <div key={a.id} className={`broadcast-banner ${a.type}`} style={{ marginBottom: 0, padding: 16 }}>
+                    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                      <div className="broadcast-icon"><AlertCircleIcon size={20} /></div>
+                      <div className="broadcast-content">
+                        <h4>{a.title}</h4>
+                        <p>{a.message}</p>
+                        <span style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 6, display: 'block' }}>Published: {new Date(a.timestamp).toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <button onClick={() => handleRemoveAnnouncement(a.id)} className="btn small outline danger">Remove</button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
       )}

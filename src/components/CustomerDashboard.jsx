@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { getBookings, setBookings } from '../utils/storage';
+import React, { useState, useEffect, useCallback } from 'react';
+import { getBookings, setBookings, getAnnouncements } from '../utils/storage';
 import BrushUpLogo from './BrushUpLogo';
 import Chatbot from './Chatbot';
 import {
   StoreIcon, ClipboardIcon, SearchIcon, ScissorsIcon,
-  CalendarIcon, ClockIcon, HourglassIcon, CheckCircleIcon, XCircleIcon, InboxIcon
+  CalendarIcon, ClockIcon, HourglassIcon, CheckCircleIcon, XCircleIcon, InboxIcon, AlertCircleIcon
 } from './Icons';
 
 function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, onOpenProfile, syncTick }) {
@@ -13,6 +13,16 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
   const [filterLoc, setFilterLoc] = useState('All');
   const [filterSvc, setFilterSvc] = useState('All');
   const [localTick, setLocalTick] = useState(0);
+  const [announcements, setAnnouncements] = useState([]);
+  
+  const loadData = useCallback(() => {
+    setAnnouncements(getAnnouncements());
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData, syncTick, localTick]);
+
   const bookings = getBookings().filter(b => b.userId === currentUser?.user);
 
   const handleCancelBooking = (id) => {
@@ -110,6 +120,22 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
           </div>
         </div>
       </section>
+
+      {/* ─── BROADCASTS ─── */}
+      <div style={{ padding: '0 24px', maxWidth: 1200, margin: '0 auto', marginTop: '-12px' }}>
+        {announcements.map(a => (
+          <div key={a.id} className={`broadcast-banner ${a.type}`}>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+              <div className="broadcast-icon"><AlertCircleIcon size={20} /></div>
+              <div className="broadcast-content">
+                <h4>{a.title}</h4>
+                <p>{a.message}</p>
+              </div>
+            </div>
+            <span style={{ fontSize: 10, color: 'var(--text-dim)', alignSelf: 'flex-start' }}>{new Date(a.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+          </div>
+        ))}
+      </div>
 
       {/* ─── Tabs ─── */}
       <div className="tab-bar">

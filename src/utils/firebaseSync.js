@@ -16,6 +16,7 @@ export const initFirebaseSync = (onDataChanged) => {
       if (data.users) localStorage.setItem('luxuryUsers', JSON.stringify(data.users));
       if (data.bookings) localStorage.setItem('luxuryBookings', JSON.stringify(data.bookings));
       if (data.salons) localStorage.setItem('luxurySalons', JSON.stringify(data.salons));
+      if (data.announcements) localStorage.setItem('luxuryAnnouncements', JSON.stringify(data.announcements));
       
       // Notify React to re-render using the new data
       if (!isInitialLoad) {
@@ -28,12 +29,14 @@ export const initFirebaseSync = (onDataChanged) => {
       const users = localStorage.getItem('luxuryUsers');
       const bookings = localStorage.getItem('luxuryBookings');
       const salons = localStorage.getItem('luxurySalons');
+      const announcements = localStorage.getItem('luxuryAnnouncements');
       
-      if (users || bookings || salons) {
+      if (users || bookings || salons || announcements) {
         setDoc(DOC_REF, {
           users: users ? JSON.parse(users) : [],
           bookings: bookings ? JSON.parse(bookings) : [],
-          salons: salons ? JSON.parse(salons) : []
+          salons: salons ? JSON.parse(salons) : [],
+          announcements: announcements ? JSON.parse(announcements) : []
         });
       }
     }

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquareIcon, SendIcon, XCircleIcon } from './Icons';
-import { getSalons, getBookings, setBookings } from '../utils/storage';
+import { getSalons, getBookings, setBookings, getAnnouncements, setAnnouncements } from '../utils/storage';
 import ReactMarkdown from 'react-markdown';
 
 // API keys: use .env if available, otherwise use built-in defaults
@@ -139,7 +139,11 @@ Role: Advise on multi-shop scalability, network standardization, revenue growth,
 Rules: 
 1. Output max 3 concise sentences. 
 2. Use Markdown formatting for emphasis.
-3. You have access to this live network data: ${contextData || 'No specific context provided.'}`;
+3. Network context: ${salonContext}
+4. BROADCAST COMMAND: If the user asks you to send an announcement to all shops, you MUST include this exact string anywhere in your response:
+[BROADCAST|type|title|message]
+Where 'type' is one of: info, warning, promo.
+Example: [BROADCAST|promo|Holiday Special|All shops are running a 20% discount this week!]`;
       } else if (role === 'admin') {
         systemPrompt = `You are the Salon Operations AI Assistant for a Brush Up Salon Manager.
 Tone: Professional, supportive, operational.
@@ -221,23 +225,27 @@ ${salonContext}`;
         }
       }
 
-      // Smart widget detection
-      let widgetToRender = null;
-      const lower = userText.toLowerCase() + ' ' + responseText.toLowerCase();
+      // Process special commands (Widgets and Broadcasts)
+      let widget = null;
+      if (role === 'customer' && responseText.toLowerCase().includes('book now')) widget = 'BookButton';
+      if (role === 'customer' && responseText.toLowerCase().includes('cancel')) widget = 'CancelWidget';
+      if (role === 'admin' && responseText.toLowerCase().includes('schedule')) widget = 'AdminSchedule';
+      if (role === 'superadmin' && responseText.toLowerCase().includes('revenue')) widget = 'MasterStats';
+      if (role === 'superadmin' && responseText.toLowerCase().includes('performance')) widget = 'ShopStats';
       
-      if (role === 'customer') {
-        if (lower.includes('cancel')) widgetToRender = 'CancelWidget';
-        else if (lower.includes('book') || lower.includes('appointment')) widgetToRender = 'BookButton';
+      // Parse Broadcasts
+      const broadcastRegex = /\[BROADCAST\|(.*?)\|(.*?)\|(.*?)\]/;
+      const match = responseText.match(broadcastRegex);
+      if (match) {
+        const [, type, title, message] = match;
+        const currentA = getAnnouncements();
+        currentA.unshift({ id: Date.now(), type: type.trim(), title: title.trim(), message: message.trim(), timestamp: new Date().toISOString() });
+        setAnnouncements(currentA);
+        responseText = responseText.replace(broadcastRegex, '').trim() + "\n\n*(Broadcast published successfully to the network)*";
       }
-      if (role === 'admin') {
-        if (lower.includes('schedule') || lower.includes('today') || lower.includes('appointment')) widgetToRender = 'AdminSchedule';
-      }
-      if (role === 'superadmin') {
-        if (lower.includes('shop') || lower.includes('salon') || lower.includes('performing') || lower.includes('branch')) widgetToRender = 'ShopStats';
-        else if (lower.includes('revenue') || lower.includes('overview') || lower.includes('total')) widgetToRender = 'MasterStats';
-      }
-      
-      setMessages(prev => [...prev, { id: Date.now(), text: responseText, isBot: true, widget: widgetToRender }]);
+
+      const botMessage = { id: Date.now() + 1, text: responseText, isBot: true, widget };
+      setMessages(prev => [...prev, botMessage]);
     } catch (err) {
       console.error(err);
       setMessages(prev => [...prev, { id: Date.now(), text: "I'm sorry, I'm having trouble connecting. Please try again.", isBot: true }]);
