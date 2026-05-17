@@ -346,72 +346,72 @@ ${salonContext}`;
   const uiConfig = {
     container: {
       position: 'fixed', zIndex: 10000, display: 'flex', flexDirection: 'column', overflow: 'hidden',
-      ...(isCustomer ? { bottom: '30px', right: '30px', width: '380px', height: '520px', backgroundColor: '#fdfbf7', borderRadius: '24px', boxShadow: '0 10px 40px rgba(232, 165, 152, 0.2)', border: '1px solid #e8a598' } : {}),
-      ...(isAdmin ? { top: 0, right: 0, bottom: 0, width: '400px', height: '100vh', backgroundColor: '#1a1a1a', borderRadius: '0', boxShadow: '-10px 0 30px rgba(0,0,0,0.5)', borderLeft: '1px solid #333' } : {}),
+      ...(isCustomer ? { bottom: '30px', right: '30px', width: '380px', height: '520px', backgroundColor: 'rgba(20,20,20,0.85)', backdropFilter: 'blur(16px)', borderRadius: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', border: '1px solid rgba(201,168,76,0.2)' } : {}),
+      ...(isAdmin ? { top: 0, right: 0, bottom: 0, width: '400px', height: '100vh', backgroundColor: 'var(--bg-card)', borderRadius: '0', boxShadow: '-10px 0 30px rgba(0,0,0,0.5)', borderLeft: '1px solid var(--border)' } : {}),
       ...(isSuperAdmin ? { top: '90px', right: '30px', width: '420px', height: '550px', backgroundColor: '#050d1a', borderRadius: '8px', boxShadow: '0 0 20px rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)' } : {})
     },
     header: {
       padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      ...(isCustomer ? { background: '#e8a598', color: '#fff', borderBottom: 'none' } : {}),
-      ...(isAdmin ? { background: '#f5a623', color: '#1a1a1a', borderBottom: 'none' } : {}),
-      ...(isSuperAdmin ? { background: '#030811', color: '#ffd700', borderBottom: '1px solid rgba(56, 189, 248, 0.3)' } : {})
+      ...(isCustomer ? { background: 'transparent', borderBottom: '1px solid rgba(255,255,255,0.05)' } : {}),
+      ...(isAdmin ? { background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid var(--border)' } : {}),
+      ...(isSuperAdmin ? { background: '#030811', borderBottom: '1px solid rgba(56, 189, 248, 0.3)' } : {})
     },
     headerTitle: {
       margin: 0, fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px',
-      ...(isCustomer ? { color: '#fff' } : {}),
-      ...(isAdmin ? { color: '#1a1a1a', fontWeight: 'bold' } : {}),
+      ...(isCustomer ? { color: 'var(--gold)' } : {}),
+      ...(isAdmin ? { color: 'var(--text-white)', fontWeight: 'bold' } : {}),
       ...(isSuperAdmin ? { color: '#ffd700', fontFamily: 'monospace', letterSpacing: '1px' } : {})
     },
     headerSubtitle: {
       margin: 0, fontSize: '11px',
-      ...(isCustomer ? { color: 'rgba(255,255,255,0.8)' } : {}),
-      ...(isAdmin ? { color: 'rgba(0,0,0,0.6)', fontWeight: 'bold' } : {}),
+      ...(isCustomer ? { color: 'var(--text-dim)' } : {}),
+      ...(isAdmin ? { color: 'var(--text-dim)' } : {}),
       ...(isSuperAdmin ? { color: 'rgba(56, 189, 248, 0.7)', fontFamily: 'monospace' } : {})
     },
     onlineIndicatorClass: isCustomer ? 'chatbot-dot-pink' : isSuperAdmin ? 'chatbot-dot-gold' : '',
-    onlineIndicatorStyle: isAdmin ? { width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#1a1a1a' } : {},
+    onlineIndicatorStyle: isAdmin ? { width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--success)' } : {},
     closeBtn: {
       background: 'none', border: 'none', cursor: 'pointer',
-      ...(isCustomer ? { color: '#fff' } : {}),
-      ...(isAdmin ? { color: '#1a1a1a' } : {}),
+      ...(isCustomer ? { color: 'var(--text-dim)' } : {}),
+      ...(isAdmin ? { color: 'var(--text-dim)' } : {}),
       ...(isSuperAdmin ? { color: '#ffd700' } : {})
     },
     botMessage: {
       padding: '10px 14px', fontSize: '13px', lineHeight: '1.5',
-      ...(isCustomer ? { background: '#e8a598', color: '#fff', borderRadius: '18px 18px 18px 4px' } : {}),
-      ...(isAdmin ? { background: '#2a2a2a', color: '#f5f5f5', borderRadius: '8px', borderLeft: '4px solid #f5a623' } : {}),
+      ...(isCustomer ? { background: 'rgba(201,168,76,0.1)', color: 'var(--text-white)', borderRadius: '16px 16px 16px 4px', border: '1px solid rgba(201,168,76,0.2)' } : {}),
+      ...(isAdmin ? { background: 'rgba(255,255,255,0.05)', color: 'var(--text-white)', borderRadius: '8px', borderLeft: '3px solid var(--success)' } : {}),
       ...(isSuperAdmin ? { background: '#0a1526', color: '#ffd700', borderRadius: '4px', fontFamily: 'monospace', border: '1px solid rgba(56, 189, 248, 0.2)' } : {})
     },
     userMessage: {
       padding: '10px 14px', fontSize: '13px', lineHeight: '1.5',
-      ...(isCustomer ? { background: '#2c2422', color: '#fff', borderRadius: '18px 18px 4px 18px' } : {}),
-      ...(isAdmin ? { background: '#f5a623', color: '#1a1a1a', borderRadius: '8px 8px 0 8px', fontWeight: '500' } : {}),
+      ...(isCustomer ? { background: 'var(--gold)', color: '#000', borderRadius: '16px 16px 4px 16px', fontWeight: '500' } : {}),
+      ...(isAdmin ? { background: 'rgba(72,187,120,0.15)', color: 'var(--success)', borderRadius: '8px', fontWeight: '500' } : {}),
       ...(isSuperAdmin ? { background: 'transparent', color: '#ffd700', borderRadius: '4px', border: '1px solid #ffd700', fontFamily: 'monospace' } : {})
     },
     inputArea: {
       padding: '14px', display: 'flex', gap: '8px',
-      ...(isCustomer ? { background: '#fdfbf7', borderTop: '1px solid rgba(232, 165, 152, 0.2)' } : {}),
-      ...(isAdmin ? { background: '#1a1a1a', borderTop: '1px solid #333' } : {}),
+      ...(isCustomer ? { background: 'transparent', borderTop: '1px solid rgba(255,255,255,0.05)' } : {}),
+      ...(isAdmin ? { background: 'rgba(0,0,0,0.2)', borderTop: '1px solid var(--border)' } : {}),
       ...(isSuperAdmin ? { background: '#030811', borderTop: '1px solid rgba(56, 189, 248, 0.3)' } : {})
     },
     inputField: {
       flex: 1, padding: '11px 16px', border: 'none', outline: 'none', fontSize: '13px',
-      ...(isCustomer ? { background: '#f5f0eb', borderRadius: '20px', color: '#2c2422', fontFamily: 'inherit' } : {}),
-      ...(isAdmin ? { background: '#2a2a2a', borderRadius: '4px', color: '#fff', fontFamily: 'inherit' } : {}),
+      ...(isCustomer ? { background: 'rgba(0,0,0,0.4)', borderRadius: '20px', color: 'var(--text-white)', fontFamily: 'inherit', border: '1px solid rgba(255,255,255,0.1)' } : {}),
+      ...(isAdmin ? { background: '#0a0a0a', borderRadius: '4px', color: '#fff', fontFamily: 'inherit', border: '1px solid var(--border)' } : {}),
       ...(isSuperAdmin ? { background: 'transparent', borderRadius: '0', color: '#ffd700', fontFamily: 'monospace', borderBottom: '1px solid rgba(56, 189, 248, 0.3)' } : {})
     },
     sendBtn: {
       width: '42px', height: '42px', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-      ...(isCustomer ? { background: '#e8a598', borderRadius: '50%', color: '#fff' } : {}),
-      ...(isAdmin ? { background: '#f5a623', borderRadius: '4px', color: '#1a1a1a' } : {}),
+      ...(isCustomer ? { background: 'var(--gold)', borderRadius: '50%', color: '#000' } : {}),
+      ...(isAdmin ? { background: 'var(--success)', borderRadius: '4px', color: '#000' } : {}),
       ...(isSuperAdmin ? { background: 'rgba(255, 215, 0, 0.1)', borderRadius: '4px', color: '#ffd700', border: '1px solid #ffd700' } : {})
     },
     fabStyle: {
       position: 'fixed', bottom: '30px', right: '30px', width: '60px', height: '60px',
       borderRadius: '50%', border: 'none', boxShadow: 'var(--shadow-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
       cursor: 'pointer', zIndex: 9999, transition: 'transform 0.3s ease', transform: isOpen ? 'scale(0)' : 'scale(1)',
-      ...(isCustomer ? { backgroundColor: '#e8a598', color: '#fff' } : {}),
-      ...(isAdmin ? { backgroundColor: '#f5a623', color: '#1a1a1a', borderRadius: '8px' } : {}),
+      ...(isCustomer ? { backgroundColor: 'var(--gold)', color: '#000' } : {}),
+      ...(isAdmin ? { backgroundColor: 'var(--success)', color: '#000', borderRadius: '8px' } : {}),
       ...(isSuperAdmin ? { backgroundColor: '#050d1a', color: '#ffd700', border: '1px solid #ffd700' } : {})
     },
     motionInitial: isCustomer ? { opacity: 0, y: 50, scale: 0.9 } : isAdmin ? { x: '100%' } : { opacity: 0, y: -20 },
@@ -527,13 +527,11 @@ ${salonContext}`;
             {/* Input */}
             <form onSubmit={handleSend} style={uiConfig.inputArea}>
               <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
-                {isSuperAdmin && <span style={{ position: 'absolute', left: 12, color: '#ffd700', fontFamily: 'monospace' }}>$</span>}
                 <input 
-                  type="text" placeholder={isSuperAdmin ? " enter command..." : "Ask me anything..."}
+                  type="text" placeholder={isSuperAdmin ? "> enter command..." : "Ask me anything..."}
                   value={input} onChange={(e) => setInput(e.target.value)}
-                  style={{ ...uiConfig.inputField, paddingLeft: isSuperAdmin ? 28 : 16 }}
+                  style={uiConfig.inputField}
                 />
-                {isSuperAdmin && !input && <div className="chatbot-cursor-blink" style={{ position: 'absolute', left: 130, width: 8, height: 16, backgroundColor: '#ffd700' }} />}
               </div>
               <button 
                 type="submit" disabled={!input.trim() || isTyping}
