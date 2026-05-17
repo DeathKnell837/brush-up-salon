@@ -483,3 +483,34 @@ select.search-input option{background:#1a1a1a;color:var(--text);padding:8px}
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ─── CHATBOT ROLE-SPECIFIC ANIMATIONS ─── */
+.chatbot-dot-pink {
+  width: 8px; height: 8px; border-radius: 50%;
+  background-color: #e8a598;
+  animation: pulsePink 2s infinite ease-in-out;
+}
+@keyframes pulsePink {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(232, 165, 152, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(232, 165, 152, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(232, 165, 152, 0); }
+}
+
+.chatbot-dot-gold {
+  width: 8px; height: 8px; border-radius: 50%;
+  background-color: #ffd700;
+  animation: pulseGold 1.5s infinite ease-in-out;
+}
+@keyframes pulseGold {
+  0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.8); }
+  50% { transform: scale(1.1); box-shadow: 0 0 8px 4px rgba(255, 215, 0, 0.4); }
+  100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+}
+
+.chatbot-cursor-blink {
+  animation: blinkCursor 1s step-end infinite;
+}
+@keyframes blinkCursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
