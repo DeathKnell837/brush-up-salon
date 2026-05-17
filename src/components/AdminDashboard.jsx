@@ -185,14 +185,13 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
       {announcements.map(a => (
         <div key={a.id} className={`broadcast-banner ${a.type}`}>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-            <div className="broadcast-icon"><AlertCircleIcon size={20} /></div>
-            <div className="broadcast-content">
-              <h4>{a.title}</h4>
-              <p>{a.message}</p>
-            </div>
+          <div className="broadcast-content">
+            <div className="broadcast-icon"><AlertCircleIcon size={16} /></div>
+            <strong>{a.title}</strong>
+            <span style={{ color: 'rgba(255,255,255,0.2)', margin: '0 4px' }}>|</span>
+            <p>{a.message}</p>
           </div>
-          <span style={{ fontSize: 10, color: 'var(--text-dim)', alignSelf: 'flex-start' }}>{new Date(a.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+          <span style={{ fontSize: 10, color: 'var(--text-dim)', flexShrink: 0 }}>{new Date(a.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
         </div>
       ))}
 

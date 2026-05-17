@@ -415,65 +415,71 @@ select.search-input option{background:#1a1a1a;color:var(--text);padding:8px}
   .footer-inner{flex-direction:column;gap:12px;text-align:center}
 }
 
-/* ─── BROADCAST BANNER ─── */
+/* ─── BROADCAST BANNER (SLIM) ─── */
 .broadcast-banner {
-  padding: 12px 24px;
-  border-radius: 12px;
-  margin-bottom: 24px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
-  animation: fadeDown 0.4s ease;
-  border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  backdrop-filter: blur(12px);
+  gap: 12px;
+  animation: fadeDown 0.3s ease;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  backdrop-filter: blur(8px);
 }
 
 .broadcast-banner.promo {
-  background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05));
-  border-color: rgba(201,168,76,0.3);
+  background: linear-gradient(90deg, rgba(201,168,76,0.1), rgba(201,168,76,0.02));
+  border-left: 3px solid var(--gold);
 }
 
 .broadcast-banner.warning {
-  background: linear-gradient(135deg, rgba(248,113,113,0.15), rgba(248,113,113,0.05));
-  border-color: rgba(248,113,113,0.3);
+  background: linear-gradient(90deg, rgba(248,113,113,0.1), rgba(248,113,113,0.02));
+  border-left: 3px solid #f87171;
 }
 
 .broadcast-banner.info {
-  background: linear-gradient(135deg, rgba(56,189,248,0.15), rgba(56,189,248,0.05));
-  border-color: rgba(56,189,248,0.3);
+  background: linear-gradient(90deg, rgba(56,189,248,0.1), rgba(56,189,248,0.02));
+  border-left: 3px solid #38bdf8;
+}
+
+.broadcast-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
 }
 
 .broadcast-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.broadcast-banner.promo .broadcast-icon { background: rgba(201,168,76,0.2); color: var(--gold); }
-.broadcast-banner.warning .broadcast-icon { background: rgba(248,113,113,0.2); color: #f87171; }
-.broadcast-banner.info .broadcast-icon { background: rgba(56,189,248,0.2); color: #38bdf8; }
+.broadcast-banner.promo .broadcast-icon { color: var(--gold); }
+.broadcast-banner.warning .broadcast-icon { color: #f87171; }
+.broadcast-banner.info .broadcast-icon { color: #38bdf8; }
 
-.broadcast-content h4 {
-  margin: 0 0 4px 0;
+.broadcast-content strong {
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: 13px;
   color: var(--text-white);
+  letter-spacing: 0.5px;
 }
 
 .broadcast-content p {
   margin: 0;
   font-size: 13px;
   color: var(--text-dim);
-  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 @keyframes fadeDown {
-  from { opacity: 0; transform: translateY(-10px); }
+  from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
 }

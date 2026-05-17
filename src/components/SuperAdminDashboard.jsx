@@ -107,14 +107,13 @@ function SuperAdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalo
       <div style={{ padding: '0 24px', maxWidth: 1200, margin: '0 auto', marginTop: '-12px' }}>
         {getAnnouncements().map(a => (
           <div key={a.id} className={`broadcast-banner ${a.type}`}>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-              <div className="broadcast-icon"><AlertCircleIcon size={20} /></div>
-              <div className="broadcast-content">
-                <h4>{a.title}</h4>
-                <p>{a.message}</p>
-              </div>
+            <div className="broadcast-content">
+              <div className="broadcast-icon"><AlertCircleIcon size={16} /></div>
+              <strong>{a.title}</strong>
+              <span style={{ color: 'rgba(255,255,255,0.2)', margin: '0 4px' }}>|</span>
+              <p>{a.message}</p>
             </div>
-            <span style={{ fontSize: 10, color: 'var(--text-dim)', alignSelf: 'flex-start' }}>{new Date(a.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+            <span style={{ fontSize: 10, color: 'var(--text-dim)', flexShrink: 0 }}>{new Date(a.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
           </div>
         ))}
       </div>
@@ -306,16 +305,14 @@ function SuperAdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalo
               <h3 style={{ fontSize: 16, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Active Broadcasts</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {getAnnouncements().length === 0 ? <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>No active broadcasts.</p> : getAnnouncements().map(a => (
-                  <div key={a.id} className={`broadcast-banner ${a.type}`} style={{ marginBottom: 0, padding: 16 }}>
-                    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                      <div className="broadcast-icon"><AlertCircleIcon size={20} /></div>
-                      <div className="broadcast-content">
-                        <h4>{a.title}</h4>
-                        <p>{a.message}</p>
-                        <span style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 6, display: 'block' }}>Published: {new Date(a.timestamp).toLocaleString()}</span>
-                      </div>
+                  <div key={a.id} className={`broadcast-banner ${a.type}`} style={{ marginBottom: 0 }}>
+                    <div className="broadcast-content">
+                      <div className="broadcast-icon"><AlertCircleIcon size={16} /></div>
+                      <strong>{a.title}</strong>
+                      <span style={{ color: 'rgba(255,255,255,0.2)', margin: '0 4px' }}>|</span>
+                      <p>{a.message}</p>
                     </div>
-                    <button onClick={() => handleRemoveAnnouncement(a.id)} className="btn small outline danger">Remove</button>
+                    <button onClick={() => handleRemoveAnnouncement(a.id)} className="btn small outline danger" style={{ flexShrink: 0, padding: '4px 10px' }}>Remove</button>
                   </div>
                 ))}
               </div>
