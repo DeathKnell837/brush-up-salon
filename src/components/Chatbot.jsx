@@ -468,9 +468,10 @@ ${salonContext}`;
                         urlTransform={(value) => value}
                         components={{
                         p: ({children}) => <p style={{margin: '0 0 6px 0', padding: 0}}>{children}</p>,
-                        ul: ({children}) => <ul style={{margin: '0 0 6px 0', paddingLeft: '16px'}}>{children}</ul>,
+                        ul: ({children}) => <ul style={{margin: '0 0 6px 0', paddingLeft: '24px'}}>{children}</ul>,
+                        ol: ({children}) => <ol style={{margin: '0 0 6px 0', paddingLeft: '24px'}}>{children}</ol>,
                         li: ({children}) => <li style={{marginBottom: '2px'}}>{children}</li>,
-                        strong: ({children}) => <strong style={{color: 'var(--gold)'}}>{children}</strong>,
+                        strong: ({children}) => <strong style={{color: 'inherit', fontWeight: 'bold'}}>{children}</strong>,
                         a: ({ href, children }) => (
                           <a href={href} onClick={(e) => {
                             e.preventDefault();
