@@ -109,7 +109,7 @@ const DEFAULT_ADMINS = [
 
 // ─── Seed admin accounts + salons into localStorage on first load ───
 export const seedAdminAccounts = async () => {
-  const version = 'v8_firebase_fix'; // Bump version to force re-seed and fix auth
+  const version = 'v9_firebase_retry'; // Bump version to force re-seed after enabling Auth
   const seededVersion = storage.get('luxurySeedVersion', '');
   
   if (seededVersion === version) return;
