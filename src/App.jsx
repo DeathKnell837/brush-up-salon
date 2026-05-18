@@ -7,7 +7,7 @@ import ProfileModal from './components/ProfileModal';
 import Toast from './components/Toast';
 import ForbiddenPage from './components/ForbiddenPage';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
-import { getUsers, setUsers, getBookings, setBookings, getSalons, setSalons, hashPassword, seedAdminAccounts, getSession, setSession, clearSession, logAuditAction } from './utils/storage';
+import { getBookings, setBookings, getSalons, setSalons, seedAdminAccounts, getSession, setSession, clearSession, logAuditAction } from './utils/storage';
 import { SALON_DATA } from './constants/salonData';
 import { auth, db } from './firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
