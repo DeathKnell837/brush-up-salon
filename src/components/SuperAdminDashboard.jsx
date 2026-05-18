@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { getBookings, getUsers, getSalons, setSalons, setUsers as saveUsers, hashPassword, logAuditAction, getAuditLogs, getAnnouncements, setAnnouncements } from '../utils/storage';
+import { db, firebaseConfig } from '../firebase';
+import { doc, deleteDoc, setDoc } from 'firebase/firestore';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import BrushUpLogo from './BrushUpLogo';
 import Chatbot from './Chatbot';
 import {
@@ -45,14 +49,11 @@ function SuperAdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalo
 
   const handleCleanupDuplicates = async () => {
     try {
-      const { deleteDoc, doc } = require('firebase/firestore');
-      const { db } = require('../firebase');
       const legacyIds = ['superadmin', 'elegantadmin', 'kareenadmin', 'prettyadmin', 'jamesadmin', 'palmaadmin', 'babieadmin', 'cutcurladmin'];
       for (const id of legacyIds) {
         await deleteDoc(doc(db, 'users', id)).catch(() => {});
       }
       showToast('Cleaned up duplicates!');
-      // Force refresh of admins by doing a small timeout or just let onSnapshot catch it
       setTimeout(() => window.location.reload(), 1000);
     } catch (e) {
       console.error(e);
@@ -68,15 +69,34 @@ function SuperAdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalo
   const handleAddSalon = async (e) => {
     e.preventDefault();
     if (!ns.name || !ns.admin || !ns.pass) { showToast('Fill all required fields.'); return; }
-    const id = ns.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now();
-    const newSalon = { id, name: ns.name, description: ns.desc || 'A premium salon.', image: ns.img || '/images/elegant.png', services: [{ name: 'Haircut', price: 'PHP 250' }], staff: [], promotions: [], address: '', contact: '', hours: '' };
-    const all = getSalons(); all.push(newSalon); setSalons(all);
-    const users = getUsers(); const hp = await hashPassword(ns.pass);
-    users.push({ name: ns.name + ' Admin', user: ns.admin, pass: hp, role: 'admin', salonId: id });
-    saveUsers(users);
-    logAuditAction(currentUser.user, 'CREATE_SALON', `Created salon ${ns.name} with admin @${ns.admin}`);
-    onRefreshSalons(); setNs({ name: '', desc: '', img: '', admin: '', pass: '' });
-    showToast(`"${newSalon.name}" created!`);
+    
+    try {
+      const secondaryApp = getApps().length > 1 ? getApp("Secondary") : initializeApp(firebaseConfig, "Secondary");
+      const secondaryAuth = getAuth(secondaryApp);
+      const email = `${ns.admin.toLowerCase()}@brushup.com`;
+      
+      const cred = await createUserWithEmailAndPassword(secondaryAuth, email, ns.pass);
+      await signOut(secondaryAuth);
+      const uid = cred.user.uid;
+
+      const id = ns.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now();
+      const newSalon = { id, name: ns.name, description: ns.desc || 'A premium salon.', image: ns.img || '/images/elegant.png', services: [{ name: 'Haircut', price: 'PHP 250' }], staff: [], promotions: [], address: '', contact: '', hours: '' };
+      
+      const all = getSalons(); all.push(newSalon); setSalons(all);
+      
+      const newAdminUser = { uid, name: ns.name + ' Admin', user: ns.admin, role: 'admin', salonId: id };
+      await setDoc(doc(db, 'users', uid), newAdminUser);
+      
+      const users = getUsers();
+      users.push(newAdminUser);
+      saveUsers(users);
+
+      logAuditAction(currentUser.user, 'CREATE_SALON', `Created salon ${ns.name} with admin @${ns.admin}`);
+      onRefreshSalons(); setNs({ name: '', desc: '', img: '', admin: '', pass: '' });
+      showToast(`"${newSalon.name}" created!`);
+    } catch (err) {
+      showToast('Failed to create admin: ' + err.message);
+    }
   };
 
   const handleRemoveSalon = (sid) => {
