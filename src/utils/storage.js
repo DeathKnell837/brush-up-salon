@@ -109,7 +109,7 @@ const DEFAULT_ADMINS = [
 
 // ─── Seed admin accounts + salons into localStorage on first load ───
 export const seedAdminAccounts = async () => {
-  const version = 'v10_firebase_final'; // Bump version again because v9 ran with a bad API key
+  const version = 'v11_menu_update'; // Bump for updated salon menus
   const seededVersion = storage.get('luxurySeedVersion', '');
   
   if (seededVersion === version) return;

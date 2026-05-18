@@ -1,0 +1,425 @@
+import React, { useState, useRef } from 'react';
+import { getBookings, setBookings } from '../utils/storage';
+import BrushUpLogo from './BrushUpLogo';
+import {
+  ScissorsIcon, CalendarIcon, ClockIcon, CloseIcon, StoreIcon
+} from './Icons';
+
+function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, showToast }) {
+  const [selectedService, setSelectedService] = useState(null);
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [bookName, setBookName] = useState(currentUser?.name || '');
+  const [bookContact, setBookContact] = useState(currentUser?.phone || '');
+  const [bookDate, setBookDate] = useState('');
+  const [bookTime, setBookTime] = useState('');
+  const [bookStaff, setBookStaff] = useState('');
+  const [reviewSort, setReviewSort] = useState('recent');
+
+  const bookingRef = useRef(null);
+
+  const allBookings = getBookings();
+  const reviews = allBookings.filter(b => b.salonId === salon.id && b.review);
+  const avgRating = reviews.length > 0
+    ? (reviews.reduce((sum, b) => sum + b.review, 0) / reviews.length).toFixed(1)
+    : 0;
+
+  // Sort reviews
+  const sortedReviews = [...reviews].sort((a, b) => {
+    if (reviewSort === 'highest') return b.review - a.review;
+    if (reviewSort === 'lowest') return a.review - b.review;
+    return (b.id || 0) - (a.id || 0); // recent
+  });
+
+  // Group services by category
+  const categories = ['All'];
+  const categoryMap = {};
+  salon.services.forEach(s => {
+    const cat = s.category || 'General';
+    if (!categoryMap[cat]) {
+      categoryMap[cat] = [];
+      categories.push(cat);
+    }
+    categoryMap[cat].push(s);
+  });
+
+  const displayedServices = activeCategory === 'All'
+    ? salon.services
+    : categoryMap[activeCategory] || [];
+
+  const handleSelectService = (service) => {
+    setSelectedService(service);
+    setTimeout(() => {
+      bookingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
+  const handleSubmitBooking = (e) => {
+    e.preventDefault();
+    if (!bookName || !bookContact || !selectedService || !bookDate || !bookTime) {
+      showToast('Please complete all fields.');
+      return;
+    }
+    const phoneRegex = /^[0-9+\-\s()]{7,15}$/;
+    if (!phoneRegex.test(bookContact)) {
+      showToast('Please enter a valid contact number.');
+      return;
+    }
+    const bookings = getBookings();
+    bookings.push({
+      id: Date.now(),
+      salonId: salon.id,
+      userId: currentUser?.user || 'unknown',
+      customer: bookName,
+      contact: bookContact,
+      service: selectedService.name,
+      staff: bookStaff || 'Any',
+      date: bookDate,
+      time: bookTime,
+      status: 'Pending'
+    });
+    setBookings(bookings);
+    showToast('Booking submitted! Awaiting salon approval.');
+    setSelectedService(null);
+    setBookDate('');
+    setBookTime('');
+    setBookStaff('');
+  };
+
+  const today = new Date().toISOString().split('T')[0];
+
+  return (
+    <div className="app-shell">
+      {/* ─── Navbar ─── */}
+      <nav className="navbar">
+        <div className="brand" style={{ cursor: 'pointer' }} onClick={onBack}><BrushUpLogo size="small" /></div>
+        <div className="navbar-right">
+          <button className="btn small outline" onClick={onBack} style={{ gap: 6 }}>
+            ← Back
+          </button>
+          <button className="profile-btn" onClick={onOpenProfile}>
+            {(currentUser?.name || 'U')[0].toUpperCase()}
+          </button>
+          <button className="logout-btn" onClick={onLogout}>Logout</button>
+        </div>
+      </nav>
+
+      {/* ═══ HERO SECTION ═══ */}
+      <section className="sdp-hero" style={{
+        backgroundImage: `linear-gradient(to top, rgba(15,15,15,1) 0%, rgba(15,15,15,0.7) 40%, rgba(15,15,15,0.3) 100%), url(${salon.image})`,
+      }}>
+        <div className="sdp-hero-content">
+          <div className="sdp-hero-badge">
+            <StoreIcon size={14} /> Partner Salon
+          </div>
+          <h1 className="sdp-hero-title">{salon.name}</h1>
+          <p className="sdp-hero-desc">{salon.description}</p>
+
+          <div className="sdp-hero-meta">
+            {reviews.length > 0 && (
+              <div className="sdp-meta-item sdp-rating">
+                <span className="sdp-rating-stars">★ {avgRating}</span>
+                <span className="sdp-rating-count">({reviews.length} reviews)</span>
+              </div>
+            )}
+            {salon.contact && (
+              <div className="sdp-meta-item">
+                <span className="sdp-meta-label">Contact</span>
+                <span>{salon.contact}</span>
+              </div>
+            )}
+            {salon.hours && (
+              <div className="sdp-meta-item">
+                <span className="sdp-meta-label">Hours</span>
+                <span>{salon.hours}</span>
+              </div>
+            )}
+            {salon.address && (
+              <div className="sdp-meta-item">
+                <span className="sdp-meta-label">Location</span>
+                <span>{salon.address}</span>
+              </div>
+            )}
+          </div>
+
+          {salon.promotions && salon.promotions.length > 0 && (
+            <div className="sdp-promo-banner">
+              🎉 {salon.promotions[0]}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ═══ SERVICES SECTION ═══ */}
+      <section className="sdp-section">
+        <div className="sdp-section-header">
+          <p className="section-label">OUR OFFERINGS</p>
+          <h2 className="section-heading">Services & Pricing</h2>
+        </div>
+
+        {/* Category tabs */}
+        <div className="sdp-category-tabs">
+          {categories.map(cat => (
+            <button
+              key={cat}
+              className={`sdp-cat-btn ${activeCategory === cat ? 'active' : ''}`}
+              onClick={() => setActiveCategory(cat)}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Services grid - grouped by category */}
+        {activeCategory === 'All' ? (
+          Object.entries(categoryMap).map(([cat, items]) => (
+            <div key={cat} className="sdp-cat-group">
+              <h3 className="sdp-cat-title">{cat}</h3>
+              <div className="sdp-services-grid">
+                {items.map(service => (
+                  <div
+                    key={service.name}
+                    className={`sdp-service-card ${selectedService?.name === service.name ? 'selected' : ''}`}
+                    onClick={() => handleSelectService(service)}
+                  >
+                    <div className="sdp-svc-info">
+                      <span className="sdp-svc-name">{service.name}</span>
+                      {service.pricingTable && (
+                        <div className="sdp-pricing-table">
+                          {service.pricingTable.neck !== undefined && (
+                            <div className="sdp-pt-row">
+                              <span>Neck</span><span>₱{service.pricingTable.neck.toLocaleString()}</span>
+                            </div>
+                          )}
+                          {service.pricingTable.bra !== undefined && (
+                            <div className="sdp-pt-row">
+                              <span>Bra</span><span>₱{service.pricingTable.bra.toLocaleString()}</span>
+                            </div>
+                          )}
+                          {service.pricingTable.waist !== undefined && (
+                            <div className="sdp-pt-row">
+                              <span>Waist</span><span>₱{service.pricingTable.waist.toLocaleString()}</span>
+                            </div>
+                          )}
+                          {service.pricingTable.short !== undefined && (
+                            <div className="sdp-pt-row">
+                              <span>Short</span><span>₱{service.pricingTable.short.toLocaleString()}</span>
+                            </div>
+                          )}
+                          {service.pricingTable.medium !== undefined && (
+                            <div className="sdp-pt-row">
+                              <span>Medium</span><span>₱{service.pricingTable.medium.toLocaleString()}</span>
+                            </div>
+                          )}
+                          {service.pricingTable.long !== undefined && (
+                            <div className="sdp-pt-row">
+                              <span>Long</span><span>₱{service.pricingTable.long.toLocaleString()}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="sdp-svc-price">
+                      <strong>{service.price}</strong>
+                      {service.pricingTable && <span className="sdp-starts-at">starts at</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="sdp-services-grid">
+            {displayedServices.map(service => (
+              <div
+                key={service.name}
+                className={`sdp-service-card ${selectedService?.name === service.name ? 'selected' : ''}`}
+                onClick={() => handleSelectService(service)}
+              >
+                <div className="sdp-svc-info">
+                  <span className="sdp-svc-name">{service.name}</span>
+                  {service.pricingTable && (
+                    <div className="sdp-pricing-table">
+                      {service.pricingTable.neck !== undefined && (
+                        <div className="sdp-pt-row">
+                          <span>Neck</span><span>₱{service.pricingTable.neck.toLocaleString()}</span>
+                        </div>
+                      )}
+                      {service.pricingTable.bra !== undefined && (
+                        <div className="sdp-pt-row">
+                          <span>Bra</span><span>₱{service.pricingTable.bra.toLocaleString()}</span>
+                        </div>
+                      )}
+                      {service.pricingTable.waist !== undefined && (
+                        <div className="sdp-pt-row">
+                          <span>Waist</span><span>₱{service.pricingTable.waist.toLocaleString()}</span>
+                        </div>
+                      )}
+                      {service.pricingTable.short !== undefined && (
+                        <div className="sdp-pt-row">
+                          <span>Short</span><span>₱{service.pricingTable.short.toLocaleString()}</span>
+                        </div>
+                      )}
+                      {service.pricingTable.medium !== undefined && (
+                        <div className="sdp-pt-row">
+                          <span>Medium</span><span>₱{service.pricingTable.medium.toLocaleString()}</span>
+                        </div>
+                      )}
+                      {service.pricingTable.long !== undefined && (
+                        <div className="sdp-pt-row">
+                          <span>Long</span><span>₱{service.pricingTable.long.toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="sdp-svc-price">
+                  <strong>{service.price}</strong>
+                  {service.pricingTable && <span className="sdp-starts-at">starts at</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ═══ STAFF SECTION ═══ */}
+      {salon.staff && salon.staff.length > 0 && (
+        <section className="sdp-section">
+          <div className="sdp-section-header">
+            <p className="section-label">OUR TEAM</p>
+            <h2 className="section-heading">Available Staff</h2>
+          </div>
+          <div className="sdp-staff-grid">
+            {salon.staff.map(name => (
+              <div key={name} className="sdp-staff-card">
+                <div className="sdp-staff-avatar">{name[0]}</div>
+                <span className="sdp-staff-name">{name}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ═══ BOOKING FORM SECTION ═══ */}
+      <section className="sdp-section" ref={bookingRef}>
+        <div className="sdp-section-header">
+          <p className="section-label">RESERVE NOW</p>
+          <h2 className="section-heading">Book an Appointment</h2>
+        </div>
+
+        <div className="sdp-booking-card">
+          {selectedService ? (
+            <div className="sdp-selected-service">
+              <ScissorsIcon size={16} />
+              <span>Selected: <strong>{selectedService.name}</strong> — {selectedService.price}</span>
+              <button className="sdp-clear-svc" onClick={() => setSelectedService(null)}><CloseIcon size={12} /></button>
+            </div>
+          ) : (
+            <div className="sdp-select-prompt">
+              <ScissorsIcon size={20} />
+              <p>Please select a service from the menu above to begin booking.</p>
+            </div>
+          )}
+
+          {selectedService && (
+            <form className="sdp-booking-form" onSubmit={handleSubmitBooking}>
+              <div className="sdp-form-grid">
+                <div className="input-group">
+                  <label>Full Name</label>
+                  <input type="text" placeholder="Your full name" value={bookName} onChange={e => setBookName(e.target.value)} required />
+                </div>
+                <div className="input-group">
+                  <label>Contact Number</label>
+                  <input type="tel" placeholder="e.g. 0917-123-4567" value={bookContact} onChange={e => setBookContact(e.target.value)} required />
+                </div>
+                {salon.staff && salon.staff.length > 0 && (
+                  <div className="input-group">
+                    <label>Preferred Staff</label>
+                    <select value={bookStaff} onChange={e => setBookStaff(e.target.value)}>
+                      <option value="">Any Available</option>
+                      {salon.staff.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                )}
+                <div className="input-group">
+                  <label>Date</label>
+                  <input type="date" value={bookDate} onChange={e => setBookDate(e.target.value)} min={today} required />
+                </div>
+                <div className="input-group">
+                  <label>Time</label>
+                  <input type="time" value={bookTime} onChange={e => setBookTime(e.target.value)} required />
+                </div>
+              </div>
+              <button type="submit" className="btn sdp-book-btn">
+                <CalendarIcon size={16} /> Confirm Booking
+              </button>
+            </form>
+          )}
+        </div>
+      </section>
+
+      {/* ═══ REVIEWS SECTION ═══ */}
+      <section className="sdp-section">
+        <div className="sdp-section-header">
+          <p className="section-label">WHAT CUSTOMERS SAY</p>
+          <h2 className="section-heading">Reviews</h2>
+        </div>
+
+        {reviews.length > 0 && (
+          <div className="sdp-review-summary">
+            <div className="sdp-review-avg">
+              <span className="sdp-avg-number">{avgRating}</span>
+              <div className="sdp-avg-stars">
+                {'★'.repeat(Math.round(avgRating))}{'☆'.repeat(5 - Math.round(avgRating))}
+              </div>
+              <span className="sdp-avg-count">{reviews.length} reviews</span>
+            </div>
+            <select className="search-input" value={reviewSort} onChange={e => setReviewSort(e.target.value)} style={{ width: 'auto', minWidth: 160 }}>
+              <option value="recent">Most Recent</option>
+              <option value="highest">Highest Rated</option>
+              <option value="lowest">Lowest Rated</option>
+            </select>
+          </div>
+        )}
+
+        {reviews.length === 0 ? (
+          <div className="sdp-no-reviews">
+            <p>No reviews yet. Be the first to leave one after your visit!</p>
+          </div>
+        ) : (
+          <div className="sdp-reviews-grid">
+            {sortedReviews.map(r => (
+              <div key={r.id} className="sdp-review-card">
+                <div className="sdp-review-top">
+                  <div className="sdp-reviewer">
+                    <div className="sdp-reviewer-avatar">{(r.customer || '?')[0]}</div>
+                    <div>
+                      <strong>{r.customer.split(' ')[0]}</strong>
+                      <span className="sdp-review-service">{r.service}</span>
+                    </div>
+                  </div>
+                  <div className="sdp-review-stars">
+                    {'★'.repeat(r.review)}{'☆'.repeat(5 - r.review)}
+                  </div>
+                </div>
+                {r.reviewComment && (
+                  <p className="sdp-review-comment">"{r.reviewComment}"</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ─── Footer ─── */}
+      <footer className="footer">
+        <div className="footer-inner">
+          <BrushUpLogo size="small" />
+          <p>© 2026 Brush Up Salon & Beauty. All rights reserved.</p>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+export default SalonDetailPage;

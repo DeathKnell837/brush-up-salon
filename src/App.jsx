@@ -4,6 +4,7 @@ import CustomerDashboard from './components/CustomerDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import BookingModal from './components/BookingModal';
 import ProfileModal from './components/ProfileModal';
+import SalonDetailPage from './components/SalonDetailPage';
 import Toast from './components/Toast';
 import ForbiddenPage from './components/ForbiddenPage';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
@@ -150,6 +151,12 @@ function App() {
     refreshSalons();
   };
 
+  const handleOpenSalonPage = (salonId) => {
+    const salon = salons.find(s => s.id === salonId);
+    setSelectedSalon(salon);
+    setCurrentPage('salon-detail');
+  };
+
   const handleOpenModal = (salonId, details = null) => {
     const salon = salons.find(s => s.id === salonId);
     setInitialDetails(typeof details === 'string' ? { service: details } : details);
@@ -185,7 +192,17 @@ function App() {
       )}
       {currentPage === 'customer' && (
         <CustomerDashboard currentUser={currentUser} salons={salons} onLogout={handleLogout}
-          onSelectSalon={handleOpenModal} onOpenProfile={() => setShowProfile(true)} syncTick={syncTick} />
+          onSelectSalon={handleOpenSalonPage} onOpenProfile={() => setShowProfile(true)} syncTick={syncTick} />
+      )}
+      {currentPage === 'salon-detail' && selectedSalon && (
+        <SalonDetailPage
+          salon={selectedSalon}
+          currentUser={currentUser}
+          onBack={() => setCurrentPage('customer')}
+          onLogout={handleLogout}
+          onOpenProfile={() => setShowProfile(true)}
+          showToast={showToast}
+        />
       )}
       {currentPage === 'admin' && (
         (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'superadmin')) 
