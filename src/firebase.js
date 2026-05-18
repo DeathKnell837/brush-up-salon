@@ -4,7 +4,7 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyA1Uv2EO7LTtYLZoGXtRe65-N6S3BzTQsg",
+  apiKey: "AIzaSyA1Uv2EO7LTtYlZoGXtRe65-N6S3BzTQsg",
   authDomain: "brush-up-salon.firebaseapp.com",
   projectId: "brush-up-salon",
   storageBucket: "brush-up-salon.firebasestorage.app",
