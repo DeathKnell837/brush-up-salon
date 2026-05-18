@@ -11,7 +11,7 @@ const _ak = ['AIza','SyAJ4_zJXgkY','rZyl9u2yLaUi','1rToxmBm_p8'];
 const GROQ_KEY = process.env.REACT_APP_GROQ_API_KEY || _gk.join('');
 const GEMINI_KEY = process.env.REACT_APP_GEMINI_API_KEY || _ak.join('');
 
-export default function Chatbot({ onOpenModal, currentUser, contextData }) {
+export default function Chatbot({ onOpenModal, currentUser, contextData, onCancelBooking }) {
   const role = currentUser?.role || 'customer';
 
   const getInitialMessage = (r) => {

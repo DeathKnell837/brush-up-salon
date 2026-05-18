@@ -146,22 +146,6 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   };
 
 
-  const handleWalkIn = () => {
-    const name = prompt("Customer Name for Walk-in:");
-    if (!name) return;
-    const serviceName = prompt("Service Name:");
-    if (!serviceName) return;
-    const allBookings = getBookings();
-    const todayStr = new Date().toISOString().split('T')[0];
-    const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    allBookings.push({
-      id: Date.now(), salonId: currentUser.salonId, userId: 'walk-in', customer: name + ' (Walk-in)',
-      contact: 'N/A', service: serviceName, date: todayStr, time: timeStr, status: 'Approved'
-    });
-    setBookings(allBookings);
-    setBookingsState(loadBookings());
-    showToast('Walk-in appointment added!');
-  };
 
   const handleExportCSV = () => {
     let csv = "ID,Date,Time,Customer,Contact,Service,Status\n";
