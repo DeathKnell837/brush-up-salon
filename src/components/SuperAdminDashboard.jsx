@@ -217,6 +217,9 @@ function SuperAdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalo
                       <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-white)' }}>{b.customer}</div>
                       <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}><ScissorsIcon size={11} /> {b.service} · <CalendarIcon size={11} /> {b.date} · <ClockIcon size={11} /> {b.time}</div>
                       <div style={{ fontSize: 11, color: 'var(--gold)', marginTop: 2 }}>{salons.find(s => s.id === b.salonId)?.name || 'Unknown'}</div>
+                      {b.review && (
+                        <div style={{ marginTop: 4, color: 'var(--gold)', fontSize: 12, letterSpacing: 1 }}>{'★'.repeat(b.review)}{'☆'.repeat(5-b.review)}</div>
+                      )}
                     </div>
                   </div>
                   <span className={`status ${b.status.toLowerCase()}`}>{b.status}</span>
