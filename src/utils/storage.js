@@ -109,7 +109,7 @@ const DEFAULT_ADMINS = [
 
 // ─── Seed admin accounts + salons into localStorage on first load ───
 export const seedAdminAccounts = async () => {
-  const version = 'v7_firebase'; // bump to run once for firebase
+  const version = 'v8_firebase_fix'; // Bump version to force re-seed and fix auth
   const seededVersion = storage.get('luxurySeedVersion', '');
   
   if (seededVersion === version) return;
@@ -117,22 +117,39 @@ export const seedAdminAccounts = async () => {
   const users = getUsers();
   
   for (const admin of DEFAULT_ADMINS) {
-    const existingIdx = users.findIndex(u => u.user.toLowerCase() === admin.user.toLowerCase());
-    if (existingIdx === -1) {
+    let uid = null;
+    const email = `${admin.user.toLowerCase()}@brushup.com`;
+    
+    try {
+      // Try to create the admin in Firebase Auth
+      const cred = await createUserWithEmailAndPassword(auth, email, admin.rawPass);
+      uid = cred.user.uid;
+    } catch (e) {
+      // If it fails (likely already exists), just sign in to get the UID
       try {
-        const email = `${admin.user.toLowerCase()}@brushup.com`;
-        const cred = await createUserWithEmailAndPassword(auth, email, admin.rawPass);
-        users.push({
-          uid: cred.user.uid,
-          name: admin.name, 
-          user: admin.user, 
-          role: admin.role, 
-          salonId: admin.salonId
-        });
-      } catch (e) {
-        // Auth user might already exist in Firebase from a previous run
-        console.log(`Admin ${admin.user} might already exist in auth.`);
+        const { signInWithEmailAndPassword } = require('firebase/auth');
+        const cred = await signInWithEmailAndPassword(auth, email, admin.rawPass);
+        uid = cred.user.uid;
+      } catch (loginErr) {
+        console.error(`Failed to create or login admin ${admin.user}:`, loginErr);
       }
+    }
+    
+    if (uid) {
+      // Remove any old entry for this admin (e.g. without uid or old password hash)
+      const existingIdx = users.findIndex(u => u.user.toLowerCase() === admin.user.toLowerCase());
+      if (existingIdx !== -1) {
+        users.splice(existingIdx, 1);
+      }
+      
+      // Add the proper admin entry
+      users.push({
+        uid: uid,
+        name: admin.name, 
+        user: admin.user, 
+        role: admin.role, 
+        salonId: admin.salonId
+      });
     }
   }
   setUsers(users);
