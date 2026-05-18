@@ -101,9 +101,12 @@ function App() {
           setCurrentPage('customer');
           return true;
         }
+      } else {
+        showToast('User record not found in database.');
       }
     } catch (err) {
-      showToast('Invalid login. Try again.');
+      console.error("Login error:", err);
+      showToast(err.code === 'auth/operation-not-allowed' ? 'Enable Email/Password Auth in Firebase!' : 'Login failed: ' + err.message);
       return false;
     }
     return false;
@@ -128,9 +131,12 @@ function App() {
           setCurrentPage('forbidden');
           return false;
         }
+      } else {
+        showToast('Admin record not found in database.');
       }
     } catch (err) {
-      showToast('Invalid admin credentials.');
+      console.error("Admin Login error:", err);
+      showToast(err.code === 'auth/operation-not-allowed' ? 'Enable Email/Password Auth in Firebase!' : 'Login failed: ' + err.message);
       return false;
     }
     return false;
