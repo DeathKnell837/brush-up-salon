@@ -1,12 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { db } from '../firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import { getUsers, setUsers, hashPassword } from '../utils/storage';
 import { LockIcon, CloseIcon } from './Icons';
 
-function ProfileModal({ currentUser, onClose, onShowToast }) {
+function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser }) {
   const [currentPass, setCurrentPass] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirmPass, setConfirmPass] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editName, setEditName] = useState(currentUser?.name || '');
+  const [editPhone, setEditPhone] = useState(currentUser?.phone || '');
+  const [editAvatarBase64, setEditAvatarBase64] = useState(currentUser?.avatar || '');
+  
+  const fileInputRef = useRef(null);
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
@@ -26,6 +35,49 @@ function ProfileModal({ currentUser, onClose, onShowToast }) {
     onShowToast('Password changed successfully!');
   };
 
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2048576) { // 2MB limit
+        onShowToast('Image too large. Please select an image under 2MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditAvatarBase64(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    if (!editName.trim()) {
+      onShowToast('Name cannot be empty.');
+      return;
+    }
+
+    try {
+      const uid = currentUser.uid || currentUser.user;
+      await setDoc(doc(db, 'users', uid), {
+        name: editName.trim(),
+        phone: editPhone.trim(),
+        avatar: editAvatarBase64
+      }, { merge: true });
+
+      if (onUpdateUser) {
+        onUpdateUser({ name: editName.trim(), phone: editPhone.trim(), avatar: editAvatarBase64 });
+      }
+      
+      onShowToast('Profile updated successfully!');
+      setIsEditingProfile(false);
+    } catch (err) {
+      console.error('Profile update error:', err);
+      onShowToast('Failed to update profile.');
+    }
+  };
+
+  const displayAvatar = isEditingProfile ? editAvatarBase64 : currentUser?.avatar;
   const initial = (currentUser?.name || 'U')[0].toUpperCase();
 
   return (
@@ -39,34 +91,80 @@ function ProfileModal({ currentUser, onClose, onShowToast }) {
 
           {/* Avatar header */}
           <div className="profile-header">
-            <div className="profile-avatar">{initial}</div>
+            <div 
+              className="profile-avatar" 
+              style={displayAvatar ? { backgroundImage: `url(${displayAvatar})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent' } : {}}
+              onClick={() => {
+                if (isEditingProfile) fileInputRef.current.click();
+              }}
+            >
+              {displayAvatar ? '' : initial}
+              {isEditingProfile && (
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '10px', textAlign: 'center', padding: '2px 0', cursor: 'pointer' }}>
+                  Upload
+                </div>
+              )}
+            </div>
+            <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleAvatarChange} />
+            
             <h2 className="profile-name">{currentUser?.name}</h2>
             <span className="profile-role-badge">{currentUser?.role || 'customer'}</span>
           </div>
 
-          {/* Info rows */}
-          <div className="profile-info">
-            <div className="profile-row">
-              <span className="profile-label">Full Name</span>
-              <span className="profile-value">{currentUser?.name || '—'}</span>
+          {!isEditingProfile && !isChangingPassword && (
+            <div style={{ textAlign: 'center', marginTop: -10, marginBottom: 20 }}>
+              <button className="btn outline" onClick={() => setIsEditingProfile(true)} style={{ padding: '6px 12px', fontSize: 13, border: 'none', color: '#c5a880' }}>
+                Edit Profile
+              </button>
             </div>
-            <div className="profile-row">
-              <span className="profile-label">Username</span>
-              <span className="profile-value">@{currentUser?.user || '—'}</span>
+          )}
+
+          {isEditingProfile ? (
+            <form onSubmit={handleSaveProfile} className="profile-info">
+              <div className="input-group">
+                <label>Full Name</label>
+                <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} required />
+              </div>
+              <div className="input-group">
+                <label>Phone Number</label>
+                <input type="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="e.g. 123-456-7890" />
+              </div>
+              
+              <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                <button type="submit" className="btn">Save Changes</button>
+                <button type="button" className="btn secondary" onClick={() => { setIsEditingProfile(false); setEditName(currentUser?.name || ''); setEditPhone(currentUser?.phone || ''); setEditAvatarBase64(currentUser?.avatar || ''); }}>Cancel</button>
+              </div>
+            </form>
+          ) : (
+            <div className="profile-info">
+              <div className="profile-row">
+                <span className="profile-label">Full Name</span>
+                <span className="profile-value">{currentUser?.name || '—'}</span>
+              </div>
+              <div className="profile-row">
+                <span className="profile-label">Username</span>
+                <span className="profile-value">@{currentUser?.user || '—'}</span>
+              </div>
+              <div className="profile-row">
+                <span className="profile-label">Phone</span>
+                <span className="profile-value">{currentUser?.phone || '—'}</span>
+              </div>
+              <div className="profile-row">
+                <span className="profile-label">Account Type</span>
+                <span className="profile-value" style={{ textTransform: 'capitalize' }}>{currentUser?.role || 'customer'}</span>
+              </div>
             </div>
-            <div className="profile-row">
-              <span className="profile-label">Account Type</span>
-              <span className="profile-value" style={{ textTransform: 'capitalize' }}>{currentUser?.role || 'customer'}</span>
-            </div>
-          </div>
+          )}
 
           <div className="divider" />
 
-          {!isChangingPassword ? (
+          {!isChangingPassword && !isEditingProfile && (
             <button className="btn outline" onClick={() => setIsChangingPassword(true)} style={{ marginTop: 12 }}>
               <LockIcon size={15} /> Change Password
             </button>
-          ) : (
+          )}
+
+          {isChangingPassword && (
             <form onSubmit={handleChangePassword} style={{ marginTop: 12 }}>
               <div className="input-group">
                 <label>Current Password</label>

@@ -234,7 +234,8 @@ body{min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--f
 .profile-header{display:flex;flex-direction:column;align-items:center;margin-bottom:28px}
 .profile-avatar{width:72px;height:72px;border-radius:50%;background:var(--gold);color:#111;
   display:flex;align-items:center;justify-content:center;font-weight:700;font-size:28px;
-  font-family:var(--font-display);margin-bottom:14px;box-shadow:0 4px 16px rgba(201,168,76,0.25)}
+  font-family:var(--font-display);margin-bottom:14px;box-shadow:0 4px 16px rgba(201,168,76,0.25);
+  position:relative;overflow:hidden;}
 .profile-name{font-family:var(--font-display);font-size:22px;font-weight:600;color:var(--text-white);margin-bottom:6px}
 .profile-role-badge{padding:4px 16px;border-radius:999px;background:var(--gold-dim);color:var(--gold);
   font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;border:1px solid rgba(201,168,76,0.2)}

@@ -206,7 +206,16 @@ function App() {
         <BookingModal salon={selectedSalon} initialDetails={initialDetails} onClose={() => setShowModal(false)} onSubmit={handleSubmitBooking} />
       )}
       {showProfile && currentUser && (
-        <ProfileModal currentUser={currentUser} onClose={() => setShowProfile(false)} onShowToast={showToast} />
+        <ProfileModal 
+          currentUser={currentUser} 
+          onClose={() => setShowProfile(false)} 
+          onShowToast={showToast} 
+          onUpdateUser={(updated) => {
+            const newSession = { ...currentUser, ...updated };
+            setCurrentUser(newSession);
+            setSession(newSession);
+          }}
+        />
       )}
       {toast && <Toast message={toast} />}
     </div>
