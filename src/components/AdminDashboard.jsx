@@ -271,9 +271,16 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   </div>
                   <div className="booking-meta"><CalendarIcon size={12} /> {b.date} <ClockIcon size={12} /> {b.time}{b.contact && <><PhoneIcon size={12} /> {b.contact}</>}</div>
                   {b.review && (
-                    <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 1 }}>Customer Rating:</span>
-                      <span style={{ color: 'var(--gold)', fontSize: 14, letterSpacing: 2 }}>{'★'.repeat(b.review)}{'☆'.repeat(5-b.review)}</span>
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 1 }}>Customer Rating:</span>
+                        <span style={{ color: 'var(--gold)', fontSize: 14, letterSpacing: 2 }}>{'★'.repeat(b.review)}{'☆'.repeat(5-b.review)}</span>
+                      </div>
+                      {b.reviewComment && (
+                        <div style={{ marginTop: 4, fontSize: 12, color: 'var(--text-white)', fontStyle: 'italic', paddingLeft: 8, borderLeft: '2px solid rgba(201,168,76,0.5)' }}>
+                          "{b.reviewComment}"
+                        </div>
+                      )}
                     </div>
                   )}
                   <div className="booking-actions">
@@ -364,7 +371,10 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       <div><strong style={{ color: 'var(--text-dim)', fontSize: 14 }}>{b.customer}</strong>
                         <div className="booking-meta" style={{ marginTop: 4 }}><ScissorsIcon size={12} /> {b.service}</div>
                         {b.review && (
-                          <div style={{ marginTop: 4, color: 'var(--gold)', fontSize: 12, letterSpacing: 1 }}>{'★'.repeat(b.review)}{'☆'.repeat(5-b.review)}</div>
+                          <div style={{ marginTop: 4 }}>
+                            <div style={{ color: 'var(--gold)', fontSize: 12, letterSpacing: 1 }}>{'★'.repeat(b.review)}{'☆'.repeat(5-b.review)}</div>
+                            {b.reviewComment && <div style={{ fontSize: 11, color: 'var(--text-dim)', fontStyle: 'italic', marginTop: 2 }}>"{b.reviewComment}"</div>}
+                          </div>
                         )}
                       </div>
                       <div style={{ textAlign: 'right', fontSize: 12, color: 'var(--text-dim)' }}><CalendarIcon size={12} /> {b.date}</div>
