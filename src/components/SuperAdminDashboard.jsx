@@ -85,6 +85,22 @@ function SuperAdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalo
     if (idx !== -1) { users[idx].pass = hp; saveUsers(users); logAuditAction(currentUser.user, 'RESET_PASSWORD', `Reset password for @${user}`); showToast('Password reset!'); }
   };
 
+  const handleExportCSV = () => {
+    let csv = "ID,Date,Time,Customer,Salon,Service,Status\n";
+    allBookings.forEach(b => {
+      const salonName = salons.find(s => s.id === b.salonId)?.name || 'Unknown';
+      csv += `${b.id},${b.date},${b.time},"${b.customer}","${salonName}","${b.service}",${b.status}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `network_bookings_export_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    showToast('Network Report exported as CSV!');
+  };
+
   const adminContextData = `Total Salons: ${salons.length}, Total Network Bookings: ${allBookings.length}, Network Admins: ${adminUsers.length}, Total Revenue: PHP ${totalRevenue.toLocaleString()}`;
 
   // Glassmorphism card styles
@@ -187,7 +203,10 @@ function SuperAdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalo
       {/* ═══ TRANSACTIONS ═══ */}
       {activeTab === 'transactions' && (
         <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
-          <div className="section-header"><p className="section-label">NETWORK WIDE</p><h2 className="section-heading">All Transactions</h2></div>
+          <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div><p className="section-label">NETWORK WIDE</p><h2 className="section-heading">All Transactions</h2></div>
+            <button className="btn small outline" onClick={handleExportCSV}><ClipboardIcon size={14} style={{ marginRight: 6 }} /> Export Report</button>
+          </div>
           {allBookings.length === 0 ? <div className="empty-state"><div className="empty-icon"><ListIcon size={48} /></div><h3 className="empty-title">No Transactions</h3><p>No bookings have been made across the network yet.</p></div> : (
             <div className="booking-list">
               {allBookings.sort((a,b) => new Date(b.id) - new Date(a.id)).map(b => (

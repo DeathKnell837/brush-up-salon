@@ -481,6 +481,10 @@ ${salonContext}`;
                               if (raw.includes('?service=')) { [sId, service] = raw.split('?service='); service = decodeURIComponent(service); }
                               setIsOpen(false);
                               if(onOpenModal) onOpenModal(sId, service);
+                            } else if (href.startsWith('cancel:')) {
+                              let bId = parseInt(href.replace('cancel:', ''), 10);
+                              setIsOpen(false);
+                              if(onCancelBooking) onCancelBooking(bId);
                             } else { window.open(href, '_blank'); }
                           }} style={{ color: 'var(--gold)', textDecoration: 'underline', fontWeight: 600, cursor: 'pointer' }}>{children}</a>
                         )

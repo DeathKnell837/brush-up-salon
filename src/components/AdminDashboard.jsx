@@ -146,7 +146,37 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   };
 
 
+  const handleWalkIn = () => {
+    const name = prompt("Customer Name for Walk-in:");
+    if (!name) return;
+    const serviceName = prompt("Service Name:");
+    if (!serviceName) return;
+    const allBookings = getBookings();
+    const todayStr = new Date().toISOString().split('T')[0];
+    const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    allBookings.push({
+      id: Date.now(), salonId: currentUser.salonId, userId: 'walk-in', customer: name + ' (Walk-in)',
+      contact: 'N/A', service: serviceName, date: todayStr, time: timeStr, status: 'Approved'
+    });
+    setBookings(allBookings);
+    setBookingsState(loadBookings());
+    showToast('Walk-in appointment added!');
+  };
 
+  const handleExportCSV = () => {
+    let csv = "ID,Date,Time,Customer,Contact,Service,Status\n";
+    bookingsState.forEach(b => {
+      csv += `${b.id},${b.date},${b.time},"${b.customer}","${b.contact}","${b.service}",${b.status}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bookings_export_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    showToast('Report exported as CSV!');
+  };
 
   const total = bookingsState.length;
   const pending = bookingsState.filter(b => b.status === 'Pending').length;
@@ -231,7 +261,10 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       {/* ══════ BOOKINGS ══════ */}
       {activeTab === 'bookings' && (
         <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
-          <div className="section-header"><p className="section-label">MANAGE</p><h2 className="section-heading">Incoming Bookings</h2></div>
+          <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div><p className="section-label">MANAGE</p><h2 className="section-heading">Incoming Bookings</h2></div>
+            <button className="btn small outline" onClick={handleExportCSV}><ListIcon size={14} style={{ marginRight: 6 }} /> Export Report</button>
+          </div>
           <div className="admin-tabs" style={{ marginBottom: 20 }}>
             {['pending', 'approved', 'completed', 'rejected', 'all'].map(f => (
               <button key={f} className={`admin-tab ${statusFilter === f ? 'active' : ''}`}

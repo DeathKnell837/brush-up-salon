@@ -288,7 +288,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
           <p>© 2026 Brush Up Salon & Beauty. All rights reserved.</p>
         </div>
       </footer>
-      <Chatbot onOpenModal={onSelectSalon} currentUser={currentUser} />
+      <Chatbot onOpenModal={onSelectSalon} currentUser={currentUser} onCancelBooking={handleCancelBooking} contextData={`User Bookings: ${JSON.stringify(bookings)}`} />
     </div>
   );
 }
