@@ -165,7 +165,6 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const total = bookingsState.length;
   const pending = bookingsState.filter(b => b.status === 'Pending').length;
   const approved = bookingsState.filter(b => b.status === 'Approved').length;
-  const rejected = bookingsState.filter(b => b.status === 'Rejected').length;
   const completed = bookingsState.filter(b => b.status === 'Completed').length;
   const filtered = statusFilter === 'all' ? bookingsState : bookingsState.filter(b => b.status.toLowerCase() === statusFilter);
   const allCustomers = getUsers().filter(u => u.role === 'customer');
@@ -178,9 +177,6 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const todaySchedule = schedule.filter(b => b.date === today);
   const upcomingSchedule = schedule.filter(b => b.date > today);
   const pastSchedule = schedule.filter(b => b.date < today);
-
-  // Service search filter
-  const filteredServices = svcSearch ? services.filter(s => s.name.toLowerCase().includes(svcSearch.toLowerCase())) : services;
 
   const adminContextData = `Salon Name: ${salonName || salon?.name}, Total Bookings: ${total}, Pending Approvals: ${pending}, Approved: ${approved}, Services Count: ${services.length}`;
 
