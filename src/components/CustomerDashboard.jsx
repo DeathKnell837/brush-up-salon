@@ -13,6 +13,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
   const [search, setSearch] = useState('');
   const [filterLoc, setFilterLoc] = useState('All');
   const [filterSvc, setFilterSvc] = useState('All');
+  const [sortOrder, setSortOrder] = useState('Default');
   const [localTick, setLocalTick] = useState(0);
   const [announcements, setAnnouncements] = useState([]);
   const [reviewBooking, setReviewBooking] = useState(null);
@@ -55,17 +56,35 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
     setReviewBooking(null);
   };
 
-  const filtered = salons.filter(s => {
+  const allBookings = getBookings();
+  const bookings = allBookings.filter(b => b.userId === currentUser?.user);
+
+  const salonsWithStats = salons.map(s => {
+    const sBookings = allBookings.filter(b => b.salonId === s.id && b.review);
+    const reviewsCount = sBookings.length;
+    const avgRating = reviewsCount > 0 ? (sBookings.reduce((sum, b) => sum + b.review, 0) / reviewsCount).toFixed(1) : 0;
+    return { ...s, reviewsCount, avgRating: parseFloat(avgRating) };
+  });
+
+  let filtered = salonsWithStats.filter(s => {
     const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) || s.services.some(sv => sv.name.toLowerCase().includes(search.toLowerCase()));
     const matchLoc = filterLoc === 'All' || (s.address && s.address.toLowerCase().includes(filterLoc.toLowerCase()));
     const matchSvc = filterSvc === 'All' || s.services.some(sv => sv.name.toLowerCase().includes(filterSvc.toLowerCase()));
     return matchSearch && matchLoc && matchSvc;
   });
 
+  if (sortOrder === 'Top Rated') {
+    filtered.sort((a, b) => b.avgRating - a.avgRating);
+  } else if (sortOrder === 'Most Reviewed') {
+    filtered.sort((a, b) => b.reviewsCount - a.reviewsCount);
+  }
+
   const uniqueLocations = Array.from(new Set(salons.map(s => s.address ? s.address.split(',').pop().trim() : 'Unknown')));
   const uniqueServices = Array.from(new Set(salons.flatMap(s => s.services.map(sv => sv.name))));
 
-  const featured = salons.slice(0, 3);
+  let featured = salonsWithStats.slice(0, 3);
+  if (sortOrder === 'Top Rated') featured = [...salonsWithStats].sort((a, b) => b.avgRating - a.avgRating).slice(0, 3);
+  else if (sortOrder === 'Most Reviewed') featured = [...salonsWithStats].sort((a, b) => b.reviewsCount - a.reviewsCount).slice(0, 3);
   
   // Find upcoming approved booking
   const today = new Date().toISOString().split('T')[0];
@@ -169,6 +188,11 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
               <option value="All">All Services</option>
               {uniqueServices.slice(0, 15).map(svc => <option key={svc} value={svc}>{svc}</option>)}
             </select>
+            <select className="search-input" style={{ flex: '1 1 150px' }} value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
+              <option value="Default">Sort: Default</option>
+              <option value="Top Rated">Sort: Top Rated</option>
+              <option value="Most Reviewed">Sort: Most Reviewed</option>
+            </select>
           </div>
 
           {/* Featured Section */}
@@ -188,6 +212,12 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                       <span className="featured-tag">{salon.services.length} services</span>
                       <h3>{salon.name}</h3>
                       <p>{salon.description}</p>
+                      {salon.reviewsCount > 0 && (
+                        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--gold)' }}>
+                          <span>★ {salon.avgRating}</span>
+                          <span style={{ color: 'var(--text-dim)' }}>({salon.reviewsCount} reviews)</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -212,6 +242,12 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                     <div className="salon-overlay">
                       <h3>{salon.name}</h3>
                       <p>{salon.description}</p>
+                      {salon.reviewsCount > 0 && (
+                        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--gold)' }}>
+                          <span>★ {salon.avgRating}</span>
+                          <span style={{ color: 'var(--text-dim)' }}>({salon.reviewsCount} reviews)</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

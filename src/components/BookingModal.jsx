@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CloseIcon, ScissorsIcon } from './Icons';
+import { getBookings } from '../utils/storage';
 
 function BookingModal({ salon, initialDetails, onClose, onSubmit }) {
   const [bookName, setBookName] = useState('');
@@ -12,6 +13,9 @@ function BookingModal({ salon, initialDetails, onClose, onSubmit }) {
   const [bookService, setBookService] = useState(defaultService);
   const [bookDate, setBookDate] = useState(initialDetails?.date || '');
   const [bookTime, setBookTime] = useState(initialDetails?.time || '');
+
+  const allBookings = getBookings();
+  const reviews = allBookings.filter(b => b.salonId === salon.id && b.review);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -31,7 +35,7 @@ function BookingModal({ salon, initialDetails, onClose, onSubmit }) {
               <button className="close-btn" onClick={onClose}><CloseIcon size={16} /></button>
             </div>
             <p className="tag">{salon.description}</p>
-            <div className="service-list">
+            <div className="service-list" style={{ maxHeight: reviews.length > 0 ? 160 : 240 }}>
               {salon.services.map((service) => (
                 <div key={service.name} className="service">
                   <span>{service.name}</span>
@@ -39,6 +43,25 @@ function BookingModal({ salon, initialDetails, onClose, onSubmit }) {
                 </div>
               ))}
             </div>
+
+            {reviews.length > 0 && (
+              <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+                <h3 style={{ fontSize: 13, color: 'var(--text-white)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  Customer Reviews <span style={{ color: 'var(--text-dim)', fontSize: 11, fontWeight: 400 }}>({reviews.length})</span>
+                </h3>
+                <div className="booking-list" style={{ maxHeight: 180, gap: 8 }}>
+                  {reviews.map(r => (
+                    <div key={r.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: r.reviewComment ? 6 : 0 }}>
+                        <strong style={{ fontSize: 13, color: 'var(--text-white)' }}>{r.customer.split(' ')[0]}</strong>
+                        <span style={{ color: 'var(--gold)', fontSize: 11, letterSpacing: 1 }}>{'★'.repeat(r.review)}{'☆'.repeat(5-r.review)}</span>
+                      </div>
+                      {r.reviewComment && <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: 0, fontStyle: 'italic', lineHeight: 1.4 }}>"{r.reviewComment}"</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
