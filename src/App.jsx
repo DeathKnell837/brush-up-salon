@@ -84,12 +84,8 @@ function App() {
     const found = users.find(u => u.user === user && u.pass === hashedPass);
     if (found) {
       if (found.role === 'admin' || found.role === 'superadmin') {
-        // Admin/superadmin tried the customer login form — redirect them to admin
-        const session = { user: found.user, name: found.name, role: found.role, salonId: found.salonId };
-        setCurrentUser(session);
-        setSession(session);
-        logAuditAction(found.user, 'LOGIN', `${found.role} logged in via customer form`);
-        setCurrentPage(found.role === 'superadmin' ? 'superadmin' : 'admin');
+        setCurrentPage('forbidden');
+        return false;
       } else {
         const session = { user: found.user, name: found.name, role: 'customer' };
         setCurrentUser(session);
