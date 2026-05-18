@@ -26,8 +26,8 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
     loadData();
   }, [loadData, syncTick, localTick]);
 
-  const bookings = getBookings().filter(b => b.userId === currentUser?.user);
-
+  const allBookings = getBookings();
+  const bookings = allBookings.filter(b => b.userId === currentUser?.user);
   const handleCancelBooking = (id) => {
     if (!window.confirm("Are you sure you want to cancel this appointment?")) return;
     const allBookings = getBookings();
@@ -56,8 +56,6 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
     setReviewBooking(null);
   };
 
-  const allBookings = getBookings();
-  const bookings = allBookings.filter(b => b.userId === currentUser?.user);
 
   const salonsWithStats = salons.map(s => {
     const sBookings = allBookings.filter(b => b.salonId === s.id && b.review);
