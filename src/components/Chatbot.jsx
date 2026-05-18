@@ -386,7 +386,7 @@ ${salonContext}`;
       position: 'fixed', zIndex: 10000, display: 'flex', flexDirection: 'column', overflow: 'hidden',
       ...(isCustomer ? { bottom: '30px', right: '30px', width: '380px', height: '520px', backgroundColor: 'rgba(20,20,20,0.85)', backdropFilter: 'blur(16px)', borderRadius: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', border: '1px solid rgba(201,168,76,0.2)' } : {}),
       ...(isAdmin ? { top: 0, right: 0, bottom: 0, width: '400px', height: '100vh', backgroundColor: 'var(--bg-card)', borderRadius: '0', boxShadow: '-10px 0 30px rgba(0,0,0,0.5)', borderLeft: '1px solid var(--border)' } : {}),
-      ...(isSuperAdmin ? { top: '90px', right: '30px', width: '420px', height: '550px', backgroundColor: '#050d1a', borderRadius: '8px', boxShadow: '0 0 20px rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)' } : {})
+      ...(isSuperAdmin ? { bottom: '30px', right: '30px', width: '380px', height: '520px', backgroundColor: '#050d1a', borderRadius: '8px', boxShadow: '0 0 20px rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)' } : {})
     },
     header: {
       padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -452,9 +452,9 @@ ${salonContext}`;
       ...(isAdmin ? { backgroundColor: 'var(--success)', color: '#000', borderRadius: '8px' } : {}),
       ...(isSuperAdmin ? { backgroundColor: '#050d1a', color: '#ffd700', border: '1px solid #ffd700' } : {})
     },
-    motionInitial: isCustomer ? { opacity: 0, y: 50, scale: 0.9 } : isAdmin ? { x: '100%' } : { opacity: 0, y: -20 },
-    motionAnimate: isCustomer ? { opacity: 1, y: 0, scale: 1 } : isAdmin ? { x: 0 } : { opacity: 1, y: 0 },
-    motionExit: isCustomer ? { opacity: 0, y: 50, scale: 0.9 } : isAdmin ? { x: '100%' } : { opacity: 0, y: -20 },
+    motionInitial: isCustomer ? { opacity: 0, y: 50, scale: 0.9 } : isAdmin ? { x: '100%' } : { opacity: 0, y: 50, scale: 0.9 },
+    motionAnimate: isCustomer ? { opacity: 1, y: 0, scale: 1 } : isAdmin ? { x: 0 } : { opacity: 1, y: 0, scale: 1 },
+    motionExit: isCustomer ? { opacity: 0, y: 50, scale: 0.9 } : isAdmin ? { x: '100%' } : { opacity: 0, y: 50, scale: 0.9 },
     motionTransition: isCustomer ? { type: 'spring', damping: 25, stiffness: 300 } : isAdmin ? { type: 'tween', duration: 0.3 } : { type: 'spring', damping: 20, stiffness: 200 }
   };
 
