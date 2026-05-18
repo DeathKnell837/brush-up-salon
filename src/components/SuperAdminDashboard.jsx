@@ -43,6 +43,23 @@ function SuperAdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalo
     setBTitle(''); setBMsg('');
   };
 
+  const handleCleanupDuplicates = async () => {
+    try {
+      const { deleteDoc, doc } = require('firebase/firestore');
+      const { db } = require('../firebase');
+      const legacyIds = ['superadmin', 'elegantadmin', 'kareenadmin', 'prettyadmin', 'jamesadmin', 'palmaadmin', 'babieadmin', 'cutcurladmin'];
+      for (const id of legacyIds) {
+        await deleteDoc(doc(db, 'users', id)).catch(() => {});
+      }
+      showToast('Cleaned up duplicates!');
+      // Force refresh of admins by doing a small timeout or just let onSnapshot catch it
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (e) {
+      console.error(e);
+      showToast('Cleanup failed: ' + e.message);
+    }
+  };
+
   const handleRemoveAnnouncement = (id) => {
     setAnnouncements(getAnnouncements().filter(a => a.id !== id));
     showToast('Broadcast removed.');
@@ -270,7 +287,10 @@ function SuperAdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalo
         <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
           <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div><p className="section-label">ACCESS CONTROL</p><h2 className="section-heading">Administrators</h2></div>
-            <button className="btn small" onClick={handleSetAnnouncement}><AlertCircleIcon size={14} /> Broadcast</button>
+            <div>
+              <button className="btn small outline" onClick={handleCleanupDuplicates} style={{ marginRight: 8 }}>Fix Duplicates</button>
+              <button className="btn small" onClick={handleSetAnnouncement}><AlertCircleIcon size={14} /> Broadcast</button>
+            </div>
           </div>
           <div style={{ display: 'grid', gap: 12 }}>
             {adminUsers.map(admin => {
