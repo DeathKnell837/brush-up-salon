@@ -141,7 +141,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
       </div>
 
       {/* ─── Tabs ─── */}
-      <div className="tab-bar">
+      <div className="tab-bar" style={{ marginTop: 24 }}>
         <button className={`tab-btn ${tab === 'salons' ? 'active' : ''}`} onClick={() => setTab('salons')}>
           <StoreIcon size={15} /> Our Salons
         </button>
@@ -269,7 +269,10 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                         {(b.status === 'Completed') && (
                           <div style={{ marginTop: '12px' }}>
                             {b.review ? (
-                              <div style={{ color: 'var(--gold)', fontSize: '16px' }}>{'★'.repeat(b.review)}{'☆'.repeat(5-b.review)}</div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <div style={{ color: 'var(--gold)', fontSize: '16px' }}>{'★'.repeat(b.review)}{'☆'.repeat(5-b.review)}</div>
+                                <button className="btn small outline" onClick={() => handleLeaveReview(b.id)}>Edit Review</button>
+                              </div>
                             ) : (
                               <button className="btn small outline" onClick={() => handleLeaveReview(b.id)}>Leave Review</button>
                             )}

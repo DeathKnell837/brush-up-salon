@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { CloseIcon, CheckCircleIcon } from './Icons';
 
 export default function ReviewModal({ booking, salonName, onClose, onSubmit }) {
-  const [rating, setRating] = useState(0);
+  const [rating, setRating] = useState(booking.review || 0);
   const [hoverRating, setHoverRating] = useState(0);
-  const [comment, setComment] = useState('');
+  const [comment, setComment] = useState(booking.reviewComment || '');
 
   const handleSubmit = (e) => {
     e.preventDefault();
