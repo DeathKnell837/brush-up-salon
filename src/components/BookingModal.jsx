@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
 import { CloseIcon, ScissorsIcon } from './Icons';
 
-function BookingModal({ salon, initialService, onClose, onSubmit }) {
+function BookingModal({ salon, initialDetails, onClose, onSubmit }) {
   const [bookName, setBookName] = useState('');
   const [bookContact, setBookContact] = useState('');
   
-  // See if initialService matches any existing service in the salon (case insensitive)
-  const matchedService = salon.services.find(s => s.name.toLowerCase() === initialService?.toLowerCase());
+  const initService = initialDetails?.service || (typeof initialDetails === 'string' ? initialDetails : '');
+  const matchedService = salon.services.find(s => s.name.toLowerCase() === initService?.toLowerCase());
   const defaultService = matchedService ? matchedService.name : (salon.services[0]?.name || '');
   
   const [bookService, setBookService] = useState(defaultService);
-  const [bookDate, setBookDate] = useState('');
-  const [bookTime, setBookTime] = useState('');
+  const [bookDate, setBookDate] = useState(initialDetails?.date || '');
+  const [bookTime, setBookTime] = useState(initialDetails?.time || '');
 
   const handleSubmit = (e) => {
     e.preventDefault();

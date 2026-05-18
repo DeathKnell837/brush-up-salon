@@ -96,9 +96,20 @@ export default function Chatbot({ onOpenModal, currentUser, contextData, onCance
         const myToday = allBookings.filter(b => b.userId === currentUser?.user && b.date === today && b.status === 'Approved');
         myToday.forEach(b => {
           if (!alertedReminder.current.has(b.id)) {
-             alertedReminder.current.add(b.id);
-             setMessages(prev => [...prev, { id: Date.now() + Math.random(), text: `⏰ **Reminder:** You have your ${b.service} appointment today at ${b.time}. See you soon!`, isBot: true }]);
-             if (!isOpen) setIsOpen(true);
+             const [bH, bM] = b.time.split(':');
+             const isPM = b.time.toLowerCase().includes('pm');
+             let hours = parseInt(bH, 10);
+             if (isPM && hours < 12) hours += 12;
+             if (!isPM && hours === 12) hours = 0;
+             const bookingTime = new Date();
+             bookingTime.setHours(hours, parseInt(bM), 0);
+             const diffMins = (bookingTime - new Date()) / 60000;
+             
+             if (diffMins > 0 && diffMins <= 60) {
+               alertedReminder.current.add(b.id);
+               setMessages(prev => [...prev, { id: Date.now() + Math.random(), text: `⏰ **Reminder:** You have your ${b.service} appointment in less than 1 hour at ${b.time}. See you soon!`, isBot: true }]);
+               if (!isOpen) setIsOpen(true);
+             }
           }
         });
       }
@@ -161,6 +172,10 @@ STRICT RULES:
 3. CRITICAL: When you recommend a salon or service, you MUST provide ONE clickable Markdown link in EXACTLY this format: [Book Name of Salon](salon:salon-id?service=ServiceName).
    Example 1: [Book Haircut at Elegant Salon](salon:elegant?service=Haircut)
 4. Do NOT generate standard http:// or https:// links. ONLY use the salon: format.
+5. If the user provides booking details (service, date, time), you can auto-fill the form using this exact syntax anywhere in your response:
+[BOOK_NOW|salon-id|service|YYYY-MM-DD|HH:MM]
+Example: [BOOK_NOW|elegant|Haircut|2026-05-20|14:00]
+6. If the customer asks about availability, say you can check and include the phrase 'availability'.
 
 LIVE DATA:
 ${salonContext}`;
@@ -228,6 +243,7 @@ ${salonContext}`;
       // Process special commands (Widgets and Broadcasts)
       let widget = null;
       if (role === 'customer' && responseText.toLowerCase().includes('book now')) widget = 'BookButton';
+      if (role === 'customer' && responseText.toLowerCase().includes('availability')) widget = 'AvailabilityWidget';
       if (role === 'customer' && responseText.toLowerCase().includes('cancel')) widget = 'CancelWidget';
       if (role === 'admin' && responseText.toLowerCase().includes('schedule')) widget = 'AdminSchedule';
       if (role === 'superadmin' && responseText.toLowerCase().includes('revenue')) widget = 'MasterStats';
@@ -242,6 +258,15 @@ ${salonContext}`;
         currentA.unshift({ id: Date.now(), type: type.trim(), title: title.trim(), message: message.trim(), timestamp: new Date().toISOString() });
         setAnnouncements(currentA);
         responseText = responseText.replace(broadcastRegex, '').trim() + "\n\n*(Broadcast published successfully to the network)*";
+      }
+
+      // Auto-fill logic from LLM
+      const fillRegex = /\[BOOK_NOW\|(.*?)\|(.*?)\|(.*?)\|(.*?)\]/;
+      const fillMatch = responseText.match(fillRegex);
+      if (fillMatch) {
+         const [, sId, svc, d, t] = fillMatch;
+         responseText = responseText.replace(fillRegex, '').trim() + "\n\nI have prepared the booking form for you!";
+         setTimeout(() => { setIsOpen(false); if(onOpenModal) onOpenModal(sId.trim(), {service: svc.trim(), date: d.trim(), time: t.trim()}); }, 2000);
       }
 
       const botMessage = { id: Date.now() + 1, text: responseText, isBot: true, widget };
@@ -276,6 +301,19 @@ ${salonContext}`;
             <button onClick={() => handleCancelBooking(b.id)} style={{ fontSize: 10, padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(229,62,62,0.3)', background: 'rgba(229,62,62,0.08)', color: '#fc8181', cursor: 'pointer', fontFamily: 'var(--font-body)', fontWeight: 600 }}>Cancel</button>
           </div>
         ))}
+      </div>
+    );
+  };
+
+  const renderAvailabilityWidget = () => {
+    return (
+      <div style={{ marginTop: 10, background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 10 }}>
+        <strong style={{ fontSize: 11, color: 'var(--gold)', letterSpacing: 0.5 }}>Available Slots (Next 3 Days)</strong>
+        <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {['10:00 AM', '1:00 PM', '3:30 PM', '5:00 PM'].map(t => (
+                <span key={t} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 4, background: 'rgba(201,168,76,0.15)', color: 'var(--gold)' }}>{t}</span>
+            ))}
+        </div>
       </div>
     );
   };
@@ -505,6 +543,7 @@ ${salonContext}`;
                           <button className="btn small" style={{ fontSize: 11, width: '100%' }} onClick={() => { setIsOpen(false); if(onOpenModal) onOpenModal(getSalons()[0]?.id); }}>Book Appointment Now</button>
                         </div>
                       )}
+                      {msg.widget === 'AvailabilityWidget' && renderAvailabilityWidget()}
                       {msg.widget === 'CancelWidget' && renderCancelWidget()}
                       {msg.widget === 'AdminSchedule' && renderAdminSchedule()}
                       {msg.widget === 'MasterStats' && renderMasterStats()}

@@ -16,7 +16,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState('auth');
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedSalon, setSelectedSalon] = useState(null);
-  const [initialService, setInitialService] = useState(null);
+  const [initialDetails, setInitialDetails] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [toast, setToast] = useState(null);
@@ -130,9 +130,9 @@ function App() {
     refreshSalons();
   };
 
-  const handleOpenModal = (salonId, service = null) => {
+  const handleOpenModal = (salonId, details = null) => {
     const salon = salons.find(s => s.id === salonId);
-    setInitialService(service);
+    setInitialDetails(typeof details === 'string' ? { service: details } : details);
     setSelectedSalon(salon); setShowModal(true);
   };
 
@@ -147,7 +147,7 @@ function App() {
     setBookings(bookings);
     showToast('Booking submitted. Await approval.');
     setShowModal(false);
-    setInitialService(null);
+    setInitialDetails(null);
   };
 
   if (!isReady) {
@@ -168,18 +168,22 @@ function App() {
           onSelectSalon={handleOpenModal} onOpenProfile={() => setShowProfile(true)} syncTick={syncTick} />
       )}
       {currentPage === 'admin' && (
-        <AdminDashboard currentUser={currentUser} salons={salons} onLogout={handleLogout}
-          onRefreshSalons={refreshSalons} showToast={showToast} syncTick={syncTick} onOpenProfile={() => setShowProfile(true)} />
+        (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'superadmin')) 
+          ? <ForbiddenPage onBack={() => setCurrentPage('auth')} />
+          : <AdminDashboard currentUser={currentUser} salons={salons} onLogout={handleLogout}
+              onRefreshSalons={refreshSalons} showToast={showToast} syncTick={syncTick} onOpenProfile={() => setShowProfile(true)} />
       )}
       {currentPage === 'superadmin' && (
-        <SuperAdminDashboard currentUser={currentUser} salons={salons} onLogout={handleLogout}
-          onRefreshSalons={refreshSalons} showToast={showToast} syncTick={syncTick} onOpenProfile={() => setShowProfile(true)} />
+        (!currentUser || currentUser.role !== 'superadmin')
+          ? <ForbiddenPage onBack={() => setCurrentPage('auth')} />
+          : <SuperAdminDashboard currentUser={currentUser} salons={salons} onLogout={handleLogout}
+              onRefreshSalons={refreshSalons} showToast={showToast} syncTick={syncTick} onOpenProfile={() => setShowProfile(true)} />
       )}
       {currentPage === 'forbidden' && (
         <ForbiddenPage onBack={() => setCurrentPage('auth')} />
       )}
       {showModal && selectedSalon && (
-        <BookingModal salon={selectedSalon} initialService={initialService} onClose={() => setShowModal(false)} onSubmit={handleSubmitBooking} />
+        <BookingModal salon={selectedSalon} initialDetails={initialDetails} onClose={() => setShowModal(false)} onSubmit={handleSubmitBooking} />
       )}
       {showProfile && currentUser && (
         <ProfileModal currentUser={currentUser} onClose={() => setShowProfile(false)} onShowToast={showToast} />
