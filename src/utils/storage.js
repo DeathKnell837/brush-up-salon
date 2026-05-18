@@ -109,7 +109,7 @@ const DEFAULT_ADMINS = [
 
 // ─── Seed admin accounts + salons into localStorage on first load ───
 export const seedAdminAccounts = async () => {
-  const version = 'v11_menu_update'; // Bump for updated salon menus
+  const version = 'v12_staff_update'; // Bump for updated salon menus
   const seededVersion = storage.get('luxurySeedVersion', '');
   
   if (seededVersion === version) return;

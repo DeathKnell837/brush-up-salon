@@ -8,7 +8,11 @@ export const SALON_DATA = [
     contact: '0951-204-2xxx',
     hours: '9:00 AM - 8:00 PM',
     promotions: [],
-    staff: ['Maria', 'Joy', 'Anna'],
+    staff: [
+      { id: 1779114386506, name: 'Maria', role: 'Stylist', services: [] },
+      { id: 1779114387348, name: 'Joy', role: 'Stylist', services: [] },
+      { id: 1779114386946, name: 'Anna', role: 'Stylist', services: [] }
+    ],
     services: [
       // Hair Rebonding
       { name: 'Loreal X-Tenso', price: 'PHP 4,500', category: 'Hair Rebonding' },
@@ -53,7 +57,11 @@ export const SALON_DATA = [
     contact: '+63 923 456 7890',
     hours: '8:00 AM - 8:00 PM',
     promotions: [],
-    staff: ['Karen', 'Liza', 'Beth'],
+    staff: [
+      { id: 1779114387217, name: 'Karen', role: 'Stylist', services: [] },
+      { id: 1779114386973, name: 'Liza', role: 'Stylist', services: [] },
+      { id: 1779114386718, name: 'Beth', role: 'Stylist', services: [] }
+    ],
     services: [
       // Regular Salon Services
       { name: 'Haircut Men w/ Shampoo & Conditioner', price: 'PHP 100', category: 'Regular Salon Services' },
@@ -127,7 +135,11 @@ export const SALON_DATA = [
     contact: '0938-1199713 / 0938-7057764',
     hours: '9:00 AM - 9:00 PM',
     promotions: ['Free Haircut with all rebond services!'],
-    staff: ['Pretty', 'Arlene', 'Mae'],
+    staff: [
+      { id: 1779114386643, name: 'Pretty', role: 'Stylist', services: [] },
+      { id: 1779114387195, name: 'Arlene', role: 'Stylist', services: [] },
+      { id: 1779114387352, name: 'Mae', role: 'Stylist', services: [] }
+    ],
     services: [
       // Hair Rebond
       { name: 'Hair Rebond', price: 'PHP 1,499', category: 'Hair Rebond' },
@@ -161,7 +173,11 @@ export const SALON_DATA = [
     contact: '+63 945 678 9012',
     hours: '8:00 AM - 10:00 PM',
     promotions: [],
-    staff: ['James', 'Mark', 'Rico'],
+    staff: [
+      { id: 1779114386473, name: 'James', role: 'Stylist', services: [] },
+      { id: 1779114386750, name: 'Mark', role: 'Stylist', services: [] },
+      { id: 1779114386728, name: 'Rico', role: 'Stylist', services: [] }
+    ],
     services: [
       { name: 'Men\'s Haircut', price: 'PHP 200', category: 'Haircut' },
       { name: 'Beard Trim', price: 'PHP 150', category: 'Grooming' },
@@ -178,7 +194,11 @@ export const SALON_DATA = [
     contact: '+63 956 789 0123',
     hours: '8:00 AM - 7:00 PM',
     promotions: [],
-    staff: ['Palma', 'Grace', 'Lyn'],
+    staff: [
+      { id: 1779114387056, name: 'Palma', role: 'Stylist', services: [] },
+      { id: 1779114386456, name: 'Grace', role: 'Stylist', services: [] },
+      { id: 1779114387295, name: 'Lyn', role: 'Stylist', services: [] }
+    ],
     services: [
       // Rebonding
       { name: 'Rebond', price: 'PHP 800', category: 'Rebonding' },
@@ -217,7 +237,11 @@ export const SALON_DATA = [
     contact: '+63 967 890 1234',
     hours: '9:00 AM - 9:00 PM',
     promotions: [],
-    staff: ['Babie', 'Jen', 'Rose'],
+    staff: [
+      { id: 1779114386778, name: 'Babie', role: 'Stylist', services: [] },
+      { id: 1779114387044, name: 'Jen', role: 'Stylist', services: [] },
+      { id: 1779114386571, name: 'Rose', role: 'Stylist', services: [] }
+    ],
     services: [
       // Nail Services
       { name: 'Pedicure', price: 'PHP 150', category: 'Nail Services' },
@@ -249,7 +273,11 @@ export const SALON_DATA = [
     contact: '+63 978 901 2345',
     hours: '8:00 AM - 8:00 PM',
     promotions: [],
-    staff: ['Curl', 'Diane', 'Tina'],
+    staff: [
+      { id: 1779114387210, name: 'Curl', role: 'Stylist', services: [] },
+      { id: 1779114386795, name: 'Diane', role: 'Stylist', services: [] },
+      { id: 1779114387239, name: 'Tina', role: 'Stylist', services: [] }
+    ],
     services: [
       { name: 'Haircut (Women)', price: 'PHP 250', category: 'Haircut' },
       { name: 'Haircut (Men)', price: 'PHP 180', category: 'Haircut' },

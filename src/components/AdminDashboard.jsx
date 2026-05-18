@@ -410,7 +410,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           ) : (
             <div className="customer-grid">
               {customers.map((c, i) => { const cb = bookingsState.filter(b => b.userId === c.user); return (
-                <div key={i} className="customer-card"><div className="customer-avatar">{c.name[0].toUpperCase()}</div>
+                <div key={i} className="customer-card"><div className="customer-avatar">{(c.name || '?')[0].toUpperCase()}</div>
                   <div><div className="customer-name">{c.name}</div><div className="customer-role">@{c.user}</div></div>
                   <div className="customer-stat"><strong>{cb.length}</strong><span>bookings</span></div></div>
               );})}
@@ -630,7 +630,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 <div key={member.id} style={{ background: 'rgba(25,25,25,0.7)', border: '1px solid var(--border)', borderRadius: 16, padding: 24, transition: 'all 0.3s ease' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                     <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                      <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.05))', border: '1px solid rgba(201,168,76,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 18, color: 'var(--gold)', fontFamily: 'var(--font-display)' }}>{member.name[0]?.toUpperCase()}</div>
+                      <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.05))', border: '1px solid rgba(201,168,76,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 18, color: 'var(--gold)', fontFamily: 'var(--font-display)' }}>{(member.name || '?')[0].toUpperCase()}</div>
                       <div>
                         <div style={{ fontWeight: 600, fontSize: 16, color: 'var(--text-white)' }}>{member.name}</div>
                         <div style={{ fontSize: 12, color: 'var(--gold)', marginTop: 2, fontWeight: 500 }}>{member.role}</div>
