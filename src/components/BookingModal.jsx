@@ -25,9 +25,9 @@ function BookingModal({ salon, initialDetails, onClose, onSubmit }) {
 
   return (
     <div className="modal" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxHeight: '90vh' }}>
         {/* Left — Salon info with image */}
-        <div className="modal-left">
+        <div className="modal-left" style={{ overflowY: 'auto' }}>
           <img src={salon.image} alt={salon.name} className="modal-salon-image" />
           <div className="modal-left-content">
             <div className="modal-header">
@@ -66,7 +66,7 @@ function BookingModal({ salon, initialDetails, onClose, onSubmit }) {
         </div>
 
         {/* Right — Booking form */}
-        <div className="modal-right">
+        <div className="modal-right" style={{ overflowY: 'auto' }}>
           <form className="booking-form" onSubmit={handleSubmit} style={{ background: 'transparent', border: 'none', padding: 0 }}>
             <h3><ScissorsIcon size={16} /> Book Appointment</h3>
             <div className="input-group">
