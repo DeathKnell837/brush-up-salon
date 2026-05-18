@@ -1,5 +1,6 @@
-import { syncToFirebase } from './firebaseSync';
-
+import { db, auth } from '../firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 // ─── In-memory fallback store ───
 const memoryStore = {
   luxuryUsers: [],
@@ -25,12 +26,6 @@ export const storage = {
     } catch (err) {
       memoryStore[key] = value;
     }
-
-    // Push to Firebase instantly
-    if (key === 'luxuryUsers') syncToFirebase('users', value);
-    if (key === 'luxuryBookings') syncToFirebase('bookings', value);
-    if (key === 'luxurySalons') syncToFirebase('salons', value);
-    if (key === 'luxuryAnnouncements') syncToFirebase('announcements', value);
   }
 };
 
@@ -41,22 +36,28 @@ export const clearSession = () => storage.set('luxurySession', null);
 
 // ─── Announcements ───
 export const getAnnouncements = () => storage.get('luxuryAnnouncements', []);
-export const setAnnouncements = (data) => storage.set('luxuryAnnouncements', data);
+export const setAnnouncements = (data) => {
+  storage.set('luxuryAnnouncements', data);
+  data.forEach(a => {
+    if (a.id) setDoc(doc(db, 'announcements', String(a.id)), a, { merge: true }).catch(() => {});
+  });
+};
 
 // ─── Audit Logs ───
 export const getAuditLogs = () => storage.get('luxuryAuditLogs', []);
 export const logAuditAction = (user, action, details) => {
   const logs = getAuditLogs();
-  logs.push({
+  const log = {
     id: Date.now(),
     timestamp: new Date().toISOString(),
     user: user || 'system',
     action,
     details
-  });
-  // Keep only last 500 logs to save space
+  };
+  logs.push(log);
   if (logs.length > 500) logs.shift();
   storage.set('luxuryAuditLogs', logs);
+  setDoc(doc(db, 'auditLogs', String(log.id)), log, { merge: true }).catch(() => {});
 };
 
 // ─── Password hashing using SHA-256 (Web Crypto API) ───
@@ -69,30 +70,29 @@ export const hashPassword = async (password) => {
 };
 
 // ─── User CRUD ───
-export const getUsers = () => {
-  return storage.get('luxuryUsers', []);
-};
-
+export const getUsers = () => storage.get('luxuryUsers', []);
 export const setUsers = (users) => {
   storage.set('luxuryUsers', users);
+  users.forEach(u => {
+    const id = u.uid || u.user;
+    if (id) setDoc(doc(db, 'users', id), u, { merge: true }).catch(() => {});
+  });
 };
 
-// ─── Booking CRUD ───
-export const getBookings = () => {
-  return storage.get('luxuryBookings', []);
-};
-
+export const getBookings = () => storage.get('luxuryBookings', []);
 export const setBookings = (bookings) => {
   storage.set('luxuryBookings', bookings);
+  bookings.forEach(b => {
+    if (b.id) setDoc(doc(db, 'bookings', String(b.id)), b, { merge: true }).catch(() => {});
+  });
 };
 
-// ─── Dynamic Salon CRUD ───
-export const getSalons = () => {
-  return storage.get('luxurySalons', []);
-};
-
+export const getSalons = () => storage.get('luxurySalons', []);
 export const setSalons = (salons) => {
   storage.set('luxurySalons', salons);
+  salons.forEach(s => {
+    if (s.id) setDoc(doc(db, 'salons', s.id), s, { merge: true }).catch(() => {});
+  });
 };
 
 // ─── Default admin accounts (seeded on first load) ───
@@ -109,43 +109,43 @@ const DEFAULT_ADMINS = [
 
 // ─── Seed admin accounts + salons into localStorage on first load ───
 export const seedAdminAccounts = async () => {
-  const version = 'v6'; // bump this to force re-seed
+  const version = 'v7_firebase'; // bump to run once for firebase
   const seededVersion = storage.get('luxurySeedVersion', '');
+  
+  if (seededVersion === version) return;
   
   const users = getUsers();
   
-  // Always ensure admins exist and their roles/passwords are correct
   for (const admin of DEFAULT_ADMINS) {
     const existingIdx = users.findIndex(u => u.user.toLowerCase() === admin.user.toLowerCase());
-    if (existingIdx !== -1) {
-      users[existingIdx].role = admin.role;
-      users[existingIdx].salonId = admin.salonId;
-      users[existingIdx].pass = await hashPassword(admin.rawPass);
-    } else {
-      const hashedPass = await hashPassword(admin.rawPass);
-      users.push({
-        name: admin.name, user: admin.user, pass: hashedPass,
-        role: admin.role, salonId: admin.salonId
-      });
+    if (existingIdx === -1) {
+      try {
+        const email = `${admin.user.toLowerCase()}@brushup.com`;
+        const cred = await createUserWithEmailAndPassword(auth, email, admin.rawPass);
+        users.push({
+          uid: cred.user.uid,
+          name: admin.name, 
+          user: admin.user, 
+          role: admin.role, 
+          salonId: admin.salonId
+        });
+      } catch (e) {
+        // Auth user might already exist in Firebase from a previous run
+        console.log(`Admin ${admin.user} might already exist in auth.`);
+      }
     }
   }
   setUsers(users);
 
-  // Re-seed salons if version changed
-  if (seededVersion !== version) {
-    const { SALON_DATA } = require('../constants/salonData');
-    setSalons(SALON_DATA);
-    storage.set('luxurySeedVersion', version);
-    storage.set('luxuryAdminsSeeded', true);
-  }
+  const { SALON_DATA } = require('../constants/salonData');
+  setSalons(SALON_DATA);
+  
+  // Also migrate existing bookings and announcements to Firestore
+  const bookings = getBookings();
+  if (bookings.length > 0) setBookings(bookings);
+  
+  const announcements = getAnnouncements();
+  if (announcements.length > 0) setAnnouncements(announcements);
 
-  // Automatic Cleanup: Purge any 'admin' whose salon no longer exists
-  const activeSalons = getSalons().map(s => s.id);
-  const cleanedUsers = users.filter(u => {
-    if (u.role === 'admin' && u.salonId !== 'all') {
-      return activeSalons.includes(u.salonId);
-    }
-    return true; // Keep customers and superadmin
-  });
-  setUsers(cleanedUsers);
+  storage.set('luxurySeedVersion', version);
 };

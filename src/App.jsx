@@ -9,8 +9,11 @@ import ForbiddenPage from './components/ForbiddenPage';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import { getUsers, setUsers, getBookings, setBookings, getSalons, setSalons, hashPassword, seedAdminAccounts, getSession, setSession, clearSession, logAuditAction } from './utils/storage';
 import { SALON_DATA } from './constants/salonData';
+import { auth, db } from './firebase';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
-import { initFirebaseSync, syncToFirebase } from './utils/firebaseSync';
+import { initFirebaseSync } from './utils/firebaseSync';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('auth');
@@ -59,66 +62,77 @@ function App() {
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
   const handleSignup = async (name, user, pass) => {
-    const users = getUsers();
-    if (users.some(u => u.user.toLowerCase() === user.toLowerCase())) {
-      showToast('Username already exists.'); return false;
+    try {
+      const email = `${user.toLowerCase().replace(/[^a-z0-9]/g, '')}@brushup.com`;
+      const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      const newUser = { uid: cred.user.uid, name, user, role: 'customer' };
+      
+      await setDoc(doc(db, 'users', cred.user.uid), newUser);
+      
+      const session = { user, name, role: 'customer', uid: cred.user.uid };
+      setCurrentUser(session);
+      setSession(session);
+      logAuditAction(user, 'SIGNUP', 'Customer signed up');
+      setCurrentPage('customer');
+      showToast('Account created. Welcome!');
+      return true;
+    } catch (err) {
+      showToast(err.message);
+      return false;
     }
-    const hashedPass = await hashPassword(pass);
-    const newUser = { name, user, pass: hashedPass, role: 'customer' };
-    users.push(newUser);
-    setUsers(users);
-    // Sync to Firebase immediately so the new user persists
-    try { await syncToFirebase('users', users); } catch(e) { console.warn('Firebase sync failed:', e); }
-    const newUserSession = { user, name, role: 'customer' };
-    setCurrentUser(newUserSession);
-    setSession(newUserSession);
-    logAuditAction(user, 'SIGNUP', 'Customer signed up');
-    setCurrentPage('customer');
-    showToast('Account created. Welcome!');
-    return true;
   };
 
   const handleLogin = async (user, pass) => {
-    const users = getUsers();
-    const hashedPass = await hashPassword(pass);
-    const found = users.find(u => u.user === user && u.pass === hashedPass);
-    if (found) {
-      if (found.role === 'admin' || found.role === 'superadmin') {
-        setCurrentPage('forbidden');
-        return false;
-      } else {
-        const session = { user: found.user, name: found.name, role: 'customer' };
-        setCurrentUser(session);
-        setSession(session);
-        logAuditAction(found.user, 'LOGIN', 'Customer logged in');
-        setCurrentPage('customer');
+    try {
+      const email = `${user.toLowerCase().replace(/[^a-z0-9]/g, '')}@brushup.com`;
+      const cred = await signInWithEmailAndPassword(auth, email, pass);
+      const userDoc = await getDoc(doc(db, 'users', cred.user.uid));
+      
+      if (userDoc.exists()) {
+        const found = userDoc.data();
+        if (found.role === 'admin' || found.role === 'superadmin') {
+          setCurrentPage('forbidden');
+          return false;
+        } else {
+          const session = { user: found.user, name: found.name, role: 'customer', uid: cred.user.uid };
+          setCurrentUser(session);
+          setSession(session);
+          logAuditAction(found.user, 'LOGIN', 'Customer logged in');
+          setCurrentPage('customer');
+          return true;
+        }
       }
-      return true;
+    } catch (err) {
+      showToast('Invalid login. Try again.');
+      return false;
     }
-    showToast('Invalid login. Try again.');
     return false;
   };
 
   const handleAdminLogin = async (user, pass) => {
-    const users = getUsers();
-    const hashedPass = await hashPassword(pass);
-    const found = users.find(u => u.user === user && u.pass === hashedPass);
-    
-    if (found) {
-      if (found.role === 'admin' || found.role === 'superadmin') {
-        const session = { user: found.user, name: found.name, role: found.role, salonId: found.salonId };
-        setCurrentUser(session);
-        setSession(session);
-        logAuditAction(found.user, 'LOGIN', `${found.role === 'superadmin' ? 'Super Admin' : 'Admin'} logged in`);
-        setCurrentPage(found.role === 'superadmin' ? 'superadmin' : 'admin');
-        return true;
-      } else {
-        // Customer trying to access Admin panel
-        setCurrentPage('forbidden');
-        return false;
+    try {
+      const email = `${user.toLowerCase().replace(/[^a-z0-9]/g, '')}@brushup.com`;
+      const cred = await signInWithEmailAndPassword(auth, email, pass);
+      const userDoc = await getDoc(doc(db, 'users', cred.user.uid));
+      
+      if (userDoc.exists()) {
+        const found = userDoc.data();
+        if (found.role === 'admin' || found.role === 'superadmin') {
+          const session = { user: found.user, name: found.name, role: found.role, salonId: found.salonId, uid: cred.user.uid };
+          setCurrentUser(session);
+          setSession(session);
+          logAuditAction(found.user, 'LOGIN', `${found.role === 'superadmin' ? 'Super Admin' : 'Admin'} logged in`);
+          setCurrentPage(found.role === 'superadmin' ? 'superadmin' : 'admin');
+          return true;
+        } else {
+          setCurrentPage('forbidden');
+          return false;
+        }
       }
+    } catch (err) {
+      showToast('Invalid admin credentials.');
+      return false;
     }
-    showToast('Invalid admin credentials.');
     return false;
   };
 
