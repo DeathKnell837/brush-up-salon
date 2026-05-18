@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { getBookings, setBookings, getAnnouncements } from '../utils/storage';
 import BrushUpLogo from './BrushUpLogo';
 import Chatbot from './Chatbot';
+import ReviewModal from './ReviewModal';
 import {
   StoreIcon, ClipboardIcon, SearchIcon, ScissorsIcon,
   CalendarIcon, ClockIcon, HourglassIcon, CheckCircleIcon, XCircleIcon, InboxIcon, AlertCircleIcon
@@ -14,6 +15,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
   const [filterSvc, setFilterSvc] = useState('All');
   const [localTick, setLocalTick] = useState(0);
   const [announcements, setAnnouncements] = useState([]);
+  const [reviewBooking, setReviewBooking] = useState(null);
   
   const loadData = useCallback(() => {
     setAnnouncements(getAnnouncements());
@@ -37,18 +39,20 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
   };
 
   const handleLeaveReview = (id) => {
-    const rating = prompt("Rate your experience from 1 to 5 stars:");
-    if (!rating) return;
-    const num = parseInt(rating);
-    if (isNaN(num) || num < 1 || num > 5) { alert("Please enter a valid number between 1 and 5."); return; }
-    
+    const b = bookings.find(x => x.id === id);
+    if (b) setReviewBooking(b);
+  };
+
+  const submitReview = (id, num, comment) => {
     const allBookings = getBookings();
     const idx = allBookings.findIndex(b => b.id === id);
     if (idx !== -1) {
       allBookings[idx].review = num;
+      if (comment) allBookings[idx].reviewComment = comment;
       setBookings(allBookings);
       setLocalTick(t => t + 1);
     }
+    setReviewBooking(null);
   };
 
   const filtered = salons.filter(s => {
@@ -288,6 +292,16 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
           <p>© 2026 Brush Up Salon & Beauty. All rights reserved.</p>
         </div>
       </footer>
+      
+      {reviewBooking && (
+        <ReviewModal 
+          booking={reviewBooking} 
+          salonName={salons.find(s => s.id === reviewBooking.salonId)?.name || 'Salon'} 
+          onClose={() => setReviewBooking(null)} 
+          onSubmit={submitReview} 
+        />
+      )}
+
       <Chatbot onOpenModal={onSelectSalon} currentUser={currentUser} onCancelBooking={handleCancelBooking} contextData={`User Bookings: ${JSON.stringify(bookings)}`} />
     </div>
   );
