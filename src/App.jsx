@@ -220,7 +220,7 @@ function App() {
         <ForbiddenPage onBack={() => setCurrentPage('auth')} />
       )}
       {showModal && selectedSalon && (
-        <BookingModal salon={selectedSalon} initialDetails={initialDetails} onClose={() => setShowModal(false)} onSubmit={handleSubmitBooking} />
+        <BookingModal salon={selectedSalon} initialDetails={initialDetails} onClose={() => setShowModal(false)} onSubmit={handleSubmitBooking} currentUser={currentUser} />
       )}
       {showProfile && currentUser && (
         <ProfileModal 

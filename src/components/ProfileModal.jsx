@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
+import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { getUsers, setUsers, hashPassword } from '../utils/storage';
 import { LockIcon, CloseIcon } from './Icons';
 
@@ -21,18 +22,40 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser }) {
     e.preventDefault();
     if (!currentPass || !newPass || !confirmPass) { onShowToast('Please fill in all password fields.'); return; }
     if (newPass !== confirmPass) { onShowToast('New passwords do not match.'); return; }
-    if (newPass.length < 4) { onShowToast('Password must be at least 4 characters.'); return; }
+    if (newPass.length < 6) { onShowToast('Password must be at least 6 characters.'); return; }
 
-    const users = getUsers();
-    const hashedCurrentPass = await hashPassword(currentPass);
-    const userIndex = users.findIndex(u => u.user === currentUser.user && u.pass === hashedCurrentPass);
-    if (userIndex === -1) { onShowToast('Current password is incorrect.'); return; }
+    try {
+      // Re-authenticate with Firebase Auth first
+      const user = auth.currentUser;
+      if (!user) { onShowToast('Session expired. Please log in again.'); return; }
+      const credential = EmailAuthProvider.credential(user.email, currentPass);
+      await reauthenticateWithCredential(user, credential);
 
-    users[userIndex].pass = await hashPassword(newPass);
-    setUsers(users);
-    setCurrentPass(''); setNewPass(''); setConfirmPass('');
-    setIsChangingPassword(false);
-    onShowToast('Password changed successfully!');
+      // Update Firebase Auth password
+      await updatePassword(user, newPass);
+
+      // Also update localStorage for consistency
+      const users = getUsers();
+      const hashedCurrentPass = await hashPassword(currentPass);
+      const userIndex = users.findIndex(u => u.user === currentUser.user && u.pass === hashedCurrentPass);
+      if (userIndex !== -1) {
+        users[userIndex].pass = await hashPassword(newPass);
+        setUsers(users);
+      }
+
+      setCurrentPass(''); setNewPass(''); setConfirmPass('');
+      setIsChangingPassword(false);
+      onShowToast('Password changed successfully!');
+    } catch (err) {
+      console.error('Password change error:', err);
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        onShowToast('Current password is incorrect.');
+      } else if (err.code === 'auth/weak-password') {
+        onShowToast('New password is too weak. Use at least 6 characters.');
+      } else {
+        onShowToast('Failed to change password: ' + err.message);
+      }
+    }
   };
 
   const handleAvatarChange = (e) => {
