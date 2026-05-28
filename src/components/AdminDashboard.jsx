@@ -100,9 +100,16 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
     const allBookings = getBookings();
     const todayStr = new Date().toISOString().split('T')[0];
     const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    
+    const matchedService = services.find(s => s.name.toLowerCase() === serviceName.trim().toLowerCase());
+    const servicePriceLabel = matchedService ? matchedService.price : 'PHP 0';
+    const cleanPrice = servicePriceLabel.replace(/[^\d.-]/g, '');
+    const servicePrice = parseFloat(cleanPrice) || 0;
+
     allBookings.push({
       id: Date.now(), salonId: currentUser.salonId, userId: 'walk-in', customer: name + ' (Walk-in)',
-      contact: 'N/A', service: serviceName, date: todayStr, time: timeStr, status: 'Approved'
+      contact: 'N/A', service: serviceName, date: todayStr, time: timeStr, status: 'Approved',
+      servicePrice: servicePrice, servicePriceLabel: servicePriceLabel
     });
     setBookings(allBookings);
     setBookingsState(loadBookings());
@@ -169,14 +176,14 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const filtered = statusFilter === 'all' ? bookingsState : bookingsState.filter(b => b.status.toLowerCase() === statusFilter);
   const allCustomers = getUsers().filter(u => u.role === 'customer');
   const customers = allCustomers.filter(c => bookingsState.some(b => b.userId === c.user));
-  const schedule = bookingsState.filter(b => b.status === 'Approved').sort((a, b) => new Date(a.date) - new Date(b.date));
+  const schedule = bookingsState.filter(b => b.status === 'Approved' || b.status === 'Completed').sort((a, b) => new Date(a.date) - new Date(b.date));
   const allSalons = getSalons();
 
   // Schedule helpers
   const today = new Date().toISOString().split('T')[0];
-  const todaySchedule = schedule.filter(b => b.date === today);
-  const upcomingSchedule = schedule.filter(b => b.date > today);
-  const pastSchedule = schedule.filter(b => b.date < today);
+  const todaySchedule = bookingsState.filter(b => b.status === 'Approved' && b.date === today).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const upcomingSchedule = bookingsState.filter(b => b.status === 'Approved' && b.date > today).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const pastSchedule = bookingsState.filter(b => b.status === 'Completed' || (b.status === 'Approved' && b.date < today)).sort((a, b) => new Date(b.date) - new Date(a.date));
 
   const adminContextData = `Salon Name: ${salonName || salon?.name}, Total Bookings: ${total}, Pending Approvals: ${pending}, Approved: ${approved}, Services Count: ${services.length}`;
 
@@ -260,7 +267,15 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               {filtered.map(b => (
                 <div key={b.id} className="booking-card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div><div className="booking-customer">{b.customer}</div><div className="booking-meta" style={{ marginTop: 4 }}><ScissorsIcon size={12} /> {b.service}</div></div>
+                    <div>
+                      <div className="booking-customer">{b.customer}</div>
+                      <div className="booking-meta" style={{ marginTop: 4 }}>
+                        <ScissorsIcon size={12} /> {b.service}
+                        <span style={{ color: 'var(--gold)', marginLeft: 8, fontWeight: 600 }}>
+                          {b.servicePriceLabel || (services.find(s => s.name === b.service)?.price || 'PHP 0')}
+                        </span>
+                      </div>
+                    </div>
                     <span className={`status ${b.status.toLowerCase()}`}>
                       {b.status === 'Pending' && <HourglassIcon size={10} />}{(b.status === 'Approved' || b.status === 'Completed') && <CheckCircleIcon size={10} />}{b.status === 'Rejected' && <XCircleIcon size={10} />}{b.status}
                     </span>
@@ -316,8 +331,15 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 {todaySchedule.map(b => (
                   <div key={b.id} className="booking-card schedule-today">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div><strong style={{ color: 'var(--text-white)', fontSize: 14 }}>{b.customer}</strong>
-                        <div className="booking-meta" style={{ marginTop: 4 }}><ScissorsIcon size={12} /> {b.service}</div></div>
+                      <div>
+                        <strong style={{ color: 'var(--text-white)', fontSize: 14 }}>{b.customer}</strong>
+                        <div className="booking-meta" style={{ marginTop: 4 }}>
+                          <ScissorsIcon size={12} /> {b.service}
+                          <span style={{ color: 'var(--gold)', marginLeft: 8, fontWeight: 600 }}>
+                            {b.servicePriceLabel || (services.find(s => s.name === b.service)?.price || 'PHP 0')}
+                          </span>
+                        </div>
+                      </div>
                       <div style={{ textAlign: 'right' }}>
                         <div className="schedule-time"><ClockIcon size={14} /> {b.time}</div>
                         {b.contact && <div className="booking-meta" style={{ marginTop: 4 }}><PhoneIcon size={12} /> {b.contact}</div>}
@@ -340,8 +362,15 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   return (
                     <div key={b.id} className="booking-card">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div><strong style={{ color: 'var(--text-white)', fontSize: 14 }}>{b.customer}</strong>
-                          <div className="booking-meta" style={{ marginTop: 4 }}><ScissorsIcon size={12} /> {b.service}</div></div>
+                        <div>
+                          <strong style={{ color: 'var(--text-white)', fontSize: 14 }}>{b.customer}</strong>
+                          <div className="booking-meta" style={{ marginTop: 4 }}>
+                            <ScissorsIcon size={12} /> {b.service}
+                            <span style={{ color: 'var(--gold)', marginLeft: 8, fontWeight: 600 }}>
+                              {b.servicePriceLabel || (services.find(s => s.name === b.service)?.price || 'PHP 0')}
+                            </span>
+                          </div>
+                        </div>
                         <div style={{ textAlign: 'right', fontSize: 12 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end', color: 'var(--text-dim)' }}><CalendarIcon size={12} /> {b.date}</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end', marginTop: 2, color: 'var(--text-dim)' }}><ClockIcon size={12} /> {b.time}</div>
@@ -364,8 +393,14 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 {pastSchedule.map(b => (
                   <div key={b.id} className="booking-card" style={{ opacity: 0.4 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div><strong style={{ color: 'var(--text-dim)', fontSize: 14 }}>{b.customer}</strong>
-                        <div className="booking-meta" style={{ marginTop: 4 }}><ScissorsIcon size={12} /> {b.service}</div>
+                      <div>
+                        <strong style={{ color: 'var(--text-dim)', fontSize: 14 }}>{b.customer}</strong>
+                        <div className="booking-meta" style={{ marginTop: 4 }}>
+                          <ScissorsIcon size={12} /> {b.service}
+                          <span style={{ color: 'var(--gold)', marginLeft: 8, fontWeight: 600 }}>
+                            {b.servicePriceLabel || (services.find(s => s.name === b.service)?.price || 'PHP 0')}
+                          </span>
+                        </div>
                         {b.review && (
                           <div style={{ marginTop: 4 }}>
                             <div style={{ color: 'var(--gold)', fontSize: 12, letterSpacing: 1 }}>{'★'.repeat(b.review)}{'☆'.repeat(5-b.review)}</div>
@@ -689,8 +724,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               const rows = [
                 ['Date', 'Customer', 'Service', 'Price', 'Status'],
                 ...bookingsState.map(b => {
-                  const svc = services.find(s => s.name === b.service);
-                  const priceStr = svc ? svc.price : 'PHP 0';
+                  const priceStr = b.servicePriceLabel || (services.find(s => s.name === b.service)?.price || 'PHP 0');
                   return [b.date, b.customer, b.service, priceStr, b.status];
                 })
               ];
@@ -708,6 +742,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             {(() => {
               const calcRev = (bks) => bks.reduce((sum, b) => {
                 if (b.status !== 'Completed') return sum;
+                if (b.servicePrice !== undefined && b.servicePrice !== null) {
+                  return sum + b.servicePrice;
+                }
                 const svc = services.find(s => s.name === b.service);
                 if (svc) { return sum + parseFloat(svc.price.replace(/[^0-9.]/g, '') || 0); }
                 return sum;

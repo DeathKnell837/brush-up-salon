@@ -21,7 +21,12 @@ export default function Chatbot({ onOpenModal, currentUser, contextData, onCance
       const todayBookings = allBookings.filter(b => b.date === today);
       const salons = getSalons();
       const thisWeek = allBookings.filter(b => { const d = new Date(b.date); const now = new Date(); const diff = (now - d) / 86400000; return diff >= 0 && diff <= 7 && b.status === 'Completed'; });
-      const weekRevenue = thisWeek.reduce((sum, b) => { const s = salons.find(sl => sl.id === b.salonId); const svc = s?.services.find(sv => sv.name === b.service); return sum + (svc ? parseFloat(svc.price.replace(/[^0-9.]/g, '') || 0) : 0); }, 0);
+      const weekRevenue = thisWeek.reduce((sum, b) => {
+        if (b.servicePrice !== undefined && b.servicePrice !== null) return sum + b.servicePrice;
+        const s = salons.find(sl => sl.id === b.salonId);
+        const svc = s?.services.find(sv => sv.name === b.service);
+        return sum + (svc ? parseFloat(svc.price.replace(/[^0-9.]/g, '') || 0) : 0);
+      }, 0);
       return { text: `**Network Command Center** — Today: **${todayBookings.length}** bookings across all shops. This week's revenue: **₱${weekRevenue.toLocaleString()}**. How can I assist?`, widget: 'MasterStats' };
     }
     if (r === 'admin') {
@@ -345,7 +350,12 @@ ${salonContext}`;
       <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
         {salons.map(s => {
           const sb = allBookings.filter(b => b.salonId === s.id);
-          const rev = sb.reduce((sum, b) => { if (b.status !== 'Completed') return sum; const svc = s.services.find(sv => sv.name === b.service); return sum + (svc ? parseFloat(svc.price.replace(/[^0-9.]/g, '') || 0) : 0); }, 0);
+          const rev = sb.reduce((sum, b) => {
+            if (b.status !== 'Completed') return sum;
+            if (b.servicePrice !== undefined && b.servicePrice !== null) return sum + b.servicePrice;
+            const svc = s.services.find(sv => sv.name === b.service);
+            return sum + (svc ? parseFloat(svc.price.replace(/[^0-9.]/g, '') || 0) : 0);
+          }, 0);
           const pending = sb.filter(b => b.status === 'Pending').length;
           return (
             <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', borderRadius: 6, padding: '6px 10px', fontSize: 11 }}>
@@ -363,7 +373,13 @@ ${salonContext}`;
     const allBookings = getBookings();
     const total = allBookings.length;
     const completed = allBookings.filter(b => b.status === 'Completed').length;
-    const totalRev = allBookings.reduce((sum, b) => { if (b.status !== 'Completed') return sum; const s = salons.find(sl => sl.id === b.salonId); const svc = s?.services.find(sv => sv.name === b.service); return sum + (svc ? parseFloat(svc.price.replace(/[^0-9.]/g, '') || 0) : 0); }, 0);
+    const totalRev = allBookings.reduce((sum, b) => {
+      if (b.status !== 'Completed') return sum;
+      if (b.servicePrice !== undefined && b.servicePrice !== null) return sum + b.servicePrice;
+      const s = salons.find(sl => sl.id === b.salonId);
+      const svc = s?.services.find(sv => sv.name === b.service);
+      return sum + (svc ? parseFloat(svc.price.replace(/[^0-9.]/g, '') || 0) : 0);
+    }, 0);
     return (
       <div style={{ marginTop: 10, background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: 10 }}>
         <strong style={{ fontSize: 11, color: 'var(--gold)', letterSpacing: 0.5 }}>NETWORK OVERVIEW</strong>

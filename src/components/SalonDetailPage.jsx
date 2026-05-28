@@ -59,6 +59,10 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
       return;
     }
     const bookings = getBookings();
+    const servicePriceLabel = selectedService.price || 'PHP 0';
+    const cleanPrice = servicePriceLabel.replace(/[^\d.-]/g, '');
+    const servicePrice = parseFloat(cleanPrice) || 0;
+
     bookings.push({
       id: Date.now(),
       salonId: salon.id,
@@ -66,6 +70,8 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
       customer: bookName,
       contact: bookContact,
       service: selectedService.name,
+      servicePrice: servicePrice,
+      servicePriceLabel: servicePriceLabel,
       staff: bookStaff || 'Any',
       date: bookDate,
       time: bookTime,

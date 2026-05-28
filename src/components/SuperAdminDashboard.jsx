@@ -24,6 +24,9 @@ function SuperAdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalo
 
   const calcRevenue = (bookings) => bookings.reduce((sum, b) => {
     if (b.status === 'Completed') {
+      if (b.servicePrice !== undefined && b.servicePrice !== null) {
+        return sum + b.servicePrice;
+      }
       const salon = salons.find(s => s.id === b.salonId);
       const svc = salon?.services.find(sv => sv.name === b.service);
       if (svc) return sum + parseFloat(svc.price.replace(/[^0-9.]/g, '') || 0);

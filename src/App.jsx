@@ -165,10 +165,17 @@ function App() {
 
   const handleSubmitBooking = (bookingData) => {
     const bookings = getBookings();
+    const matchedService = selectedSalon.services.find(s => s.name.toLowerCase() === bookingData.service.toLowerCase());
+    const servicePriceLabel = matchedService ? matchedService.price : 'PHP 0';
+    const cleanPrice = servicePriceLabel.replace(/[^\d.-]/g, '');
+    const servicePrice = parseFloat(cleanPrice) || 0;
+
     bookings.push({
       id: Date.now(), salonId: selectedSalon.id,
       userId: currentUser?.user || 'unknown', customer: bookingData.name,
       contact: bookingData.contact, service: bookingData.service,
+      servicePrice: servicePrice,
+      servicePriceLabel: servicePriceLabel,
       date: bookingData.date, time: bookingData.time, status: 'Pending'
     });
     setBookings(bookings);
@@ -192,7 +199,7 @@ function App() {
       )}
       {currentPage === 'customer' && (
         <CustomerDashboard currentUser={currentUser} salons={salons} onLogout={handleLogout}
-          onSelectSalon={handleOpenSalonPage} onOpenProfile={() => setShowProfile(true)} syncTick={syncTick} />
+          onSelectSalon={handleOpenSalonPage} onOpenProfile={() => setShowProfile(true)} syncTick={syncTick} showToast={showToast} />
       )}
       {currentPage === 'salon-detail' && selectedSalon && (
         <SalonDetailPage
