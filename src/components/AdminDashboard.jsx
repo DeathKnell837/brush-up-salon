@@ -31,6 +31,7 @@ const GEMINI_KEY = process.env.REACT_APP_GEMINI_API_KEY || _ak.join('');
 
 function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, showToast, syncTick, onOpenProfile }) {
   const allSalons = getSalons();
+  const isSuperAdmin = currentUser.salonId === 'all' || currentUser.role === 'superadmin';
   
   // Decoupled salon scoping
   const [currentSalonId, setCurrentSalonId] = useState(
@@ -336,6 +337,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   // HQ Handlers (from legacy SuperAdminDashboard)
   const handleSetAnnouncement = (e) => {
     e.preventDefault();
+    if (!isSuperAdmin) { showToast("Permission denied. Only Super Admin can broadcast announcements."); return; }
     if (!bTitle || !bMsg) return;
     const currentA = getAnnouncements();
     const newA = { id: Date.now(), type: bType, title: bTitle, message: bMsg, timestamp: new Date().toISOString() };
@@ -348,6 +350,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   };
 
   const handleCleanupDuplicates = async () => {
+    if (!isSuperAdmin) { showToast("Permission denied. Action restricted to Super Admin."); return; }
     try {
       const legacyIds = ['superadmin', 'elegantadmin', 'kareenadmin', 'prettyadmin', 'jamesadmin', 'palmaadmin', 'babieadmin', 'cutcurladmin'];
       for (const id of legacyIds) {
@@ -362,6 +365,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   };
 
   const handleRemoveAnnouncement = (id) => {
+    if (!isSuperAdmin) { showToast("Permission denied. Action restricted to Super Admin."); return; }
     const filtered = getAnnouncements().filter(a => a.id !== id);
     saveAnnouncements(filtered);
     setAnnouncements(filtered);
@@ -370,6 +374,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
   const handleAddSalon = async (e) => {
     e.preventDefault();
+    if (!isSuperAdmin) { showToast("Permission denied. Action restricted to Super Admin."); return; }
     if (!ns.name || !ns.admin || !ns.pass) { showToast('Fill all required fields.'); return; }
     
     // Fix 7: Super Admin check duplicate salon names (case-insensitive, trimmed)
@@ -414,6 +419,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   };
 
   const handleRemoveSalon = (sid) => {
+    if (!isSuperAdmin) { showToast("Permission denied. Action restricted to Super Admin."); return; }
     if (!window.confirm("Remove this salon and its admin permanently?")) return;
     setSalons(getSalons().filter(s => s.id !== sid));
     saveUsers(getUsers().filter(u => u.salonId !== sid));
@@ -422,6 +428,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   };
 
   const handleRemoveAdmin = (user) => {
+    if (!isSuperAdmin) { showToast("Permission denied. Action restricted to Super Admin."); return; }
     if (user === currentUser.user) { showToast("Can't remove yourself."); return; }
     saveUsers(getUsers().filter(u => u.user !== user));
     logAuditAction(currentUser.user, 'REMOVE_ADMIN', `Revoked access for @${user}`);
@@ -429,6 +436,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   };
 
   const handleResetPassword = async (user) => {
+    if (!isSuperAdmin) { showToast("Permission denied. Action restricted to Super Admin."); return; }
     const newPass = prompt(`New password for @${user}:`, "admin123");
     if (!newPass) return;
     const hp = await hashPassword(newPass);
@@ -442,6 +450,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   };
 
   const handleExportHQCSV = () => {
+    if (!isSuperAdmin) { showToast("Permission denied. Action restricted to Super Admin."); return; }
     const allBookings = getBookings();
     let csv = "ID,Date,Time,Customer,Salon,Service,Status\n";
     allBookings.forEach(b => {
@@ -473,6 +482,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const approved = bookingsState.filter(b => b.status === 'Approved').length;
   const completed = bookingsState.filter(b => b.status === 'Completed').length;
   const filtered = statusFilter === 'all' ? bookingsState : bookingsState.filter(b => b.status.toLowerCase() === statusFilter);
+  /* eslint-disable react-hooks/exhaustive-deps */
   const allCustomers = React.useMemo(() => {
     const raw = getUsers().filter(u => u.role === 'customer');
     const seen = new Set();
@@ -488,6 +498,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
     });
     return unique;
   }, [syncTick]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   const customers = React.useMemo(() => {
     return allCustomers.filter(c => bookingsState.some(b => b.userId === c.user));
@@ -845,28 +856,30 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             >
               <StoreIcon size={14} /> Branch Operations
             </button>
-            <button 
-              className={`navbar-tab ${viewScope === 'network' ? 'active' : ''}`}
-              style={{
-                background: 'none',
-                border: 'none',
-                borderBottom: viewScope === 'network' ? '2px solid var(--gold)' : '2px solid transparent',
-                color: viewScope === 'network' ? 'var(--gold)' : 'var(--text-dim)',
-                padding: '24px 4px',
-                fontSize: '13px',
-                fontWeight: '600',
-                letterSpacing: '0.5px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                transition: 'all 0.2s ease',
-                height: '70px'
-              }}
-              onClick={() => { setViewScope('network'); setActiveTab('network-overview'); }}
-            >
-              <ShieldIcon size={14} /> Network HQ View
-            </button>
+            {isSuperAdmin && (
+              <button
+                className={`navbar-tab ${viewScope === 'network' ? 'active' : ''}`}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: viewScope === 'network' ? '2px solid var(--gold)' : '2px solid transparent',
+                  color: viewScope === 'network' ? 'var(--gold)' : 'var(--text-dim)',
+                  padding: '24px 4px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  letterSpacing: '0.5px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  transition: 'all 0.2s ease',
+                  height: '70px'
+                }}
+                onClick={() => { setViewScope('network'); setActiveTab('network-overview'); }}
+              >
+                <ShieldIcon size={14} /> Network HQ View
+              </button>
+            )}
           </div>
 
           {/* Vertical separator if superadmin / has switcher */}

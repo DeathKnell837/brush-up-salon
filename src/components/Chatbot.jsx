@@ -13,8 +13,21 @@ const GEMINI_KEY = process.env.REACT_APP_GEMINI_API_KEY || _ak.join('');
 
 export default function Chatbot({ onOpenModal, currentUser, contextData, onCancelBooking }) {
   const role = currentUser?.role || 'customer';
+  const isCustomer = role === 'customer';
+  const isSuperAdmin = currentUser?.salonId === 'all' || role === 'superadmin';
+  const isAdmin = (role === 'admin' || role === 'superadmin') && !isSuperAdmin;
 
   const getInitialMessage = (r) => {
+    if (isSuperAdmin) {
+      const allBookings = getBookings();
+      const today = new Date().toISOString().split('T')[0];
+      const todayAllBookings = allBookings.filter(b => b.date === today);
+      const pending = allBookings.filter(b => b.status === 'Pending').length;
+      return {
+        text: `Good day, Executive Overseer! Across the entire 7-salon network, there are **${todayAllBookings.length}** appointments scheduled today, with **${pending}** total pending across branches. How can I assist you with corporate operations, predictive analytics, or financial turnaround strategies?`,
+        widget: 'MasterStats'
+      };
+    }
     if (r === 'admin' || r === 'superadmin') {
       const allBookings = getBookings();
       const bookings = allBookings.filter(b => b.salonId === currentUser?.salonId);
@@ -139,7 +152,7 @@ Services: ${s.services.map(sv => `${sv.name} (${sv.price})`).join(', ')}`).join(
 
       let systemPrompt = "";
       
-      if (role === 'admin' || role === 'superadmin') {
+      if (isAdmin || isSuperAdmin) {
         systemPrompt = `You are the Cooperative Business Intelligence & Operations AI Assistant for a Brush Up Salon Admin.
 Tone: Highly analytical, professional, supportive, strategic.
 Role: Advise on daily booking scheduling, staff rosters, resolving customer disputes, optimizing menus, upselling treatments, AND overall network performance, multi-shop analytics, cash flow runway, and insolvency turnaround strategies.
@@ -230,12 +243,12 @@ ${salonContext}`;
 
       // Process special commands (Widgets and Broadcasts)
       let widget = null;
-      if (role === 'customer' && responseText.toLowerCase().includes('book now')) widget = 'BookButton';
-      if (role === 'customer' && responseText.toLowerCase().includes('availability')) widget = 'AvailabilityWidget';
-      if (role === 'customer' && responseText.toLowerCase().includes('cancel')) widget = 'CancelWidget';
-      if (role === 'admin' && responseText.toLowerCase().includes('schedule')) widget = 'AdminSchedule';
-      if (role === 'superadmin' && responseText.toLowerCase().includes('revenue')) widget = 'MasterStats';
-      if (role === 'superadmin' && responseText.toLowerCase().includes('performance')) widget = 'ShopStats';
+      if (isCustomer && responseText.toLowerCase().includes('book now')) widget = 'BookButton';
+      if (isCustomer && responseText.toLowerCase().includes('availability')) widget = 'AvailabilityWidget';
+      if (isCustomer && responseText.toLowerCase().includes('cancel')) widget = 'CancelWidget';
+      if (isAdmin && responseText.toLowerCase().includes('schedule')) widget = 'AdminSchedule';
+      if (isSuperAdmin && responseText.toLowerCase().includes('revenue')) widget = 'MasterStats';
+      if (isSuperAdmin && responseText.toLowerCase().includes('performance')) widget = 'ShopStats';
       
       // Parse Broadcasts
       const broadcastRegex = /\[BROADCAST\|(.*?)\|(.*?)\|(.*?)\]/;
@@ -376,9 +389,6 @@ ${salonContext}`;
   };
 
   // ─── ROLE-BASED UI CONFIG ───
-  const isCustomer = role === 'customer';
-  const isAdmin = role === 'admin';
-  const isSuperAdmin = role === 'superadmin';
 
   const uiConfig = {
     container: {
