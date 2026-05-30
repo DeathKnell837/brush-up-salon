@@ -684,6 +684,51 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
     return data;
   }, [comparisonData, compSortBy, compSortOrder]);
 
+  const networkServicePopularity = React.useMemo(() => {
+    const counts = {};
+    networkBookings.forEach(b => {
+      if (b.service) {
+        counts[b.service] = (counts[b.service] || 0) + 1;
+      }
+    });
+    return Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  }, [networkBookings]);
+
+  const bookingDistribution = React.useMemo(() => {
+    const total = networkBookings.length || 1;
+    const pending = networkBookings.filter(b => b.status === 'Pending').length;
+    const approved = networkBookings.filter(b => b.status === 'Approved').length;
+    const completed = networkBookings.filter(b => b.status === 'Completed').length;
+    return {
+      total,
+      pending,
+      approved,
+      completed,
+      pendingPct: Math.round((pending / total) * 100),
+      approvedPct: Math.round((approved / total) * 100),
+      completedPct: Math.round((completed / total) * 100)
+    };
+  }, [networkBookings]);
+
+  const riskDistribution = React.useMemo(() => {
+    let stable = 0;
+    let distress = 0;
+    let critical = 0;
+    comparisonData.forEach(s => {
+      if (s.riskPercentage >= 75) critical++;
+      else if (s.riskPercentage >= 40) distress++;
+      else stable++;
+    });
+    return { stable, distress, critical };
+  }, [comparisonData]);
+
+  const networkAlerts = React.useMemo(() => {
+    return comparisonData.filter(s => s.riskPercentage >= 40 || s.isAlertActive);
+  }, [comparisonData]);
+
   const handleSortComp = (field) => {
     if (compSortBy === field) {
       setCompSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -2807,6 +2852,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
               <div className="section-header"><p className="section-label">PERFORMANCE</p><h2 className="section-heading">Network Analytics</h2></div>
 
+              {/* 4 Top KPI Cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
                 <div style={glassCard}><p style={{ fontSize: 11, color: 'var(--text-dim)', letterSpacing: 1.5, marginBottom: 8 }}>TOTAL REVENUE</p><h2 style={{ fontSize: 32, color: 'var(--gold)', margin: 0, fontFamily: 'var(--font-display)' }}>₱{networkRevenue.toLocaleString()}</h2></div>
                 <div style={glassCard}><p style={{ fontSize: 11, color: 'var(--text-dim)', letterSpacing: 1.5, marginBottom: 8 }}>COMPLETED</p><h2 style={{ fontSize: 32, color: '#4ade80', margin: 0, fontFamily: 'var(--font-display)' }}>{networkCompleted}</h2></div>
@@ -2814,30 +2860,139 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 <div style={glassCard}><p style={{ fontSize: 11, color: 'var(--text-dim)', letterSpacing: 1.5, marginBottom: 8 }}>CUSTOMERS</p><h2 style={{ fontSize: 32, color: 'var(--text-white)', margin: 0, fontFamily: 'var(--font-display)' }}>{allCustomers.length}</h2></div>
               </div>
 
-              <h3 style={{ fontSize: 16, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Revenue by Branch</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
-                {allSalons.map(s => {
-                  const sb = networkBookings.filter(b => b.salonId === s.id);
-                  const sr = calcNetworkRevenue(sb);
-                  const maxRev = Math.max(...allSalons.map(sl => calcNetworkRevenue(networkBookings.filter(b => b.salonId === sl.id))), 1);
-                  return (
-                    <div key={s.id} style={panelCard}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <div><div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-white)' }}>{s.name}</div>
-                        <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>{sb.length} bookings</div></div>
-                        <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--gold)', fontFamily: 'var(--font-display)' }}>₱{sr.toLocaleString()}</span>
+              {/* Grid 2 Columns for Revenue by Branch and Risk / Status Distributions */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 28 }}>
+                
+                {/* Left: Revenue by Branch */}
+                <div style={panelCard}>
+                  <h3 style={{ fontSize: 16, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Revenue by Branch</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {allSalons.map(s => {
+                      const sb = networkBookings.filter(b => b.salonId === s.id);
+                      const sr = calcNetworkRevenue(sb);
+                      const maxRev = Math.max(...allSalons.map(sl => calcNetworkRevenue(networkBookings.filter(b => b.salonId === sl.id))), 1);
+                      return (
+                        <div key={s.id}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-white)' }}>{s.name}</div>
+                              <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>{sb.length} bookings</div>
+                            </div>
+                            <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--gold)', fontFamily: 'var(--font-display)' }}>₱{sr.toLocaleString()}</span>
+                          </div>
+                          <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${(sr / maxRev) * 100}%`, background: 'linear-gradient(90deg, var(--gold), rgba(201,168,76,0.3))', borderRadius: 3, transition: 'width 1s ease' }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Right: Franchise Risk Breakdown & Booking Status Distribution */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                  
+                  {/* Franchise Risk Distribution */}
+                  <div style={panelCard}>
+                    <h3 style={{ fontSize: 16, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Franchise Risk Distribution</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                      <div style={{ textAlign: 'center', padding: 12, background: 'rgba(74, 222, 128, 0.05)', border: '1px solid rgba(74, 222, 128, 0.15)', borderRadius: 8 }}>
+                        <div style={{ fontSize: 24, fontWeight: 700, color: '#4ade80', fontFamily: 'var(--font-display)' }}>{riskDistribution.stable}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4 }}>Stable</div>
                       </div>
-                      <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${(sr / maxRev) * 100}%`, background: 'linear-gradient(90deg, var(--gold), rgba(201,168,76,0.3))', borderRadius: 3, transition: 'width 1s ease' }} />
+                      <div style={{ textAlign: 'center', padding: 12, background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.15)', borderRadius: 8 }}>
+                        <div style={{ fontSize: 24, fontWeight: 700, color: '#f59e0b', fontFamily: 'var(--font-display)' }}>{riskDistribution.distress}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4 }}>Distress</div>
+                      </div>
+                      <div style={{ textAlign: 'center', padding: 12, background: 'rgba(248, 113, 113, 0.05)', border: '1px solid rgba(248, 113, 113, 0.15)', borderRadius: 8 }}>
+                        <div style={{ fontSize: 24, fontWeight: 700, color: '#f87171', fontFamily: 'var(--font-display)' }}>{riskDistribution.critical}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4 }}>Critical</div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
+                  </div>
 
-          {/* ═══ SALON PERFORMANCE COMPARISON ═══ */}
+                  {/* Booking Status Distribution */}
+                  <div style={panelCard}>
+                    <h3 style={{ fontSize: 16, color: 'var(--text-white)', marginBottom: 12, fontFamily: 'var(--font-display)' }}>Booking Status Distribution</h3>
+                    <div style={{ display: 'flex', height: 16, borderRadius: 8, overflow: 'hidden', marginBottom: 16 }}>
+                      <div style={{ width: `${bookingDistribution.completedPct}%`, background: '#4ade80', transition: 'width 1s ease' }} />
+                      <div style={{ width: `${bookingDistribution.approvedPct}%`, background: '#3b82f6', transition: 'width 1s ease' }} />
+                      <div style={{ width: `${bookingDistribution.pendingPct}%`, background: '#f59e0b', transition: 'width 1s ease' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80' }} />
+                        <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>Completed ({bookingDistribution.completedPct}%)</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6' }} />
+                        <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>Approved ({bookingDistribution.approvedPct}%)</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} />
+                        <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>Pending ({bookingDistribution.pendingPct}%)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Grid 2 Columns for Network Service Popularity and Executive Warning Flags */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
+                
+                {/* Left: Top Services */}
+                <div style={panelCard}>
+                  <h3 style={{ fontSize: 16, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Top Franchise Services</h3>
+                  {networkServicePopularity.length === 0 ? (
+                    <div style={{ color: 'var(--text-dim)', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>
+                      No service data recorded yet.
+                    </div>
+                  ) : (() => {
+                    const maxSvcCount = Math.max(...networkServicePopularity.map(s => s.count), 1);
+                    return networkServicePopularity.map(s => (
+                      <div key={s.name} style={{ marginBottom: 14 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
+                          <span style={{ color: 'var(--text-white)', fontWeight: 500 }}>{s.name}</span>
+                          <span style={{ color: 'var(--gold)', fontWeight: 600 }}>{s.count} bookings</span>
+                        </div>
+                        <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${(s.count / maxSvcCount) * 100}%`, background: 'var(--gold)', borderRadius: 3, transition: 'width 1s ease' }} />
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+
+                {/* Right: Executive Warning Flags */}
+                <div style={panelCard}>
+                  <h3 style={{ fontSize: 16, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Executive Attention Flags</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 260, overflowY: 'auto' }}>
+                    {networkAlerts.length === 0 ? (
+                      <div style={{ color: 'var(--text-dim)', fontSize: 13, textAlign: 'center', padding: '40px 0' }}>
+                        All branches operating within nominal parameters.
+                      </div>
+                    ) : (
+                      networkAlerts.map(s => (
+                        <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: s.riskPercentage >= 75 ? 'rgba(239, 68, 68, 0.08)' : 'rgba(245, 158, 11, 0.08)', border: s.riskPercentage >= 75 ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(245, 158, 11, 0.2)', borderRadius: 8 }}>
+                          <AlertCircleIcon size={18} style={{ color: s.riskPercentage >= 75 ? '#f87171' : '#f59e0b', flexShrink: 0 }} />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-white)' }}>{s.name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>
+                              {s.riskPercentage >= 75 ? `Critical Bankruptcy Risk (${s.riskPercentage}%)` : (s.riskPercentage >= 40 ? `Operational Distress (${s.riskPercentage}%)` : 'Nominal Risk')}
+                              {s.isAlertActive && ' • No recent bookings in 48 hours'}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+              </div>
+
+            </section>
+          )}          {/* ═══ SALON PERFORMANCE COMPARISON ═══ */}
           {activeTab === 'network-comparison' && (
             <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
               <div className="section-header">
