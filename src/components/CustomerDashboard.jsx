@@ -169,14 +169,84 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
       {/* ─── BROADCASTS ─── */}
       <div style={{ padding: '0 24px', maxWidth: 1200, margin: '0 auto', marginTop: '-12px' }}>
         {announcements.map(a => (
-          <div key={a.id} className={`broadcast-banner ${a.type}`}>
-            <div className="broadcast-content">
-              <div className="broadcast-icon"><AlertCircleIcon size={16} /></div>
-              <strong>{a.title}</strong>
-              <span style={{ color: 'rgba(255,255,255,0.2)', margin: '0 4px' }}>|</span>
-              <p>{a.message}</p>
+          <div key={a.id} style={{
+            background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.65), rgba(15, 15, 15, 0.85))',
+            backdropFilter: 'blur(24px)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            borderRadius: '16px',
+            padding: '16px 20px',
+            marginBottom: '16px',
+            position: 'relative',
+            boxShadow: '0 12px 24px rgba(0, 0, 0, 0.25)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            transition: 'all 0.3s ease',
+            borderLeft: `5px solid ${a.type === 'promo' ? 'var(--gold)' : a.type === 'warning' ? '#f87171' : '#38bdf8'}`
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 16px 32px rgba(0, 0, 0, 0.35)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.25)';
+          }}
+          >
+            {/* Top row: Icon, title, tag, time */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  color: a.type === 'promo' ? 'var(--gold)' : a.type === 'warning' ? '#f87171' : '#38bdf8',
+                  background: a.type === 'promo' ? 'rgba(201, 168, 76, 0.1)' : a.type === 'warning' ? 'rgba(248, 113, 113, 0.1)' : 'rgba(56, 189, 248, 0.1)',
+                  borderRadius: '50%',
+                  width: '28px',
+                  height: '28px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: `0 0 10px ${a.type === 'promo' ? 'rgba(201, 168, 76, 0.2)' : a.type === 'warning' ? 'rgba(248, 113, 113, 0.2)' : 'rgba(56, 189, 248, 0.2)'}`
+                }}>
+                  <AlertCircleIcon size={16} />
+                </div>
+                <strong style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  color: '#fff',
+                  letterSpacing: '0.5px'
+                }}>
+                  {a.title}
+                </strong>
+                <span style={{
+                  fontSize: '9px',
+                  textTransform: 'uppercase',
+                  fontWeight: '800',
+                  letterSpacing: '1px',
+                  background: a.type === 'promo' ? 'rgba(201, 168, 76, 0.15)' : a.type === 'warning' ? 'rgba(248, 113, 113, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+                  color: a.type === 'promo' ? 'var(--gold)' : a.type === 'warning' ? '#f87171' : '#38bdf8',
+                  padding: '3px 8px',
+                  borderRadius: '10px',
+                  border: `1px solid ${a.type === 'promo' ? 'rgba(201,168,76,0.3)' : a.type === 'warning' ? 'rgba(248,113,113,0.3)' : 'rgba(56,189,248,0.3)'}`
+                }}>
+                  {a.type === 'promo' ? 'Promotion' : a.type === 'warning' ? 'Notice' : 'Update'}
+                </span>
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: '500' }}>
+                {new Date(a.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })} · {new Date(a.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
             </div>
-            <span style={{ fontSize: 10, color: 'var(--text-dim)', flexShrink: 0 }}>{new Date(a.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+            
+            {/* Bottom row: Wrapped description */}
+            <p style={{
+              margin: '0 0 0 38px',
+              fontSize: '13px',
+              lineHeight: '1.6',
+              color: 'rgba(255, 255, 255, 0.75)',
+              whiteSpace: 'normal'
+            }}>
+              {a.message}
+            </p>
           </div>
         ))}
       </div>
