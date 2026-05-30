@@ -5,7 +5,7 @@ import Chatbot from './Chatbot';
 import ReviewModal from './ReviewModal';
 import {
   StoreIcon, ClipboardIcon, SearchIcon, ScissorsIcon,
-  CalendarIcon, ClockIcon, HourglassIcon, CheckCircleIcon, XCircleIcon, InboxIcon, AlertCircleIcon
+  CalendarIcon, ClockIcon, HourglassIcon, CheckCircleIcon, XCircleIcon, InboxIcon, BellIcon
 } from './Icons';
 
 function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, onOpenProfile, syncTick, showToast }) {
@@ -17,6 +17,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
   const [localTick, setLocalTick] = useState(0);
   const [announcements, setAnnouncements] = useState([]);
   const [reviewBooking, setReviewBooking] = useState(null);
+  const [showNotifications, setShowNotifications] = useState(false);
   
   const loadData = useCallback(() => {
     setAnnouncements(getAnnouncements());
@@ -25,6 +26,8 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
   useEffect(() => {
     loadData();
   }, [loadData, syncTick, localTick]);
+
+
 
   const allBookings = getBookings();
   const bookings = allBookings.filter(b => b.userId === currentUser?.user);
@@ -119,7 +122,130 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
       {/* ─── Navbar ─── */}
       <nav className="navbar">
         <div className="brand"><BrushUpLogo size="small" /></div>
-        <div className="navbar-right">
+        <div className="navbar-right" style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
+          {/* Notification Bell */}
+          <div style={{ position: 'relative' }}>
+            <button 
+              onClick={() => setShowNotifications(!showNotifications)}
+              style={{
+                background: showNotifications ? 'rgba(255,255,255,0.08)' : 'transparent',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '50%',
+                width: '38px',
+                height: '38px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: showNotifications ? 'var(--gold)' : 'var(--text-dim)',
+                transition: 'all 0.2s ease',
+                position: 'relative'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--gold)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+              onMouseLeave={e => { 
+                if (!showNotifications) {
+                  e.currentTarget.style.color = 'var(--text-dim)'; 
+                  e.currentTarget.style.background = 'transparent'; 
+                }
+              }}
+            >
+              <BellIcon size={18} />
+              {announcements.length > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: '-2px',
+                  right: '-2px',
+                  background: 'var(--gold)',
+                  color: '#000',
+                  borderRadius: '50%',
+                  fontSize: '9px',
+                  fontWeight: '800',
+                  width: '16px',
+                  height: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 0 10px rgba(201, 168, 76, 0.4)'
+                }}>
+                  {announcements.length}
+                </span>
+              )}
+            </button>
+
+            {/* Notification Popover Dropdown */}
+            {showNotifications && (
+              <div className="glass-panel" style={{
+                position: 'absolute',
+                top: '50px',
+                right: '0',
+                width: '360px',
+                maxHeight: '440px',
+                background: 'linear-gradient(135deg, rgba(25, 25, 25, 0.98), rgba(15, 15, 15, 0.99))',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(201, 168, 76, 0.18)',
+                borderRadius: '12px',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.6), 0 0 30px rgba(201, 168, 76, 0.05)',
+                padding: '16px',
+                zIndex: 9999,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                overflowY: 'auto'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '8px' }}>
+                  <h3 style={{ margin: 0, fontSize: '14px', color: 'var(--gold)', fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.5px' }}>Broadcasts & Notices</h3>
+                  <button 
+                    onClick={() => setShowNotifications(false)} 
+                    style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim)'}
+                  >
+                    Close
+                  </button>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {announcements.length === 0 ? (
+                    <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-dim)', fontSize: '13px' }}>No active broadcasts.</div>
+                  ) : (
+                    announcements.map(a => (
+                      <div key={a.id} style={{
+                        background: 'rgba(255,255,255,0.02)',
+                        border: '1px solid rgba(255, 255, 255, 0.04)',
+                        borderLeft: `4px solid ${a.type === 'promo' ? 'var(--gold)' : a.type === 'warning' ? '#f87171' : '#38bdf8'}`,
+                        borderRadius: '8px',
+                        padding: '10px 12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: '700', color: '#fff' }}>{a.title}</span>
+                          <span style={{
+                            fontSize: '7px',
+                            textTransform: 'uppercase',
+                            fontWeight: '800',
+                            letterSpacing: '0.5px',
+                            background: a.type === 'promo' ? 'rgba(201, 168, 76, 0.15)' : a.type === 'warning' ? 'rgba(248, 113, 113, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+                            color: a.type === 'promo' ? 'var(--gold)' : a.type === 'warning' ? '#f87171' : '#38bdf8',
+                            padding: '1px 4px',
+                            borderRadius: '4px',
+                            border: `1px solid ${a.type === 'promo' ? 'rgba(201,168,76,0.1)' : a.type === 'warning' ? 'rgba(248,113,113,0.1)' : 'rgba(56,189,248,0.1)'}`
+                          }}>
+                            {a.type === 'promo' ? 'Promo' : a.type === 'warning' ? 'Notice' : 'Update'}
+                          </span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.4', whiteSpace: 'normal', wordBreak: 'break-word' }}>{a.message}</p>
+                        <span style={{ fontSize: '8px', color: 'var(--text-dim)', alignSelf: 'flex-end', marginTop: '2px' }}>
+                          {new Date(a.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           <span className="pill">Welcome, {currentUser?.name || 'Guest'}</span>
           <button className="profile-btn" onClick={onOpenProfile}>
             {(currentUser?.name || 'U')[0].toUpperCase()}
@@ -166,90 +292,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
         </div>
       </section>
 
-      {/* ─── BROADCASTS ─── */}
-      <div style={{ padding: '0 24px', maxWidth: 1200, margin: '0 auto', marginTop: '-12px' }}>
-        {announcements.map(a => (
-          <div key={a.id} style={{
-            background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.65), rgba(15, 15, 15, 0.85))',
-            backdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '16px',
-            padding: '16px 20px',
-            marginBottom: '16px',
-            position: 'relative',
-            boxShadow: '0 12px 24px rgba(0, 0, 0, 0.25)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
-            transition: 'all 0.3s ease',
-            borderLeft: `5px solid ${a.type === 'promo' ? 'var(--gold)' : a.type === 'warning' ? '#f87171' : '#38bdf8'}`
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.boxShadow = '0 16px 32px rgba(0, 0, 0, 0.35)';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.25)';
-          }}
-          >
-            {/* Top row: Icon, title, tag, time */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{
-                  color: a.type === 'promo' ? 'var(--gold)' : a.type === 'warning' ? '#f87171' : '#38bdf8',
-                  background: a.type === 'promo' ? 'rgba(201, 168, 76, 0.1)' : a.type === 'warning' ? 'rgba(248, 113, 113, 0.1)' : 'rgba(56, 189, 248, 0.1)',
-                  borderRadius: '50%',
-                  width: '28px',
-                  height: '28px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: `0 0 10px ${a.type === 'promo' ? 'rgba(201, 168, 76, 0.2)' : a.type === 'warning' ? 'rgba(248, 113, 113, 0.2)' : 'rgba(56, 189, 248, 0.2)'}`
-                }}>
-                  <AlertCircleIcon size={16} />
-                </div>
-                <strong style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '14px',
-                  fontWeight: '700',
-                  color: '#fff',
-                  letterSpacing: '0.5px'
-                }}>
-                  {a.title}
-                </strong>
-                <span style={{
-                  fontSize: '9px',
-                  textTransform: 'uppercase',
-                  fontWeight: '800',
-                  letterSpacing: '1px',
-                  background: a.type === 'promo' ? 'rgba(201, 168, 76, 0.15)' : a.type === 'warning' ? 'rgba(248, 113, 113, 0.15)' : 'rgba(56, 189, 248, 0.15)',
-                  color: a.type === 'promo' ? 'var(--gold)' : a.type === 'warning' ? '#f87171' : '#38bdf8',
-                  padding: '3px 8px',
-                  borderRadius: '10px',
-                  border: `1px solid ${a.type === 'promo' ? 'rgba(201,168,76,0.3)' : a.type === 'warning' ? 'rgba(248,113,113,0.3)' : 'rgba(56,189,248,0.3)'}`
-                }}>
-                  {a.type === 'promo' ? 'Promotion' : a.type === 'warning' ? 'Notice' : 'Update'}
-                </span>
-              </div>
-              <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: '500' }}>
-                {new Date(a.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })} · {new Date(a.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
-            
-            {/* Bottom row: Wrapped description */}
-            <p style={{
-              margin: '0 0 0 38px',
-              fontSize: '13px',
-              lineHeight: '1.6',
-              color: 'rgba(255, 255, 255, 0.75)',
-              whiteSpace: 'normal'
-            }}>
-              {a.message}
-            </p>
-          </div>
-        ))}
-      </div>
+
 
       {/* ─── Tabs ─── */}
       <div className="tab-bar" style={{ marginTop: 24 }}>
