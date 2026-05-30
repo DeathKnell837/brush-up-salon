@@ -1157,10 +1157,10 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             { id: 'network-comparison', icon: <ChartIcon size={15} />, label: 'Performance Comparison' },
             { id: 'network-transactions', icon: <ListIcon size={15} />, label: 'Transactions', count: networkPending > 0 ? networkPending : null },
             { id: 'network-salons', icon: <StoreIcon size={15} />, label: 'Salons', count: allSalons.length },
-            { id: 'network-admins', icon: <ShieldIcon size={15} />, label: 'Admins', count: adminUsers.length },
+            (currentUser.role === 'superadmin' || currentUser.salonId === 'all') && { id: 'network-admins', icon: <ShieldIcon size={15} />, label: 'Admins', count: adminUsers.length },
             { id: 'network-broadcasts', icon: <AlertCircleIcon size={15} />, label: 'Broadcasts' },
             { id: 'network-audit', icon: <ClipboardIcon size={15} />, label: 'Audit Log' }
-          ].map(t => (
+          ].filter(Boolean).map(t => (
             <button key={t.id} className={`tab-btn ${activeTab === t.id ? 'active' : ''}`} onClick={() => setActiveTab(t.id)}>
               {t.icon} {t.label} {t.count > 0 && <span className="tab-count">{t.count}</span>}
             </button>
@@ -3195,8 +3195,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             </section>
           )}
 
-          {/* ═══ ADMINS ═══ */}
-          {activeTab === 'network-admins' && (
+          {activeTab === 'network-admins' && (currentUser.role === 'superadmin' || currentUser.salonId === 'all') && (
             <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
               <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div><p className="section-label">ACCESS CONTROL</p><h2 className="section-heading">Administrators</h2></div>
