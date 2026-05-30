@@ -13,7 +13,7 @@ import ReactMarkdown from 'react-markdown';
 import {
   HourglassIcon, CheckCircleIcon, XCircleIcon, CalendarIcon, ClockIcon, 
   PhoneIcon, ScissorsIcon, UserIcon, ListIcon, SettingsIcon, AlertCircleIcon, 
-  ChartIcon, CloseIcon, StoreIcon, ShieldIcon, ClipboardIcon, SparklesIcon, BellIcon
+  ChartIcon, CloseIcon, StoreIcon, ShieldIcon, ClipboardIcon, SparklesIcon, BellIcon, SearchIcon
 } from './Icons';
 
 // Helper: convert file to base64 data URL
@@ -105,6 +105,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const [compSortOrder, setCompSortOrder] = useState('asc');
   const [reportTimeframe, setReportTimeframe] = useState('monthly'); // 'weekly' | 'monthly' | 'yearly'
   const [showNotifications, setShowNotifications] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [customerSort, setCustomerSort] = useState('revenue');
+  const [expandedCustomer, setExpandedCustomer] = useState(null);
   const [readIds, setReadIds] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(`read_announcements_${currentUser?.user}`) || '[]');
@@ -1870,22 +1873,306 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           )}
 
           {/* ══════ CUSTOMERS ══════ */}
-          {activeTab === 'customers' && (
+          {activeTab === 'customers' && (() => {
+            // ─── Computed Customer Analytics ───
+            const custData = customers.map(c => {
+              const cb = bookingsState.filter(b => b.userId === c.user);
+              const completedB = cb.filter(b => b.status === 'Completed');
+              const rev = completedB.reduce((s, b) => {
+                if (b.paidAmount != null) return s + b.paidAmount;
+                if (b.servicePrice != null) return s + b.servicePrice;
+                const svc = services.find(sv => sv.name === b.service);
+                return s + parseFloat(svc?.price?.replace(/[^0-9.]/g, '') || 0);
+              }, 0);
+              const dates = cb.map(b => b.date).filter(Boolean).sort();
+              const lastVisit = dates.length ? dates[dates.length - 1] : null;
+              const firstVisit = dates.length ? dates[0] : null;
+              return { ...c, bookings: cb.length, completed: completedB.length, revenue: rev, lastVisit, firstVisit, bookingsList: cb };
+            });
+            const totalCust = custData.length;
+            const totalCustRevenue = custData.reduce((s, c) => s + c.revenue, 0);
+            const avgSpend = totalCust > 0 ? Math.round(totalCustRevenue / totalCust) : 0;
+            const topSpender = custData.reduce((top, c) => c.revenue > (top?.revenue || 0) ? c : top, null);
+            const repeatCustomers = custData.filter(c => c.bookings > 1).length;
+            const repeatRate = totalCust > 0 ? Math.round((repeatCustomers / totalCust) * 100) : 0;
+
+            // Revenue bar chart - top 8
+            const revenueRanked = [...custData].sort((a, b) => b.revenue - a.revenue).slice(0, 8);
+            const maxRevBar = revenueRanked.length > 0 ? Math.max(...revenueRanked.map(c => c.revenue), 1) : 1;
+
+            // Booking status donut
+            const allCustBookings = bookingsState.filter(b => customers.some(c => c.user === b.userId));
+            const statusCounts = { Completed: 0, Approved: 0, Pending: 0, Cancelled: 0 };
+            allCustBookings.forEach(b => { if (statusCounts[b.status] !== undefined) statusCounts[b.status]++; });
+            const totalStatB = Object.values(statusCounts).reduce((a, b) => a + b, 0);
+            const statusColors = { Completed: '#4ade80', Approved: '#60a5fa', Pending: '#c9a84c', Cancelled: '#f87171' };
+
+            // Monthly acquisition trend (6 months)
+            const monthLabels = [];
+            const monthCounts = [];
+            for (let i = 5; i >= 0; i--) {
+              const d = new Date(); d.setMonth(d.getMonth() - i);
+              const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+              monthLabels.push(d.toLocaleString('default', { month: 'short' }));
+              monthCounts.push(custData.filter(c => c.firstVisit && c.firstVisit.startsWith(ym)).length);
+            }
+            const maxMonthCount = Math.max(...monthCounts, 1);
+
+            // Service popularity
+            const svcMap = {};
+            allCustBookings.forEach(b => { svcMap[b.service] = (svcMap[b.service] || 0) + 1; });
+            const svcRanked = Object.entries(svcMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
+            const maxSvcCount = svcRanked.length > 0 ? Math.max(...svcRanked.map(s => s[1]), 1) : 1;
+
+            // Filtered/sorted customer list
+            const filtered = custData.filter(c => {
+              if (!customerSearch) return true;
+              const q = customerSearch.toLowerCase();
+              return c.name?.toLowerCase().includes(q) || c.user?.toLowerCase().includes(q);
+            });
+            const sorted = [...filtered].sort((a, b) => {
+              if (customerSort === 'revenue') return b.revenue - a.revenue;
+              if (customerSort === 'bookings') return b.bookings - a.bookings;
+              if (customerSort === 'recent') return (b.lastVisit || '').localeCompare(a.lastVisit || '');
+              if (customerSort === 'name') return (a.name || '').localeCompare(b.name || '');
+              return 0;
+            });
+
+            return (
             <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
-              <div className="section-header"><p className="section-label">REGISTERED</p><h2 className="section-heading">Customer Directory</h2></div>
+              <div className="section-header"><p className="section-label">INTELLIGENCE CENTER</p><h2 className="section-heading">Customer Analytics</h2></div>
+
               {customers.length === 0 ? (
                 <div className="empty-state"><div className="empty-icon"><UserIcon size={48} /></div><h3 className="empty-title">No Customers</h3><p>No customers registered yet.</p></div>
-              ) : (
-                <div className="customer-grid">
-                  {customers.map((c, i) => { const cb = bookingsState.filter(b => b.userId === c.user); return (
-                    <div key={i} className="customer-card"><div className="customer-avatar">{(c.name || '?')[0].toUpperCase()}</div>
-                      <div><div className="customer-name">{c.name}</div><div className="customer-role">@{c.user}</div></div>
-                      <div className="customer-stat"><strong>{cb.length}</strong><span>bookings</span></div></div>
-                  );})}
+              ) : (<>
+
+              {/* ── KPI Cards ── */}
+              <div className="ci-kpi-row">
+                <div className="ci-kpi-card">
+                  <div className="ci-kpi-icon"><UserIcon size={18} /></div>
+                  <div className="ci-kpi-label">Total Customers</div>
+                  <div className="ci-kpi-value">{totalCust}</div>
+                  <div className="ci-kpi-sub">{repeatCustomers} returning clients</div>
                 </div>
-              )}
+                <div className="ci-kpi-card">
+                  <div className="ci-kpi-icon"><ChartIcon size={18} /></div>
+                  <div className="ci-kpi-label">Avg. Spend / Customer</div>
+                  <div className="ci-kpi-value">₱{avgSpend.toLocaleString()}</div>
+                  <div className="ci-kpi-sub">Across {totalCust} customers</div>
+                </div>
+                <div className="ci-kpi-card">
+                  <div className="ci-kpi-icon"><SparklesIcon size={18} /></div>
+                  <div className="ci-kpi-label">Top Spender</div>
+                  <div className="ci-kpi-value" style={{ fontSize: 20 }}>{topSpender?.name?.split(' ')[0] || '—'}</div>
+                  <div className="ci-kpi-sub">₱{(topSpender?.revenue || 0).toLocaleString()} total</div>
+                </div>
+                <div className="ci-kpi-card">
+                  <div className="ci-kpi-icon"><CheckCircleIcon size={18} /></div>
+                  <div className="ci-kpi-label">Repeat Rate</div>
+                  <div className="ci-kpi-value">{repeatRate}%</div>
+                  <div className="ci-kpi-sub">{repeatCustomers} of {totalCust} customers</div>
+                </div>
+              </div>
+
+              {/* ── Charts Row 1: Revenue Bar + Status Donut ── */}
+              <div className="ci-charts-row">
+                <div className="ci-chart-card">
+                  <div className="ci-chart-title">Top Customer Revenue</div>
+                  {revenueRanked.map((c, i) => (
+                    <div key={i} className="ci-bar">
+                      <div className="ci-bar-label" title={c.name}>{c.name?.split(' ')[0]}</div>
+                      <div className="ci-bar-track">
+                        <div className="ci-bar-fill" style={{ width: `${(c.revenue / maxRevBar) * 100}%` }} />
+                      </div>
+                      <div className="ci-bar-val">₱{c.revenue.toLocaleString()}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="ci-chart-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div className="ci-chart-title" style={{ alignSelf: 'flex-start', width: '100%' }}>Booking Status Breakdown</div>
+                  <div style={{ position: 'relative', width: 180, height: 180, margin: '10px 0 16px' }}>
+                    <svg width="180" height="180" viewBox="0 0 180 180">
+                      {(() => {
+                        let cumAngle = -90;
+                        return Object.entries(statusCounts).filter(([, v]) => v > 0).map(([status, count], idx) => {
+                          const pct = totalStatB > 0 ? count / totalStatB : 0;
+                          const angle = pct * 360;
+                          const startAngle = cumAngle;
+                          cumAngle += angle;
+                          const endAngle = cumAngle;
+                          const largeArc = angle > 180 ? 1 : 0;
+                          const r = 70;
+                          const cx = 90, cy = 90;
+                          const x1 = cx + r * Math.cos((startAngle * Math.PI) / 180);
+                          const y1 = cy + r * Math.sin((startAngle * Math.PI) / 180);
+                          const x2 = cx + r * Math.cos((endAngle * Math.PI) / 180);
+                          const y2 = cy + r * Math.sin((endAngle * Math.PI) / 180);
+                          return (
+                            <path key={idx} d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`}
+                              fill={statusColors[status]} opacity="0.85" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5" />
+                          );
+                        });
+                      })()}
+                      <circle cx="90" cy="90" r="42" fill="rgba(15,15,15,0.95)" />
+                      <text x="90" y="85" textAnchor="middle" fill="#fff" fontSize="22" fontWeight="800" fontFamily="var(--font-display)">{totalStatB}</text>
+                      <text x="90" y="102" textAnchor="middle" fill="var(--text-dim)" fontSize="9" fontWeight="700" letterSpacing="1" textTransform="uppercase">BOOKINGS</text>
+                    </svg>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px', justifyContent: 'center' }}>
+                    {Object.entries(statusCounts).map(([status, count]) => (
+                      <div key={status} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: statusColors[status], display: 'inline-block' }} />
+                        <span style={{ color: 'var(--text-dim)' }}>{status}</span>
+                        <span style={{ color: 'var(--text-white)', fontWeight: 600 }}>{count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Charts Row 2: Acquisition Trend + Service Popularity ── */}
+              <div className="ci-charts-row-2">
+                <div className="ci-chart-card">
+                  <div className="ci-chart-title">Monthly New Customers (6 months)</div>
+                  <svg width="100%" height="140" viewBox="0 0 320 140" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                      <linearGradient id="acqGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--gold)" stopOpacity="0.3" />
+                        <stop offset="100%" stopColor="var(--gold)" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                    {/* Grid lines */}
+                    {[0, 1, 2, 3].map(i => (
+                      <line key={i} x1="30" y1={20 + i * 30} x2="310" y2={20 + i * 30} stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+                    ))}
+                    {/* Area fill */}
+                    {(() => {
+                      const pts = monthCounts.map((v, i) => ({ x: 30 + (i * 280) / 5, y: 110 - (v / maxMonthCount) * 85 }));
+                      const pathD = `M ${pts[0].x} 110 ` + pts.map(p => `L ${p.x} ${p.y}`).join(' ') + ` L ${pts[pts.length - 1].x} 110 Z`;
+                      const lineD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+                      return (<>
+                        <path d={pathD} fill="url(#acqGrad)" />
+                        <path d={lineD} fill="none" stroke="var(--gold)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                        {pts.map((p, i) => (
+                          <g key={i}>
+                            <circle cx={p.x} cy={p.y} r="4" fill="var(--gold)" stroke="rgba(15,15,15,0.9)" strokeWidth="2" />
+                            <text x={p.x} y={p.y - 10} textAnchor="middle" fill="var(--text-white)" fontSize="10" fontWeight="700">{monthCounts[i]}</text>
+                          </g>
+                        ))}
+                      </>);
+                    })()}
+                    {/* Month labels */}
+                    {monthLabels.map((m, i) => (
+                      <text key={i} x={30 + (i * 280) / 5} y="130" textAnchor="middle" fill="var(--text-dim)" fontSize="9" fontWeight="600">{m}</text>
+                    ))}
+                  </svg>
+                </div>
+                <div className="ci-chart-card">
+                  <div className="ci-chart-title">Most Popular Services</div>
+                  {svcRanked.map(([svc, count], i) => (
+                    <div key={i} className="ci-bar">
+                      <div className="ci-bar-label" title={svc}>{svc.length > 12 ? svc.slice(0, 12) + '…' : svc}</div>
+                      <div className="ci-bar-track">
+                        <div className="ci-bar-fill ci-svc-bar-fill" style={{ width: `${(count / maxSvcCount) * 100}%` }} />
+                      </div>
+                      <div className="ci-bar-val">{count} bookings</div>
+                    </div>
+                  ))}
+                  {svcRanked.length === 0 && <p style={{ color: 'var(--text-dim)', fontSize: 12 }}>No service data yet.</p>}
+                </div>
+              </div>
+
+              {/* ── Customer Data Table ── */}
+              <div className="ci-chart-card" style={{ marginBottom: 0 }}>
+                <div className="ci-chart-title">Customer Directory</div>
+                <div className="ci-table-header">
+                  <div className="ci-search-wrap">
+                    <SearchIcon size={14} />
+                    <input
+                      className="ci-search"
+                      placeholder="Search by name or username…"
+                      value={customerSearch}
+                      onChange={e => setCustomerSearch(e.target.value)}
+                    />
+                  </div>
+                  {['revenue', 'bookings', 'recent', 'name'].map(s => (
+                    <button key={s} className={`ci-sort-btn ${customerSort === s ? 'active' : ''}`} onClick={() => setCustomerSort(s)}>
+                      {s === 'revenue' ? '₱ Revenue' : s === 'bookings' ? '# Bookings' : s === 'recent' ? 'Recent' : 'A-Z'}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="ci-table">
+                    <thead>
+                      <tr>
+                        <th>Customer</th>
+                        <th>Bookings</th>
+                        <th>Completed</th>
+                        <th>Revenue</th>
+                        <th>Last Visit</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sorted.map((c, i) => {
+                        const isActive = c.lastVisit && ((new Date() - new Date(c.lastVisit)) / (1000 * 60 * 60 * 24)) < 60;
+                        const isExpanded = expandedCustomer === c.user;
+                        return (
+                          <React.Fragment key={i}>
+                            <tr onClick={() => setExpandedCustomer(isExpanded ? null : c.user)}>
+                              <td>
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                  <span className="ci-table-avatar">{(c.name || '?')[0].toUpperCase()}</span>
+                                  <div>
+                                    <div className="ci-table-name">{c.name}</div>
+                                    <div className="ci-table-user">@{c.user}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td style={{ fontWeight: 600 }}>{c.bookings}</td>
+                              <td>{c.completed}</td>
+                              <td style={{ fontWeight: 700, color: 'var(--gold)' }}>₱{c.revenue.toLocaleString()}</td>
+                              <td>{c.lastVisit || '—'}</td>
+                              <td><span className={`ci-tag ${isActive ? 'ci-tag-active' : 'ci-tag-inactive'}`}>{isActive ? 'Active' : 'Inactive'}</span></td>
+                            </tr>
+                            {isExpanded && (
+                              <tr className="ci-expand">
+                                <td colSpan="6">
+                                  <div style={{ marginBottom: 8, fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Recent Bookings</div>
+                                  <div className="ci-expand-grid">
+                                    {c.bookingsList.slice(-6).reverse().map((b, bi) => (
+                                      <div key={bi} className="ci-expand-item">
+                                        <span>{b.date} · {b.service}</span>
+                                        <span style={{ color: b.status === 'Completed' ? '#4ade80' : b.status === 'Pending' ? '#c9a84c' : b.status === 'Approved' ? '#60a5fa' : '#f87171' }}>
+                                          {b.status} {b.paidAmount ? `· ₱${b.paidAmount.toLocaleString()}` : ''}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  {c.bookingsList.length > 6 && (
+                                    <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 8 }}>…and {c.bookingsList.length - 6} more bookings</p>
+                                  )}
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {sorted.length === 0 && customerSearch && (
+                  <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-dim)' }}>
+                    <SearchIcon size={32} style={{ opacity: 0.3, marginBottom: 8 }} />
+                    <p>No customers match "{customerSearch}"</p>
+                  </div>
+                )}
+              </div>
+
+              </>)}
             </section>
-          )}
+            );
+          })()}
 
           {/* ══════ SERVICES ══════ */}
           {activeTab === 'services' && (() => {
