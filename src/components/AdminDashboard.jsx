@@ -473,8 +473,25 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const approved = bookingsState.filter(b => b.status === 'Approved').length;
   const completed = bookingsState.filter(b => b.status === 'Completed').length;
   const filtered = statusFilter === 'all' ? bookingsState : bookingsState.filter(b => b.status.toLowerCase() === statusFilter);
-  const allCustomers = getUsers().filter(u => u.role === 'customer');
-  const customers = allCustomers.filter(c => bookingsState.some(b => b.userId === c.user));
+  const allCustomers = React.useMemo(() => {
+    const raw = getUsers().filter(u => u.role === 'customer');
+    const seen = new Set();
+    const unique = [];
+    raw.forEach(u => {
+      if (u.user) {
+        const key = u.user.toLowerCase().trim();
+        if (!seen.has(key)) {
+          seen.add(key);
+          unique.push(u);
+        }
+      }
+    });
+    return unique;
+  }, [syncTick]);
+
+  const customers = React.useMemo(() => {
+    return allCustomers.filter(c => bookingsState.some(b => b.userId === c.user));
+  }, [allCustomers, bookingsState]);
 
   // Fix 3: Redefine Schedule tab counters
   const getLocalDateString = () => {
@@ -3446,7 +3463,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 <label>Link to Customer (Optional)</label>
                 <select value={walkInCustomerLink} onChange={e => setWalkInCustomerLink(e.target.value)}>
                   <option value="">-- Don't Link --</option>
-                  {getUsers().filter(u => u.role === 'customer').map(u => (
+                  {allCustomers.map(u => (
                     <option key={u.user} value={u.user}>{u.name} (@{u.user})</option>
                   ))}
                 </select>
