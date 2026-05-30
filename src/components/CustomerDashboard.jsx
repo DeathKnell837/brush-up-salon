@@ -18,6 +18,28 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
   const [announcements, setAnnouncements] = useState([]);
   const [reviewBooking, setReviewBooking] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [readIds, setReadIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`read_announcements_${currentUser?.user}`) || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const unreadAnnouncements = announcements.filter(a => !readIds.includes(a.id));
+
+  const handleDismiss = (id) => {
+    const updated = [...readIds, id];
+    setReadIds(updated);
+    localStorage.setItem(`read_announcements_${currentUser?.user}`, JSON.stringify(updated));
+  };
+
+  const handleMarkAllRead = () => {
+    const allIds = announcements.map(a => a.id);
+    const updated = Array.from(new Set([...readIds, ...allIds]));
+    setReadIds(updated);
+    localStorage.setItem(`read_announcements_${currentUser?.user}`, JSON.stringify(updated));
+  };
   
   const loadData = useCallback(() => {
     setAnnouncements(getAnnouncements());
@@ -150,7 +172,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
               }}
             >
               <BellIcon size={18} />
-              {announcements.length > 0 && (
+              {unreadAnnouncements.length > 0 && (
                 <span style={{
                   position: 'absolute',
                   top: '-2px',
@@ -167,7 +189,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                   justifyContent: 'center',
                   boxShadow: '0 0 10px rgba(201, 168, 76, 0.4)'
                 }}>
-                  {announcements.length}
+                  {unreadAnnouncements.length}
                 </span>
               )}
             </button>
@@ -194,20 +216,32 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '8px' }}>
                   <h3 style={{ margin: 0, fontSize: '14px', color: 'var(--gold)', fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.5px' }}>Broadcasts & Notices</h3>
-                  <button 
-                    onClick={() => setShowNotifications(false)} 
-                    style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}
-                    onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim)'}
-                  >
-                    Close
-                  </button>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    {unreadAnnouncements.length > 0 && (
+                      <button 
+                        onClick={handleMarkAllRead} 
+                        style={{ background: 'none', border: 'none', color: 'var(--gold)', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}
+                        onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+                        onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
+                      >
+                        Dismiss All
+                      </button>
+                    )}
+                    <button 
+                      onClick={() => setShowNotifications(false)} 
+                      style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+                      onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim)'}
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {announcements.length === 0 ? (
+                  {unreadAnnouncements.length === 0 ? (
                     <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-dim)', fontSize: '13px' }}>No active broadcasts.</div>
                   ) : (
-                    announcements.map(a => (
+                    unreadAnnouncements.map(a => (
                       <div key={a.id} style={{
                         background: 'rgba(255,255,255,0.02)',
                         border: '1px solid rgba(255, 255, 255, 0.04)',
@@ -220,19 +254,29 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                       }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '12px', fontWeight: '700', color: '#fff' }}>{a.title}</span>
-                          <span style={{
-                            fontSize: '7px',
-                            textTransform: 'uppercase',
-                            fontWeight: '800',
-                            letterSpacing: '0.5px',
-                            background: a.type === 'promo' ? 'rgba(201, 168, 76, 0.15)' : a.type === 'warning' ? 'rgba(248, 113, 113, 0.15)' : 'rgba(56, 189, 248, 0.15)',
-                            color: a.type === 'promo' ? 'var(--gold)' : a.type === 'warning' ? '#f87171' : '#38bdf8',
-                            padding: '1px 4px',
-                            borderRadius: '4px',
-                            border: `1px solid ${a.type === 'promo' ? 'rgba(201,168,76,0.1)' : a.type === 'warning' ? 'rgba(248,113,113,0.1)' : 'rgba(56,189,248,0.1)'}`
-                          }}>
-                            {a.type === 'promo' ? 'Promo' : a.type === 'warning' ? 'Notice' : 'Update'}
-                          </span>
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                            <span style={{
+                              fontSize: '7px',
+                              textTransform: 'uppercase',
+                              fontWeight: '800',
+                              letterSpacing: '0.5px',
+                              background: a.type === 'promo' ? 'rgba(201, 168, 76, 0.15)' : a.type === 'warning' ? 'rgba(248, 113, 113, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+                              color: a.type === 'promo' ? 'var(--gold)' : a.type === 'warning' ? '#f87171' : '#38bdf8',
+                              padding: '1px 4px',
+                              borderRadius: '4px',
+                              border: `1px solid ${a.type === 'promo' ? 'rgba(201,168,76,0.1)' : a.type === 'warning' ? 'rgba(248,113,113,0.1)' : 'rgba(56,189,248,0.1)'}`
+                            }}>
+                              {a.type === 'promo' ? 'Promo' : a.type === 'warning' ? 'Notice' : 'Update'}
+                            </span>
+                            <button 
+                              onClick={() => handleDismiss(a.id)}
+                              style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '9px', padding: 0 }}
+                              onMouseEnter={e => e.currentTarget.style.color = '#ff6b6b'}
+                              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim)'}
+                            >
+                              Dismiss
+                            </button>
+                          </div>
                         </div>
                         <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.4', whiteSpace: 'normal', wordBreak: 'break-word' }}>{a.message}</p>
                         <span style={{ fontSize: '8px', color: 'var(--text-dim)', alignSelf: 'flex-end', marginTop: '2px' }}>
