@@ -29,9 +29,11 @@ A premium, full-stack React application designed for a multi-branch salon networ
 - **Service Menu Editor** — add, remove, and update services and pricing in real-time.
 - **Staff Management** — manage the salon's team roster.
 - **Promotions** — set promotional banners visible to customers on the salon detail page.
+- **Advanced Financial Reports** — Renders real-time statistics cards (Total Revenue, Period Revenue, Average Ticketing, Total Bookings) with an interactive **Timeframe Selector (Weekly, Monthly, Yearly)**. Displays horizontal progress bars for service sales distribution, and a custom neon glowing SVG trend area chart dynamically updated per interval.
 
 #### 3. Super Admin Dashboard (Network HQ)
 - **Network Analytics** — total revenue, completed/pending counts, customer totals, and per-branch revenue bars.
+- **Salon Performance Leaderboard** — A premium multi-salon ranked comparison matrix presenting total revenue, completed bookings, top-performing services, weekly trend arrows, and active/inactive status badges (pulsing red warning dots for salons with zero bookings in 3+ days, gold highlighted borders for top-performing branches), complete with interactive sortable column headers.
 - **All Transactions** — a unified view of every booking across the network with CSV export.
 - **Salon Management** — register new salons with auto-provisioned Firebase Auth admin accounts (uses a secondary Firebase app to avoid signing out the current user). Remove salons and their admins.
 - **Admin Access Control** — view all administrators, reset passwords, and revoke access.
