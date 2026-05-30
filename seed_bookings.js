@@ -102,6 +102,20 @@ const customerNames = [
   'Frank', 'Gabriella', 'Henry', 'Isabella', 'Jack', 'Katherine', 'Leo', 'Mia', 'Nathan', 'Olivia', 'Paul', 'Rose'
 ];
 
+const mockCustomers = [
+  { uid: 'rogie123', name: 'Rogie P. Bacanto', user: 'rogie123', role: 'customer' },
+  { uid: 'samantha123', name: 'Samantha Miller', user: 'samantha123', role: 'customer' },
+  { uid: 'chloe123', name: 'Chloe Watson', user: 'chloe123', role: 'customer' },
+  { uid: 'fiona123', name: 'Fiona Gallagher', user: 'fiona123', role: 'customer' },
+  { uid: 'bella123', name: 'Bella Swan', user: 'bella123', role: 'customer' },
+  { uid: 'emma123', name: 'Emma Watson', user: 'emma123', role: 'customer' },
+  { uid: 'hannah123', name: 'Hannah Baker', user: 'hannah123', role: 'customer' },
+  { uid: 'julia123', name: 'Julia Roberts', user: 'julia123', role: 'customer' },
+  { uid: 'lily123', name: 'Lily Collins', user: 'lily123', role: 'customer' },
+  { uid: 'nora123', name: 'Nora Jones', user: 'nora123', role: 'customer' },
+  { uid: 'sophia123', name: 'Sophia Loren', user: 'sophia123', role: 'customer' }
+];
+
 function getRandomElement(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -115,7 +129,26 @@ function getRandomInt(min, max) {
 function generateBooking(id, salonId, date, status = 'Completed') {
   const services = salonServices[salonId];
   const serviceObj = getRandomElement(services);
-  const customer = getRandomElement(customerNames) + (Math.random() > 0.75 ? ' (Walk-in)' : '');
+  
+  const isWalkIn = Math.random() > 0.8; // 20% chance of walk-in
+  let customerName = "";
+  let userId = "";
+
+  if (isWalkIn) {
+    customerName = getRandomElement(customerNames) + ' (Walk-in)';
+    userId = 'walk-in';
+  } else {
+    // 30% chance for rogie, 70% split among others
+    let customerObj;
+    if (Math.random() < 0.3) {
+      customerObj = mockCustomers[0]; // Rogie P. Bacanto
+    } else {
+      customerObj = getRandomElement(mockCustomers.slice(1));
+    }
+    customerName = customerObj.name;
+    userId = customerObj.user;
+  }
+
   const staff = getRandomElement(staffNames);
   
   const hour = String(getRandomInt(9, 18)).padStart(2, '0');
@@ -125,8 +158,8 @@ function generateBooking(id, salonId, date, status = 'Completed') {
   return {
     id: id,
     salonId: salonId,
-    userId: customer.includes('Walk-in') ? 'walk-in' : 'rogie123',
-    customer: customer,
+    userId: userId,
+    customer: customerName,
     contact: Math.random() > 0.5 ? `09${getRandomInt(10, 99)}-${getRandomInt(100, 999)}-${getRandomInt(1000, 9999)}` : 'N/A',
     service: serviceObj.name,
     servicePrice: serviceObj.price,
@@ -351,7 +384,14 @@ async function seed() {
     console.log(`   👉 Committed final batch. Total: ${batchCount}`);
   }
 
-  // 📢 4. Seed Announcements
+  // 📢 4. Seed Customer Users
+  console.log("🌱 Seeding mock customer users into database...");
+  for (const cust of mockCustomers) {
+    await setDoc(doc(db, "users", cust.uid), cust);
+  }
+  console.log(`   👉 Seeded ${mockCustomers.length} Customer users.`);
+
+  // 📢 5. Seed Announcements
   console.log("🌱 Seeding realistic announcements...");
   const announcementsList = [
     {

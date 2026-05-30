@@ -54,6 +54,46 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
   const allBookings = getBookings();
   const bookings = allBookings.filter(b => b.userId === currentUser?.user);
 
+  // Calculate customer statistics
+  const completedBookings = bookings.filter(b => b.status === 'Completed');
+  const activeBookings = bookings.filter(b => b.status === 'Approved' || b.status === 'Pending');
+  const cancelledBookings = bookings.filter(b => b.status === 'Cancelled' || b.status === 'Rejected');
+
+  const totalSpent = completedBookings.reduce((sum, b) => {
+    if (b.paidAmount !== undefined && b.paidAmount !== null) return sum + b.paidAmount;
+    if (b.servicePrice !== undefined && b.servicePrice !== null) return sum + b.servicePrice;
+    return sum;
+  }, 0);
+
+  // Favorite service
+  const serviceCounts = {};
+  bookings.forEach(b => {
+    serviceCounts[b.service] = (serviceCounts[b.service] || 0) + 1;
+  });
+  let favoriteService = 'N/A';
+  let maxSvcCount = 0;
+  Object.entries(serviceCounts).forEach(([svc, count]) => {
+    if (count > maxSvcCount) {
+      maxSvcCount = count;
+      favoriteService = svc;
+    }
+  });
+
+  // Favorite salon
+  const salonCounts = {};
+  bookings.forEach(b => {
+    salonCounts[b.salonId] = (salonCounts[b.salonId] || 0) + 1;
+  });
+  let favoriteSalonName = 'N/A';
+  let maxSalonCount = 0;
+  Object.entries(salonCounts).forEach(([sid, count]) => {
+    if (count > maxSalonCount) {
+      maxSalonCount = count;
+      const matched = salons.find(s => s.id === sid);
+      favoriteSalonName = matched ? matched.name : 'Unknown';
+    }
+  });
+
   const bookingStatusesRef = useRef({});
 
   useEffect(() => {
@@ -455,7 +495,77 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                 </button>
               </div>
             ) : (
-              <div className="history-grid">
+              <>
+                {/* Visual Analytics / Stats Panel */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <span style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>Total Bookings</span>
+                    <span style={{ fontSize: '24px', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-display)' }}>{bookings.length}</span>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <span style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>Total Investment</span>
+                    <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--gold)', fontFamily: 'var(--font-display)' }}>₱{totalSpent.toLocaleString()}</span>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+                    <span style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>Favorite Salon</span>
+                    <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={favoriteSalonName}>{favoriteSalonName}</span>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+                    <span style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>Preferred Service</span>
+                    <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={favoriteService}>{favoriteService}</span>
+                  </div>
+                </div>
+
+                {/* Combined Progress Split Bar Graph */}
+                <div style={{ background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.01), rgba(255, 255, 255, 0.02))', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '20px', marginBottom: '32px', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                    <h3 style={{ fontSize: '12px', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.8px', margin: 0, textTransform: 'uppercase' }}>Your Booking Journey Split</h3>
+                    <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 500 }}>Completed ({completedBookings.length}) · Active ({activeBookings.length}) · Cancelled ({cancelledBookings.length})</span>
+                  </div>
+                  
+                  {/* Glowing progress bar segments */}
+                  <div style={{ height: '10px', borderRadius: '5px', background: 'rgba(255,255,255,0.04)', display: 'flex', overflow: 'hidden', marginBottom: '16px' }}>
+                    {completedBookings.length > 0 && (
+                      <div style={{
+                        width: `${(completedBookings.length / bookings.length) * 100}%`,
+                        background: 'var(--gold)',
+                        boxShadow: '0 0 10px rgba(201, 168, 76, 0.4)'
+                      }} />
+                    )}
+                    {activeBookings.length > 0 && (
+                      <div style={{
+                        width: `${(activeBookings.length / bookings.length) * 100}%`,
+                        background: '#38bdf8',
+                        boxShadow: '0 0 10px rgba(56, 189, 248, 0.4)'
+                      }} />
+                    )}
+                    {cancelledBookings.length > 0 && (
+                      <div style={{
+                        width: `${(cancelledBookings.length / bookings.length) * 100}%`,
+                        background: '#f87171',
+                        boxShadow: '0 0 10px rgba(248, 113, 113, 0.4)'
+                      }} />
+                    )}
+                  </div>
+
+                  {/* Colored Legend Labels */}
+                  <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--gold)', boxShadow: '0 0 6px var(--gold)' }} />
+                      <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 500 }}>Completed ({Math.round((completedBookings.length / bookings.length) * 100) || 0}%)</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 6px #38bdf8' }} />
+                      <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 500 }}>Active & Upcoming ({Math.round((activeBookings.length / bookings.length) * 100) || 0}%)</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f87171', boxShadow: '0 0 6px #f87171' }} />
+                      <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 500 }}>Cancelled & Rejected ({Math.round((cancelledBookings.length / bookings.length) * 100) || 0}%)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="history-grid">
                 {bookings.map((b, i) => {
                   const salon = salons.find(s => s.id === b.salonId);
                   return (
@@ -498,6 +608,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                   );
                 })}
               </div>
+              </>
             )}
           </section>
         </div>
