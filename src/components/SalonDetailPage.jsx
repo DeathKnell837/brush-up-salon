@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { getBookings, setBookings } from '../utils/storage';
 import BrushUpLogo from './BrushUpLogo';
 import {
-  ScissorsIcon, CalendarIcon, ClockIcon, CloseIcon, StoreIcon
+  ScissorsIcon, CalendarIcon, CloseIcon, StoreIcon
 } from './Icons';
 
 function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, showToast }) {
@@ -59,9 +59,43 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
       return;
     }
     const bookings = getBookings();
+    
+    // Booking conflict check
+    const staffNames = (salon.staff || []).map(member => typeof member === 'string' ? member : member.name);
+    const activeBookings = bookings.filter(b => 
+      b.salonId === salon.id && 
+      b.date === bookDate && 
+      b.time === bookTime && 
+      (b.status === 'Pending' || b.status === 'Approved')
+    );
+    
+    if (staffNames.length > 0) {
+      const chosenStaff = bookStaff || 'Any';
+      if (chosenStaff !== 'Any') {
+        const isStaffBusy = activeBookings.some(b => b.staff === chosenStaff);
+        if (isStaffBusy) {
+          showToast(`This time slot is already booked for ${chosenStaff}. Please choose another time.`);
+          return;
+        }
+      }
+      if (activeBookings.length >= staffNames.length) {
+        showToast(chosenStaff === 'Any' 
+          ? 'All staff members are fully booked for this time slot.' 
+          : `This time slot is already booked for ${chosenStaff}. Please choose another time.`
+        );
+        return;
+      }
+    }
+
     const servicePriceLabel = selectedService.price || 'PHP 0';
-    const cleanPrice = servicePriceLabel.replace(/[^\d.-]/g, '');
-    const servicePrice = parseFloat(cleanPrice) || 0;
+    let servicePrice = 0;
+    if (selectedService.pricingTable) {
+      const values = Object.values(selectedService.pricingTable);
+      servicePrice = Math.min(...values);
+    } else {
+      const cleanPrice = servicePriceLabel.replace(/[^\d.-]/g, '');
+      servicePrice = parseFloat(cleanPrice) || 0;
+    }
 
     bookings.push({
       id: Date.now(),
@@ -200,12 +234,15 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
                 <h2 className="section-heading">Staff</h2>
               </div>
               <div className="sdp-staff-grid">
-                {salon.staff.map(name => (
-                  <div key={name} className="sdp-staff-card">
-                    <div className="sdp-staff-avatar">{name[0]}</div>
-                    <span className="sdp-staff-name">{name}</span>
-                  </div>
-                ))}
+                {salon.staff.map(member => {
+                  const name = typeof member === 'string' ? member : member.name;
+                  return (
+                    <div key={name} className="sdp-staff-card">
+                      <div className="sdp-staff-avatar">{name[0]}</div>
+                      <span className="sdp-staff-name">{name}</span>
+                    </div>
+                  );
+                })}
               </div>
             </section>
           )}
@@ -286,7 +323,10 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
                       <label>Preferred Staff</label>
                       <select value={bookStaff} onChange={e => setBookStaff(e.target.value)}>
                         <option value="">Any Available</option>
-                        {salon.staff.map(s => <option key={s} value={s}>{s}</option>)}
+                        {salon.staff.map(member => {
+                          const name = typeof member === 'string' ? member : member.name;
+                          return <option key={name} value={name}>{name}</option>;
+                        })}
                       </select>
                     </div>
                   )}

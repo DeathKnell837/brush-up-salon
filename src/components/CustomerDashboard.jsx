@@ -29,23 +29,29 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
   const allBookings = getBookings();
   const bookings = allBookings.filter(b => b.userId === currentUser?.user);
 
-  const prevBookingsRef = useRef([]);
+  const bookingStatusesRef = useRef({});
 
   useEffect(() => {
-    if (prevBookingsRef.current.length > 0 && showToast) {
-      bookings.forEach(curr => {
-        const prev = prevBookingsRef.current.find(b => b.id === curr.id);
-        if (prev && prev.status === 'Pending' && curr.status !== 'Pending') {
-          if (curr.status === 'Approved') {
-            showToast(`Your booking for ${curr.service} has been approved! ✅`);
-          } else if (curr.status === 'Rejected') {
-            showToast(`Your booking for ${curr.service} was rejected. ❌`);
-          }
+    if (!currentUser?.user || !showToast) return;
+    const currentStatuses = bookingStatusesRef.current;
+    
+    // First time initializing the status map, just load the current statuses
+    const isFirstLoad = Object.keys(currentStatuses).length === 0;
+
+    bookings.forEach(curr => {
+      const prevStatus = currentStatuses[curr.id];
+      if (!isFirstLoad && prevStatus === 'Pending' && curr.status !== 'Pending') {
+        if (curr.status === 'Approved') {
+          showToast(`Your booking for ${curr.service} has been approved!`);
+        } else if (curr.status === 'Rejected') {
+          showToast(`Your booking for ${curr.service} was rejected.`);
         }
-      });
-    }
-    prevBookingsRef.current = bookings;
-  }, [syncTick, bookings, showToast]);
+      }
+      currentStatuses[curr.id] = curr.status;
+    });
+
+    bookingStatusesRef.current = currentStatuses;
+  }, [syncTick, bookings, showToast, currentUser]);
   const handleCancelBooking = (id) => {
     if (!window.confirm("Are you sure you want to cancel this appointment?")) return;
     const allBookings = getBookings();

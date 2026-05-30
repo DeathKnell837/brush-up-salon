@@ -53,6 +53,16 @@ A floating chatbot powered by **Groq (Llama 3.1 8B)** with **Gemini 2.0 Flash Li
 - Super Admin: 3-day zero-booking alerts for underperforming branches.
 - Customer: 1-hour appointment reminders.
 
+### 🔮 Oracle AI Predictive Financial Audit
+A powerful executive analytics suite designed for network managers to assess per-branch business health and forecast operational longevity:
+- **Interactive Risk Index Gauge:** Evaluates salon status on an enlarged 0-100% risk index with double-ring glowing indicators that engage a critical pulsing red warning loop if cash runways drop below safe thresholds.
+- **Glassmorphic Financial Metrics:** Tracks Operational Cash Runway, Monthly Net Surplus/Deficit, and Break-Even Targets in real-time with status-aware color coding (emerald green for healthy surplus, neon red for operational deficit, white for neutral).
+- **Oracle AI Turnaround Report:** Synthesizes overhead coefficients, roster utilization indexes, and transaction histories to compile detailed operational suggestions and predictive risk warnings, cleanly formatted as a markdown document inside a balanced, centered 2-column modal separated by an elegant gold vertical divider.
+
+### 👑 Hardened System Security & Live Toasts
+- **Client-Proof Compliance Logs:** Hardened Firestore database rules for `/auditLogs` to explicitly block all client-side writes, locking log creation strictly to secure, authorized system SDK servers to safeguard system logs from tampering.
+- **Real-time Status Toasts:** Integrated snap listener hooks that instantly pop elegant, emoji-free toast notifications on customer dashboards when booking states transition to Approved or Rejected.
+
 ### 🎨 Premium UI/UX
 - **Dark Theme** with gold accent typography (`Playfair Display` + `Montserrat` from Google Fonts).
 - **Glassmorphism** cards with `backdrop-filter: blur()` and gradient overlays.

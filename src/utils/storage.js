@@ -47,10 +47,12 @@ export const setAnnouncements = (data) => {
 export const getAuditLogs = () => storage.get('luxuryAuditLogs', []);
 export const logAuditAction = (user, action, details) => {
   const logs = getAuditLogs();
+  const uid = auth.currentUser?.uid || 'system';
   const log = {
     id: Date.now(),
     timestamp: new Date().toISOString(),
     user: user || 'system',
+    uid,
     action,
     details
   };
@@ -97,7 +99,7 @@ export const setSalons = (salons) => {
 
 // ─── Default admin accounts (seeded on first load) ───
 const DEFAULT_ADMINS = [
-  { name: 'Super Admin', user: 'superadmin', pass: null, rawPass: 'admin123', role: 'superadmin', salonId: 'all' },
+  { name: 'Super Admin', user: 'superadmin', pass: null, rawPass: 'admin123', role: 'admin', salonId: 'all' },
   { name: 'Elegant Admin', user: 'elegantadmin', pass: null, rawPass: 'admin123', role: 'admin', salonId: 'elegant' },
   { name: 'Karen Green Admin', user: 'kareenadmin', pass: null, rawPass: 'admin123', role: 'admin', salonId: 'karen-green' },
   { name: 'Pretty Aspects Admin', user: 'prettyadmin', pass: null, rawPass: 'admin123', role: 'admin', salonId: 'pretty-aspects' },
@@ -109,7 +111,7 @@ const DEFAULT_ADMINS = [
 
 // ─── Seed admin accounts + salons into localStorage on first load ───
 export const seedAdminAccounts = async () => {
-  const version = 'v12_staff_update'; // Bump for updated salon menus
+  const version = 'v13_predictive_analytics_update'; // Bump for predictive analytics cost fields
   const seededVersion = storage.get('luxurySeedVersion', '');
   
   if (seededVersion === version) return;
@@ -155,7 +157,12 @@ export const seedAdminAccounts = async () => {
   setUsers(users);
 
   const { SALON_DATA } = require('../constants/salonData');
-  setSalons(SALON_DATA);
+  const enrichedSalons = SALON_DATA.map(s => ({
+    ...s,
+    fixedOverhead: s.id === 'sir-james' || s.id === 'elegant' ? 65000 : 45000,
+    operatingCapital: 150000
+  }));
+  setSalons(enrichedSalons);
   
   // Also migrate existing bookings and announcements to Firestore
   const bookings = getBookings();

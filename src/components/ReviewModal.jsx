@@ -17,9 +17,18 @@ export default function ReviewModal({ booking, salonName, onClose, onSubmit }) {
 
   return (
     <div className="modal" onClick={onClose}>
-      <div className="modal-content" style={{ maxWidth: 450, padding: 0 }} onClick={e => e.stopPropagation()}>
+      <div className="modal-content" style={{ 
+        maxWidth: 450, 
+        padding: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gridTemplateColumns: 'none', /* Bypasses App.css grid layout */
+        background: '#0e1118',
+        border: '1px solid rgba(201, 168, 76, 0.3)',
+        boxShadow: '0 24px 48px rgba(0, 0, 0, 0.6)'
+      }} onClick={e => e.stopPropagation()}>
         <div style={{ padding: '24px 30px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: 18, color: 'var(--text-white)', margin: 0, fontFamily: 'var(--font-display)' }}>Rate Your Experience</h2>
+          <h2 style={{ fontSize: 18, color: 'var(--text-white)', margin: 0, fontFamily: 'var(--font-display)', letterSpacing: '0.3px' }}>Rate Your Experience</h2>
           <button className="close-btn" onClick={onClose}><CloseIcon size={20} /></button>
         </div>
         
@@ -55,7 +64,41 @@ export default function ReviewModal({ booking, salonName, onClose, onSubmit }) {
             />
           </div>
           
-          <button type="submit" className="btn" style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }} disabled={rating < 1}>
+          <button 
+            type="submit" 
+            className="btn" 
+            style={{ 
+              width: '100%', 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              background: rating < 1 ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)',
+              border: 'none',
+              color: rating < 1 ? 'var(--text-dim)' : '#0e1118',
+              padding: '12px 20px',
+              borderRadius: '10px',
+              fontWeight: '700',
+              fontSize: '14px',
+              cursor: rating < 1 ? 'not-allowed' : 'pointer',
+              fontFamily: 'var(--font-body)',
+              transition: 'all 0.3s ease',
+              boxShadow: rating < 1 ? 'none' : '0 4px 12px rgba(201, 168, 76, 0.2)',
+              opacity: rating < 1 ? 0.6 : 1
+            }}
+            onMouseEnter={(e) => {
+              if (rating >= 1) {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 6px 18px rgba(201, 168, 76, 0.35)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (rating >= 1) {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(201, 168, 76, 0.2)';
+              }
+            }}
+            disabled={rating < 1}
+          >
             <CheckCircleIcon size={16} style={{ marginRight: 8 }} /> Submit Review
           </button>
         </form>

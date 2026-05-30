@@ -15,26 +15,17 @@ export default function Chatbot({ onOpenModal, currentUser, contextData, onCance
   const role = currentUser?.role || 'customer';
 
   const getInitialMessage = (r) => {
-    if (r === 'superadmin') {
+    if (r === 'admin' || r === 'superadmin') {
       const allBookings = getBookings();
-      const today = new Date().toISOString().split('T')[0];
-      const todayBookings = allBookings.filter(b => b.date === today);
-      const salons = getSalons();
-      const thisWeek = allBookings.filter(b => { const d = new Date(b.date); const now = new Date(); const diff = (now - d) / 86400000; return diff >= 0 && diff <= 7 && b.status === 'Completed'; });
-      const weekRevenue = thisWeek.reduce((sum, b) => {
-        if (b.servicePrice !== undefined && b.servicePrice !== null) return sum + b.servicePrice;
-        const s = salons.find(sl => sl.id === b.salonId);
-        const svc = s?.services.find(sv => sv.name === b.service);
-        return sum + (svc ? parseFloat(svc.price.replace(/[^0-9.]/g, '') || 0) : 0);
-      }, 0);
-      return { text: `**Network Command Center** — Today: **${todayBookings.length}** bookings across all shops. This week's revenue: **₱${weekRevenue.toLocaleString()}**. How can I assist?`, widget: 'MasterStats' };
-    }
-    if (r === 'admin') {
-      const bookings = getBookings().filter(b => b.salonId === currentUser?.salonId);
+      const bookings = allBookings.filter(b => b.salonId === currentUser?.salonId);
       const today = new Date().toISOString().split('T')[0];
       const todayB = bookings.filter(b => b.date === today);
       const pending = bookings.filter(b => b.status === 'Pending').length;
-      return { text: `Good day, Manager! You have **${todayB.length}** appointments today and **${pending}** pending approvals. How can I help?`, widget: 'AdminSchedule' };
+      const todayAllBookings = allBookings.filter(b => b.date === today);
+      return { 
+        text: `Good day, Manager! You have **${todayB.length}** appointments scheduled today at your branch (**${pending}** pending). Across the entire network, there are **${todayAllBookings.length}** bookings. How can I assist you with operations, predictive analytics, or financial turnaround strategies?`, 
+        widget: 'AdminSchedule' 
+      };
     }
     return { text: "Hello! Welcome to Brush Up. I'm your personal salon concierge. How can I help you today?", widget: 'CustomerShortcuts' };
   };
@@ -61,13 +52,13 @@ export default function Chatbot({ onOpenModal, currentUser, contextData, onCance
       const today = new Date().toISOString().split('T')[0];
       const nowH = new Date().getHours();
 
-      if (role === 'admin') {
+      if (role === 'admin' || role === 'superadmin') {
         // 1. Admin Cancellation Alert
         const myCancelled = allBookings.filter(b => b.salonId === currentUser?.salonId && b.status === 'Cancelled');
         myCancelled.forEach(b => {
           if (!alertedCancel.current.has(b.id)) {
             alertedCancel.current.add(b.id);
-            setMessages(prev => [...prev, { id: Date.now() + Math.random(), text: `⚠️ **Alert:** Customer **${b.customer}** just cancelled their ${b.service} appointment.`, isBot: true }]);
+            setMessages(prev => [...prev, { id: Date.now() + Math.random(), text: `**[Cancellation Alert]** Customer **${b.customer}** just cancelled their ${b.service} appointment.`, isBot: true }]);
             if (!isOpen) setIsOpen(true);
           }
         });
@@ -77,11 +68,11 @@ export default function Chatbot({ onOpenModal, currentUser, contextData, onCance
           morningAlertSent.current = true;
           const myToday = allBookings.filter(b => b.salonId === currentUser?.salonId && b.date === today && b.status === 'Approved');
           if (myToday.length > 0) {
-            setMessages(prev => [...prev, { id: Date.now() + Math.random(), text: `🌅 **Morning Reminder:** You have **${myToday.length}** approved appointments today.`, isBot: true }]);
+            setMessages(prev => [...prev, { id: Date.now() + Math.random(), text: `**[Morning Schedule]** You have **${myToday.length}** approved appointments today.`, isBot: true }]);
           }
         }
-      } else if (role === 'superadmin') {
-        // 3. Super Admin 3-day zero booking alert
+
+        // 3. Admin 3-day zero booking alert
         if (!zeroBookingsSent.current) {
           zeroBookingsSent.current = true;
           const salons = getSalons();
@@ -92,7 +83,7 @@ export default function Chatbot({ onOpenModal, currentUser, contextData, onCance
           const underperforming = salons.filter(s => !recentBookings.some(b => b.salonId === s.id));
           if (underperforming.length > 0) {
              const names = underperforming.map(s => s.name).join(', ');
-             setMessages(prev => [...prev, { id: Date.now() + Math.random(), text: `🚨 **Network Alert:** The following shops have had ZERO bookings in the last 3 days: **${names}**.`, isBot: true }]);
+             setMessages(prev => [...prev, { id: Date.now() + Math.random(), text: `**[Network Activity Alert]** The following shops have had zero bookings in the last 3 days: **${names}**.`, isBot: true }]);
              if (!isOpen) setIsOpen(true);
           }
         }
@@ -111,9 +102,9 @@ export default function Chatbot({ onOpenModal, currentUser, contextData, onCance
              const diffMins = (bookingTime - new Date()) / 60000;
              
              if (diffMins > 0 && diffMins <= 60) {
-               alertedReminder.current.add(b.id);
-               setMessages(prev => [...prev, { id: Date.now() + Math.random(), text: `⏰ **Reminder:** You have your ${b.service} appointment in less than 1 hour at ${b.time}. See you soon!`, isBot: true }]);
-               if (!isOpen) setIsOpen(true);
+                alertedReminder.current.add(b.id);
+                setMessages(prev => [...prev, { id: Date.now() + Math.random(), text: `**[Appointment Reminder]** You have your ${b.service} appointment in less than 1 hour at ${b.time}. See you soon!`, isBot: true }]);
+                if (!isOpen) setIsOpen(true);
              }
           }
         });
@@ -148,26 +139,18 @@ Services: ${s.services.map(sv => `${sv.name} (${sv.price})`).join(', ')}`).join(
 
       let systemPrompt = "";
       
-      if (role === 'superadmin') {
-        systemPrompt = `You are the Executive AI Assistant for the Super Admin of the Brush Up Salon Network. 
-Tone: Ultra-professional, highly analytical, strategic.
-Role: Advise on multi-shop scalability, network standardization, revenue growth, and high-level platform management.
-Rules: 
-1. Output max 3 concise sentences. 
-2. Use Markdown formatting for emphasis.
-3. Network context: ${salonContext}
-4. BROADCAST COMMAND: If the user asks you to send an announcement to all shops, you MUST include this exact string anywhere in your response:
-[BROADCAST|type|title|message]
-Where 'type' is one of: info, warning, promo.
-Example: [BROADCAST|promo|Holiday Special|All shops are running a 20% discount this week!]`;
-      } else if (role === 'admin') {
-        systemPrompt = `You are the Salon Operations AI Assistant for a Brush Up Salon Manager.
-Tone: Professional, supportive, operational.
-Role: Advise on daily scheduling, resolving customer disputes, optimizing local service menus, upselling treatments, and maximizing daily workflow.
+      if (role === 'admin' || role === 'superadmin') {
+        systemPrompt = `You are the Cooperative Business Intelligence & Operations AI Assistant for a Brush Up Salon Admin.
+Tone: Highly analytical, professional, supportive, strategic.
+Role: Advise on daily booking scheduling, staff rosters, resolving customer disputes, optimizing menus, upselling treatments, AND overall network performance, multi-shop analytics, cash flow runway, and insolvency turnaround strategies.
 Rules:
 1. Output max 3 concise sentences.
-2. Provide practical, actionable advice for a salon manager.
-3. You have access to this live salon data: ${contextData || 'No specific context provided.'}`;
+2. Address operational, cost-minimizing, and bankruptcy-preventing priorities.
+3. Network context: ${salonContext}. Live branch statistics: ${contextData || 'No specific branch context.'}
+4. BROADCAST COMMAND: If the user asks you to publish an announcement, you MUST include:
+[BROADCAST|type|title|message]
+Where 'type' is one of: info, warning, promo.
+5. If the user asks about financial audits or forecasts, explain you can analyze performance and include 'revenue' or 'performance' in your response.`;
       } else {
         systemPrompt = `You are the exclusive AI Concierge for Brush Up Luxury Salon Network. 
 You are speaking with ${currentUser?.name || 'a guest'}. Be friendly, professional, and speak with a luxurious tone.

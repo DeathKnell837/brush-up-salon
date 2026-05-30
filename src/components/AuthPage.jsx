@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { UserIcon, ShieldIcon, LockIcon } from './Icons';
 import BrushUpLogo from './BrushUpLogo';
 
-function AuthPage({ salons = [], onSignup, onLogin, onAdminLogin }) {
+function AuthPage({ salons = [], onSignup, onLogin, onAdminLogin, isLocked = false, lockCountdown = 0 }) {
   const [isLogin, setIsLogin] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loginUser, setLoginUser] = useState('');
@@ -14,8 +14,22 @@ function AuthPage({ salons = [], onSignup, onLogin, onAdminLogin }) {
   const totalSalons = salons.length;
   const totalServices = salons.reduce((acc, salon) => acc + (salon.services?.length || 0), 0);
 
+  const getPasswordFeedback = (password) => {
+    if (!password) return null;
+    const errors = [];
+    if (password.length < 8) errors.push("minimum 8 characters");
+    if (!/[A-Z]/.test(password)) errors.push("at least 1 uppercase letter");
+    if (!/[0-9]/.test(password)) errors.push("at least 1 number");
+    
+    if (errors.length > 0) {
+      return `Password must have: ${errors.join(', ')}.`;
+    }
+    return null;
+  };
+
   const handleLogin = (e) => {
     e.preventDefault();
+    if (isLocked) { alert(`Too many attempts. Try again in ${lockCountdown}s.`); return; }
     if (!loginUser || !loginPass) { alert('Enter username and password.'); return; }
     if (isAdmin) { onAdminLogin(loginUser, loginPass); }
     else { onLogin(loginUser, loginPass); }
@@ -24,6 +38,8 @@ function AuthPage({ salons = [], onSignup, onLogin, onAdminLogin }) {
   const handleSignup = (e) => {
     e.preventDefault();
     if (!signupName || !signupUser || !signupPass) { alert('Please complete all fields.'); return; }
+    const feedback = getPasswordFeedback(signupPass);
+    if (feedback) { alert(feedback); return; }
     onSignup(signupName, signupUser, signupPass);
   };
 
@@ -31,7 +47,7 @@ function AuthPage({ salons = [], onSignup, onLogin, onAdminLogin }) {
     <div className="auth-page">
       {/* Animated background */}
       <div className="auth-bg">
-        <div className="auth-gradient" />
+        <div className="auth-gradient" style={{ backgroundImage: "linear-gradient(to bottom, rgba(5, 5, 7, 0.84) 0%, rgba(9, 9, 12, 0.92) 100%), url('/images/auth-luxury-bg.png')" }} />
         <div className="auth-orb auth-orb-1" />
         <div className="auth-orb auth-orb-2" />
         <div className="auth-orb auth-orb-3" />
@@ -82,7 +98,14 @@ function AuthPage({ salons = [], onSignup, onLogin, onAdminLogin }) {
                 <input type="password" placeholder="Enter password"
                   value={loginPass} onChange={(e) => setLoginPass(e.target.value)} />
               </div>
-              <button type="submit" className="btn"><LockIcon size={15} /> Sign In</button>
+              <button type="submit" className="btn" disabled={isLocked}>
+                <LockIcon size={15} /> {isLocked ? `Locked (${lockCountdown}s)` : 'Sign In'}
+              </button>
+              {isLocked && (
+                <div style={{ color: '#ef4444', fontSize: '13px', marginTop: '8px', textAlign: 'center', fontWeight: '500' }}>
+                  Too many attempts. Try again in {lockCountdown}s.
+                </div>
+              )}
               {!isAdmin && (
                 <p className="muted-link">Don't have an account? <span onClick={() => setIsLogin(false)}>Create one</span></p>
               )}
@@ -104,6 +127,11 @@ function AuthPage({ salons = [], onSignup, onLogin, onAdminLogin }) {
               <div className="input-group">
                 <label>Password</label>
                 <input type="password" placeholder="Create a password" value={signupPass} onChange={(e) => setSignupPass(e.target.value)} />
+                {signupPass && getPasswordFeedback(signupPass) && (
+                  <span className="password-feedback" style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                    {getPasswordFeedback(signupPass)}
+                  </span>
+                )}
               </div>
               <button type="submit" className="btn"><UserIcon size={15} /> Create Account</button>
               <p className="muted-link">Already have an account? <span onClick={() => setIsLogin(true)}>Sign in</span></p>

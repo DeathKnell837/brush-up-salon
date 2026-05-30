@@ -136,7 +136,29 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser }) {
 
           {!isEditingProfile && !isChangingPassword && (
             <div style={{ textAlign: 'center', marginTop: -10, marginBottom: 20 }}>
-              <button className="btn outline" onClick={() => setIsEditingProfile(true)} style={{ padding: '6px 12px', fontSize: 13, border: 'none', color: '#c5a880' }}>
+              <button 
+                onClick={() => setIsEditingProfile(true)} 
+                style={{ 
+                  background: 'transparent',
+                  border: '1px solid rgba(201, 168, 76, 0.4)',
+                  color: 'var(--gold)',
+                  padding: '6px 16px', 
+                  fontSize: '12px', 
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  fontFamily: 'var(--font-body)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(201, 168, 76, 0.08)';
+                  e.currentTarget.style.borderColor = 'var(--gold)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.borderColor = 'rgba(201, 168, 76, 0.4)';
+                }}
+              >
                 Edit Profile
               </button>
             </div>
@@ -153,9 +175,65 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser }) {
                 <input type="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="e.g. 123-456-7890" />
               </div>
               
-              <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-                <button type="submit" className="btn">Save Changes</button>
-                <button type="button" className="btn secondary" onClick={() => { setIsEditingProfile(false); setEditName(currentUser?.name || ''); setEditPhone(currentUser?.phone || ''); setEditAvatarBase64(currentUser?.avatar || ''); }}>Cancel</button>
+              <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+                <button 
+                  type="submit" 
+                  className="btn"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)',
+                    border: 'none',
+                    color: '#0e1118',
+                    padding: '10px 20px',
+                    borderRadius: '10px',
+                    fontWeight: '700',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-body)',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 12px rgba(201, 168, 76, 0.15)',
+                    flex: 1
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 6px 18px rgba(201, 168, 76, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(201, 168, 76, 0.15)';
+                  }}
+                >
+                  Save Changes
+                </button>
+                <button 
+                  type="button" 
+                  className="btn secondary" 
+                  onClick={() => { setIsEditingProfile(false); setEditName(currentUser?.name || ''); setEditPhone(currentUser?.phone || ''); setEditAvatarBase64(currentUser?.avatar || ''); }}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    color: 'var(--text-dim)',
+                    padding: '10px 20px',
+                    borderRadius: '10px',
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-body)',
+                    transition: 'all 0.3s ease',
+                    flex: 1
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                    e.currentTarget.style.color = 'var(--text-white)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = 'var(--text-dim)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+                  }}
+                >
+                  Cancel
+                </button>
               </div>
             </form>
           ) : (
@@ -182,7 +260,36 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser }) {
           <div className="divider" />
 
           {!isChangingPassword && !isEditingProfile && (
-            <button className="btn outline" onClick={() => setIsChangingPassword(true)} style={{ marginTop: 12 }}>
+            <button 
+              className="btn outline" 
+              onClick={() => setIsChangingPassword(true)} 
+              style={{ 
+                marginTop: 12,
+                width: '100%',
+                background: 'transparent',
+                border: '1px solid rgba(201, 168, 76, 0.4)',
+                color: 'var(--gold)',
+                padding: '10px 20px',
+                borderRadius: '10px',
+                fontWeight: '600',
+                fontSize: '13px',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-body)',
+                transition: 'all 0.3s ease',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(201, 168, 76, 0.08)';
+                e.currentTarget.style.borderColor = 'var(--gold)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.borderColor = 'rgba(201, 168, 76, 0.4)';
+              }}
+            >
               <LockIcon size={15} /> Change Password
             </button>
           )}
@@ -201,9 +308,65 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser }) {
                 <label>Confirm New Password</label>
                 <input type="password" placeholder="Confirm new password" value={confirmPass} onChange={(e) => setConfirmPass(e.target.value)} />
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button type="submit" className="btn">Save Password</button>
-                <button type="button" className="btn secondary" onClick={() => { setIsChangingPassword(false); setCurrentPass(''); setNewPass(''); setConfirmPass(''); }}>Cancel</button>
+              <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+                <button 
+                  type="submit" 
+                  className="btn"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)',
+                    border: 'none',
+                    color: '#0e1118',
+                    padding: '10px 20px',
+                    borderRadius: '10px',
+                    fontWeight: '700',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-body)',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 12px rgba(201, 168, 76, 0.15)',
+                    flex: 1
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 6px 18px rgba(201, 168, 76, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(201, 168, 76, 0.15)';
+                  }}
+                >
+                  Save Password
+                </button>
+                <button 
+                  type="button" 
+                  className="btn secondary" 
+                  onClick={() => { setIsChangingPassword(false); setCurrentPass(''); setNewPass(''); setConfirmPass(''); }}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    color: 'var(--text-dim)',
+                    padding: '10px 20px',
+                    borderRadius: '10px',
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-body)',
+                    transition: 'all 0.3s ease',
+                    flex: 1
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                    e.currentTarget.style.color = 'var(--text-white)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = 'var(--text-dim)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+                  }}
+                >
+                  Cancel
+                </button>
               </div>
             </form>
           )}
