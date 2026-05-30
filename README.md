@@ -1,8 +1,10 @@
 # Brush Up — Luxury Salon Management System
 
-> **🌐 Live Demo:** [https://brush-up-salon.onrender.com/](https://brush-up-salon.onrender.com/)
+> **🌐 Primary Live Demo (Vercel):** [https://brush-up-salon.vercel.app/](https://brush-up-salon.vercel.app/)
+> 
+> **🌐 Secondary Live Demo (Render):** [https://brush-up-salon.onrender.com/](https://brush-up-salon.onrender.com/)
 
-A premium, full-stack React application designed for a multi-branch salon network based in **Midsayap, Cotabato, Philippines**. The platform provides distinct interfaces for **Customers**, **Shop Admins**, and a **Super Admin** to manage bookings, services, reviews, and real-time operations across the entire Brush Up Salon network.
+A premium, full-stack React application designed for a multi-branch salon network based in **Midsayap, Cotabato, Philippines**. The platform provides a consolidated dashboard with role-based security filters for **Customers**, **Shop Admins**, and **Super Admins** to manage bookings, services, reviews, and real-time operations across the entire franchise network.
 
 ---
 
@@ -31,15 +33,18 @@ A premium, full-stack React application designed for a multi-branch salon networ
 - **Promotions** — set promotional banners visible to customers on the salon detail page.
 - **Advanced Financial Reports** — Renders real-time statistics cards (Total Revenue, Period Revenue, Average Ticketing, Total Bookings) with an interactive **Timeframe Selector (Weekly, Monthly, Yearly)**. Displays horizontal progress bars for service sales distribution, and a custom neon glowing SVG trend area chart dynamically updated per interval.
 
-#### 3. Super Admin Dashboard (Network HQ)
-- **Network Analytics** — total revenue, completed/pending counts, customer totals, and per-branch revenue bars.
+#### 3. Consolidated Super Admin Dashboard (Network HQ View)
+- **Network HQ Interface** — Merged directly into the Admin Dashboard but strictly protected with role-based security checks. Visible only to Super Admins and corporate managers.
+- **Interactive Network Analytics** — Real-time revenue metrics, completed/pending/customer counts, booking status distribution (emerald/blue/yellow stacked indicators), and franchise risk categories (Stable, Distress, Critical).
 - **Salon Performance Leaderboard** — A premium multi-salon ranked comparison matrix presenting total revenue, completed bookings, top-performing services, weekly trend arrows, and active/inactive status badges (pulsing red warning dots for salons with zero bookings in 3+ days, gold highlighted borders for top-performing branches), complete with interactive sortable column headers.
-- **All Transactions** — a unified view of every booking across the network with CSV export.
-- **Salon Management** — register new salons with auto-provisioned Firebase Auth admin accounts (uses a secondary Firebase app to avoid signing out the current user). Remove salons and their admins.
-- **Admin Access Control** — view all administrators, reset passwords, and revoke access.
-- **Network Broadcasts** — publish info/warning/promo announcements visible across all dashboards.
-- **System Audit Log** — timestamped, color-coded log of all login, logout, signup, salon creation/deletion, password reset, and broadcast actions (capped at 500 entries, immutable in Firestore).
-- **Duplicate Cleanup** — utility to purge legacy username-keyed Firestore documents from pre-UID migration.
+- **Top Franchise Services** — Interactive CSS-based horizontal bar charts showing top overall bookings per service across all branches.
+- **Executive Attention Flags** — Automatic alarm panel highlighting branches with high bankruptcy risks or zero booking activity in 48 hours.
+- **All Transactions** — A unified view of every booking across the network with CSV export.
+- **Salon Management** — Register new salons with auto-provisioned Firebase Auth admin accounts (uses a secondary Firebase app to avoid signing out the current user). Remove salons and their admins.
+- **Admin Access Control** — View all administrators, reset passwords, and revoke access.
+- **Network Broadcasts** — Publish info/warning/promo announcements visible across all dashboards.
+- **System Audit Log** — Timestamped, color-coded log of all login, logout, signup, salon creation/deletion, password reset, and broadcast actions (capped at 500 entries, immutable in Firestore).
+- **Duplicate Cleanup** — Utility to purge legacy username-keyed Firestore documents from pre-UID migration.
 
 ### 🤖 AI Chatbot (Context-Aware, Role-Adaptive)
 A floating chatbot powered by **Groq (Llama 3.1 8B)** with **Gemini 2.0 Flash Lite** as a fallback:
@@ -85,8 +90,7 @@ brush-up-salon-master/
 │   └── images/                  # Salon hero images (7 salons)
 ├── src/
 │   ├── components/
-│   │   ├── AdminDashboard.jsx       # Shop admin: bookings, services, staff, promos
-│   │   ├── SuperAdminDashboard.jsx  # Network HQ: analytics, salons, admins, audits
+│   │   ├── AdminDashboard.jsx       # Unified admin: includes local branch & Super Admin Network HQ View (RBAC-guarded)
 │   │   ├── CustomerDashboard.jsx    # Client portal: browse salons, view bookings
 │   │   ├── SalonDetailPage.jsx      # Full salon page: services, staff, reviews, booking
 │   │   ├── AuthPage.jsx             # Dual login (Customer / Admin) with signup
@@ -109,8 +113,10 @@ brush-up-salon-master/
 │   └── index.jsx                   # React DOM entry
 ├── firestore.rules                 # Firestore security rules (RBAC)
 ├── render.yaml                     # Render.com static site deployment config
+├── vercel.json                     # Vercel deployment, SPA routes, and build overrides
 ├── package.json                    # Dependencies & scripts
-└── .env                            # Environment variables (API keys)
+├── .env.production                 # Production build flags (disables strict ESLint on Vercel/Render)
+└── .env                            # Environment variables (API keys - gitignored)
 ```
 
 ---
@@ -136,13 +142,18 @@ brush-up-salon-master/
 
 ## 🌐 Deployment
 
-The app is deployed as a **static site** on [Render](https://render.com) using the configuration in `render.yaml`:
+### ⚡ Primary: Vercel (Recommended)
+The app is fully optimized for **Vercel** with custom rewrite rules and automatic deployment hooks:
+- **Build Override:** Controlled via [vercel.json](file:///c:/Users/USER/Desktop/PROJECTS/brush-up-salon-master/vercel.json) to handle SPA routing, build triggers, and compile parameters.
+- **Production Flags:** Uses [.env.production](file:///c:/Users/USER/Desktop/PROJECTS/brush-up-salon-master/.env.production) to override strict CI linter rules, guaranteeing smooth deploys.
+- **Live URL:** [https://brush-up-salon.vercel.app/](https://brush-up-salon.vercel.app/)
+
+### ☁️ Secondary: Render
+The app is also configured for **Render.com** static sites using `render.yaml`:
 - **Build Command:** `npm install && npm run build`
 - **Publish Directory:** `./build`
 - **SPA Routing:** All routes rewrite to `/index.html`
-- **Environment Variables:** `REACT_APP_GEMINI_API_KEY` and `REACT_APP_GROQ_API_KEY` are set in Render's dashboard.
-
-**Live URL:** [https://brush-up-salon.onrender.com/](https://brush-up-salon.onrender.com/)
+- **Live URL:** [https://brush-up-salon.onrender.com/](https://brush-up-salon.onrender.com/)
 
 ---
 
@@ -180,7 +191,7 @@ You can create a new customer account directly on the signup page. To access the
 | **Styling** | Vanilla CSS3 (CSS Variables, Flexbox/Grid, Keyframe Animations, Glassmorphism) |
 | **Typography** | Playfair Display + Montserrat (Google Fonts) |
 | **Security** | Firebase Auth (Email/Password), Firestore Security Rules (RBAC) |
-| **Deployment** | Render.com (Static Site) |
+| **Deployment** | Vercel (Primary, Static Site) + Render.com (Secondary) |
 
 ---
 
