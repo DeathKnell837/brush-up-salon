@@ -6,7 +6,7 @@ import ReviewModal from './ReviewModal';
 import {
   StoreIcon, ClipboardIcon, SearchIcon, ScissorsIcon,
   CalendarIcon, ClockIcon, HourglassIcon, CheckCircleIcon, XCircleIcon, InboxIcon, BellIcon,
-  AlertCircleIcon, CloseIcon
+  AlertCircleIcon, CloseIcon, CreditCardIcon
 } from './Icons';
 
 function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
@@ -230,6 +230,8 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
   const completedBookings = bookings.filter(b => b.status === 'Completed');
   const activeBookings = bookings.filter(b => b.status === 'Approved' || b.status === 'Pending');
   const cancelledBookings = bookings.filter(b => b.status === 'Cancelled' || b.status === 'Rejected');
+  const approvedBookings = bookings.filter(b => b.status === 'Approved');
+  const pendingPaymentsCount = approvedBookings.filter(b => !b.paymentProof).length;
 
   const totalSpent = completedBookings.reduce((sum, b) => {
     if (b.paidAmount !== undefined && b.paidAmount !== null) return sum + b.paidAmount;
@@ -594,6 +596,10 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
           <ClipboardIcon size={15} /> My Bookings
           {bookings.length > 0 && <span className="tab-count">{bookings.length}</span>}
         </button>
+        <button className={`tab-btn ${tab === 'payments' ? 'active' : ''}`} onClick={() => setTab('payments')}>
+          <CreditCardIcon size={15} /> GCash Payment
+          {pendingPaymentsCount > 0 && <span className="tab-count" style={{ backgroundColor: 'var(--gold)', color: '#000', fontWeight: 'bold' }}>{pendingPaymentsCount}</span>}
+        </button>
       </div>
 
       {/* ─── Salons Tab ─── */}
@@ -873,6 +879,111 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                 })}
               </div>
               </>
+            )}
+          </section>
+        </div>
+      )}
+
+      {/* ─── GCash Payment Tab ─── */}
+      {tab === 'payments' && (
+        <div style={{ animation: 'fadeUp .5s ease' }}>
+          <section className="content-section">
+            <div className="section-header">
+              <p className="section-label">PAYMENT ACTIONS</p>
+              <h2 className="section-heading">GCash Payments</h2>
+            </div>
+
+            {approvedBookings.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon"><InboxIcon size={48} /></div>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--text-white)', marginBottom: 8 }}>No Active Payments</h3>
+                <p>You have no approved bookings awaiting payment at the moment.</p>
+                <button className="btn secondary" style={{ width: 'auto', marginTop: 20 }} onClick={() => setTab('salons')}>
+                  <StoreIcon size={14} /> Explore Salons
+                </button>
+              </div>
+            ) : (
+              <div className="history-grid">
+                {approvedBookings.map((b, i) => {
+                  const salon = salons.find(s => s.id === b.salonId);
+                  const salonGcash = salonDataWithGcash.find(s => s.id === b.salonId);
+                  const gcashNumber = salonGcash?.gcashNumber;
+
+                  const approvedMinutesAgo = b.approvedAt ? Math.floor((Date.now() - new Date(b.approvedAt).getTime()) / 60000) : 0;
+                  const isPaymentOverdue = b.status === 'Approved' && b.approvedAt && approvedMinutesAgo >= 30 && !b.paymentProof;
+                  const minutesRemaining = b.status === 'Approved' && b.approvedAt && !b.paymentProof ? Math.max(0, 30 - approvedMinutesAgo) : 0;
+
+                  return (
+                    <div key={b.id} className="history-card" style={{ animationDelay: `${i * 0.08}s` }}>
+                      <div className="history-card-image" style={{ backgroundImage: `url(${salon?.image})` }} />
+                      <div className="history-card-body">
+                        <div className="history-salon">{salon?.name || 'Unknown Salon'}</div>
+                        <div className="history-service"><ScissorsIcon size={13} /> {b.service}</div>
+                        <div className="history-datetime">
+                          <span><CalendarIcon size={13} /> {b.date}</span>
+                          <span><ClockIcon size={13} /> {b.time}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+                          <span style={{ fontSize: 13, color: 'var(--text-white)', fontWeight: 600 }}>Amount to Pay</span>
+                          <span style={{ fontSize: 15, color: 'var(--gold)', fontWeight: 700 }}>₱{(b.servicePrice || 0).toLocaleString()}</span>
+                        </div>
+
+                        {/* GCash Payment Trigger & Countdown */}
+                        {gcashNumber && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            {isPaymentOverdue && !b.paymentProof && (
+                              <div className="payment-reminder-banner" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#fca5a5', padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, marginTop: 10 }}>
+                                <AlertCircleIcon size={12} style={{ color: '#f87171' }} />
+                                <span>Payment Overdue</span>
+                              </div>
+                            )}
+                            {!isPaymentOverdue && minutesRemaining > 0 && !b.paymentProof && (
+                              <div className="payment-countdown" style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '10px 0 0 0', alignSelf: 'stretch', justifyContent: 'center' }}>
+                                <ClockIcon size={12} />
+                                <span>Pay within {minutesRemaining} min</span>
+                              </div>
+                            )}
+
+                            {b.paymentProof ? (
+                              <button 
+                                className="btn small outline" 
+                                onClick={() => setPaymentBookingId(b.id)}
+                                style={{ marginTop: 10, width: '100%', border: '1px solid rgba(74, 222, 128, 0.3)', color: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                              >
+                                <CheckCircleIcon size={12} /> View Payment Details
+                              </button>
+                            ) : (
+                              <button 
+                                className="btn small" 
+                                onClick={() => setPaymentBookingId(b.id)}
+                                style={{ 
+                                  marginTop: 10, 
+                                  width: '100%', 
+                                  background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)', 
+                                  color: '#0e1118', 
+                                  fontWeight: 700, 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  justifyContent: 'center', 
+                                  gap: 6,
+                                  border: 'none',
+                                  boxShadow: '0 4px 10px rgba(201, 168, 76, 0.15)'
+                                }}
+                              >
+                                💳 Pay via GCash
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        <div style={{ marginTop: '12px' }}>
+                          <button className="btn small outline danger" onClick={() => handleCancelBooking(b.id)}>Cancel Appointment</button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </section>
         </div>
