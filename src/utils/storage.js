@@ -99,7 +99,6 @@ export const setSalons = (salons) => {
 
 // ─── Default admin accounts (seeded on first load) ───
 const DEFAULT_ADMINS = [
-  { name: 'Super Admin', user: 'superadmin', pass: null, rawPass: 'admin123', role: 'admin', salonId: 'all' },
   { name: 'Elegant Admin', user: 'elegantadmin', pass: null, rawPass: 'admin123', role: 'admin', salonId: 'elegant' },
   { name: 'Karen Green Admin', user: 'kareenadmin', pass: null, rawPass: 'admin123', role: 'admin', salonId: 'karen-green' },
   { name: 'Pretty Aspects Admin', user: 'prettyadmin', pass: null, rawPass: 'admin123', role: 'admin', salonId: 'pretty-aspects' },
@@ -111,7 +110,7 @@ const DEFAULT_ADMINS = [
 
 // ─── Seed admin accounts + salons into localStorage on first load ───
 export const seedAdminAccounts = async () => {
-  const version = 'v14_gcash_payment_update'; // Bump for GCash numbers + payment features
+  const version = 'v15_remove_superadmin_update'; // Bump for GCash numbers + payment features and removing superadmin
   const seededVersion = storage.get('luxurySeedVersion', '');
   
   if (seededVersion === version) return;
