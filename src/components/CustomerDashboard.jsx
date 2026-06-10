@@ -5,8 +5,178 @@ import Chatbot from './Chatbot';
 import ReviewModal from './ReviewModal';
 import {
   StoreIcon, ClipboardIcon, SearchIcon, ScissorsIcon,
-  CalendarIcon, ClockIcon, HourglassIcon, CheckCircleIcon, XCircleIcon, InboxIcon, BellIcon
+  CalendarIcon, ClockIcon, HourglassIcon, CheckCircleIcon, XCircleIcon, InboxIcon, BellIcon,
+  AlertCircleIcon, CloseIcon
 } from './Icons';
+
+function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
+  const gcashNumber = salon?.gcashNumber;
+  const approvedMinutesAgo = booking.approvedAt ? Math.floor((Date.now() - new Date(booking.approvedAt).getTime()) / 60000) : 0;
+  const isPaymentOverdue = booking.approvedAt && approvedMinutesAgo >= 30 && !booking.paymentProof;
+  const minutesRemaining = booking.approvedAt && !booking.paymentProof ? Math.max(0, 30 - approvedMinutesAgo) : 0;
+
+  // Stable QR generation using qrserver API
+  const qrCodeUrl = gcashNumber 
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${gcashNumber}` 
+    : '';
+
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    if (gcashNumber) {
+      navigator.clipboard.writeText(gcashNumber);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div className="modal" onClick={onClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+      <div className="modal-content" style={{
+        maxWidth: 450,
+        padding: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gridTemplateColumns: 'none',
+        background: '#0e1118',
+        border: '1px solid rgba(201, 168, 76, 0.3)',
+        boxShadow: '0 24px 48px rgba(0, 0, 0, 0.6)',
+        borderRadius: '16px',
+        animation: 'fadeUp 0.3s ease',
+        width: 'min(450px, 94vw)'
+      }} onClick={e => e.stopPropagation()}>
+        
+        {/* Header */}
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <img 
+              src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/GCash_logo.svg/1200px-GCash_logo.svg.png" 
+              alt="GCash" 
+              style={{ height: 18, filter: 'brightness(1.2)' }} 
+              onError={(e) => { e.target.style.display = 'none'; }} 
+            />
+            <h2 style={{ fontSize: 16, color: 'var(--text-white)', margin: 0, fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+              GCash Payment
+            </h2>
+          </div>
+          <button className="close-btn" onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', padding: 4 }}>
+            <CloseIcon size={18} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div style={{ padding: '24px' }}>
+          {/* Payment countdown or overdue banner */}
+          {!booking.paymentProof && (
+            <div style={{ marginBottom: 20 }}>
+              {isPaymentOverdue ? (
+                <div className="payment-reminder-banner" style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5' }}>
+                  <AlertCircleIcon size={14} style={{ color: '#f87171' }} />
+                  <span>Payment overdue! Please upload your GCash proof now.</span>
+                </div>
+              ) : (
+                <div className="payment-countdown" style={{ display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
+                  <ClockIcon size={14} />
+                  <span>Upload payment proof within {minutesRemaining} min</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Salon Info */}
+          <div style={{ marginBottom: 20, textAlign: 'center' }}>
+            <h3 style={{ fontSize: 18, color: 'var(--text-white)', margin: '0 0 4px 0', fontFamily: 'var(--font-display)' }}>
+              {salon?.name}
+            </h3>
+            <p style={{ fontSize: 13, color: 'var(--text-dim)', margin: 0 }}>
+              {booking.service}
+            </p>
+          </div>
+
+          {/* QR Code */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24 }}>
+            <div className="gcash-qr-wrap" style={{ background: '#fff', padding: 12, borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.2)', width: 224, height: 224, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              {qrCodeUrl ? (
+                <img 
+                  src={qrCodeUrl} 
+                  alt="GCash QR" 
+                  style={{ width: 180, height: 180, objectFit: 'contain' }}
+                />
+              ) : (
+                <div style={{ color: '#000', fontSize: 12, fontWeight: 600 }}>Loading QR...</div>
+              )}
+              <span className="gcash-scan-label" style={{ color: '#111', fontSize: 10, fontWeight: 700, letterSpacing: 0.5 }}>
+                Scan to pay via GCash
+              </span>
+            </div>
+          </div>
+
+          {/* Payment Details List */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
+              <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>GCash Number</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontFamily: 'monospace', fontSize: 14, fontWeight: 600, color: 'var(--text-white)' }}>{gcashNumber}</span>
+                <button 
+                  onClick={handleCopy}
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-white)', fontSize: 11, padding: '2px 8px', borderRadius: 4, cursor: 'pointer', transition: 'all 0.2s' }}
+                >
+                  {copied ? 'Copied ✓' : 'Copy'}
+                </button>
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
+              <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>Amount to Pay</span>
+              <span style={{ color: 'var(--gold)', fontSize: 16, fontWeight: 700 }}>₱{(booking.servicePrice || 0).toLocaleString()}</span>
+            </div>
+          </div>
+
+          {/* Payment Proof Section */}
+          {booking.paymentProof ? (
+            <div className="gcash-proof-done" style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center', background: 'rgba(74, 222, 128, 0.05)', border: '1px solid rgba(74, 222, 128, 0.15)', borderRadius: 8, padding: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#4ade80', fontSize: 13 }}>
+                <CheckCircleIcon size={16} />
+                <span>Payment proof submitted successfully!</span>
+              </div>
+              <img 
+                src={booking.paymentProof} 
+                alt="Proof" 
+                style={{ width: '100%', maxHeight: 180, objectFit: 'contain', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)', padding: 4 }} 
+              />
+              <button 
+                className="btn small outline" 
+                onClick={() => onUpload(booking.id)}
+                style={{ marginTop: 4, width: '100%', border: '1px solid rgba(251, 191, 36, 0.3)', color: 'var(--gold)' }}
+              >
+                Change Proof Screenshot
+              </button>
+            </div>
+          ) : (
+            <button 
+              className="btn" 
+              onClick={() => onUpload(booking.id)}
+              style={{
+                width: '100%',
+                background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)',
+                color: '#0e1118',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                border: 'none',
+                boxShadow: '0 4px 12px rgba(201, 168, 76, 0.2)'
+              }}
+            >
+              Upload Payment Receipt
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, onOpenProfile, syncTick, showToast }) {
   const [tab, setTab] = useState('salons');
@@ -17,6 +187,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
   const [localTick, setLocalTick] = useState(0);
   const [announcements, setAnnouncements] = useState([]);
   const [reviewBooking, setReviewBooking] = useState(null);
+  const [paymentBookingId, setPaymentBookingId] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [readIds, setReadIds] = useState(() => {
     try {
@@ -53,6 +224,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
 
   const allBookings = getBookings();
   const bookings = allBookings.filter(b => b.userId === currentUser?.user);
+  const paymentBooking = bookings.find(b => b.id === paymentBookingId);
 
   // Calculate customer statistics
   const completedBookings = bookings.filter(b => b.status === 'Completed');
@@ -630,63 +802,49 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                           </span>
                         </div>
 
-                        {/* ─── GCash Payment Section (Approved bookings) ─── */}
+                        {/* ─── GCash Payment Trigger & Countdown (Approved bookings) ─── */}
                         {b.status === 'Approved' && gcashNumber && (
-                          <div className={`gcash-payment-section ${isPaymentOverdue ? 'payment-reminder-urgent' : ''}`}>
-                            {/* Payment reminder banner */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                             {isPaymentOverdue && !b.paymentProof && (
-                              <div className="payment-reminder-banner">
-                                <span>⏰</span>
-                                <span>Payment overdue! Please upload your GCash proof now.</span>
+                              <div className="payment-reminder-banner" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#fca5a5', padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, marginTop: 10 }}>
+                                <AlertCircleIcon size={12} style={{ color: '#f87171' }} />
+                                <span>Payment Overdue</span>
                               </div>
                             )}
                             {!isPaymentOverdue && minutesRemaining > 0 && !b.paymentProof && (
-                              <div className="payment-countdown">
-                                <HourglassIcon size={12} />
-                                <span>Upload payment proof within {minutesRemaining} min</span>
+                              <div className="payment-countdown" style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '10px 0 0 0', alignSelf: 'stretch', justifyContent: 'center' }}>
+                                <ClockIcon size={12} />
+                                <span>Pay within {minutesRemaining} min</span>
                               </div>
                             )}
 
-                            <div className="gcash-header">
-                              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/GCash_logo.svg/1200px-GCash_logo.svg.png" alt="GCash" style={{ height: 20, filter: 'brightness(1.2)' }} onError={(e) => { e.target.style.display = 'none'; }} />
-                              <span>Pay via GCash</span>
-                            </div>
-                            
-                            <div className="gcash-body">
-                              <div className="gcash-qr-wrap">
-                                <img 
-                                  src={`https://chart.googleapis.com/chart?chs=180x180&cht=qr&chl=${gcashNumber}&choe=UTF-8`} 
-                                  alt="GCash QR" 
-                                  className="gcash-qr-img"
-                                />
-                                <span className="gcash-scan-label">Scan to pay via GCash</span>
-                              </div>
-                              <div className="gcash-details">
-                                <div className="gcash-number-row">
-                                  <span className="gcash-label">GCash Number</span>
-                                  <span className="gcash-number">{gcashNumber}</span>
-                                </div>
-                                <div className="gcash-number-row">
-                                  <span className="gcash-label">Amount to Pay</span>
-                                  <span className="gcash-amount">₱{(b.servicePrice || 0).toLocaleString()}</span>
-                                </div>
-                                <div className="gcash-number-row">
-                                  <span className="gcash-label">Service</span>
-                                  <span style={{ color: 'var(--text-white)', fontSize: 12 }}>{b.service}</span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Payment proof */}
                             {b.paymentProof ? (
-                              <div className="gcash-proof-done">
-                                <CheckCircleIcon size={14} />
-                                <span>Payment proof submitted</span>
-                                <img src={b.paymentProof} alt="Proof" className="gcash-proof-thumb" />
-                              </div>
+                              <button 
+                                className="btn small outline" 
+                                onClick={() => setPaymentBookingId(b.id)}
+                                style={{ marginTop: 10, width: '100%', border: '1px solid rgba(74, 222, 128, 0.3)', color: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                              >
+                                <CheckCircleIcon size={12} /> View Payment Details
+                              </button>
                             ) : (
-                              <button className="btn small gcash-upload-btn" onClick={() => handlePaymentProofUpload(b.id)}>
-                                📸 Upload Payment Screenshot
+                              <button 
+                                className="btn small" 
+                                onClick={() => setPaymentBookingId(b.id)}
+                                style={{ 
+                                  marginTop: 10, 
+                                  width: '100%', 
+                                  background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)', 
+                                  color: '#0e1118', 
+                                  fontWeight: 700, 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  justifyContent: 'center', 
+                                  gap: 6,
+                                  border: 'none',
+                                  boxShadow: '0 4px 10px rgba(201, 168, 76, 0.15)'
+                                }}
+                              >
+                                💳 Pay via GCash
                               </button>
                             )}
                           </div>
@@ -734,6 +892,15 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
           salonName={salons.find(s => s.id === reviewBooking.salonId)?.name || 'Salon'} 
           onClose={() => setReviewBooking(null)} 
           onSubmit={submitReview} 
+        />
+      )}
+
+      {paymentBooking && (
+        <GCashPaymentModal 
+          booking={paymentBooking}
+          salon={salons.find(s => s.id === paymentBooking.salonId)}
+          onClose={() => setPaymentBookingId(null)}
+          onUpload={handlePaymentProofUpload}
         />
       )}
 
