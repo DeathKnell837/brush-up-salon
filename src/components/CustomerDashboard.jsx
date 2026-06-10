@@ -65,17 +65,18 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
         </div>
 
         {/* Content */}
-        <div style={{ padding: '24px' }}>
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          
           {/* Payment countdown or overdue banner */}
           {!booking.paymentProof && (
-            <div style={{ marginBottom: 20 }}>
+            <div style={{ width: '100%', marginBottom: 20 }}>
               {isPaymentOverdue ? (
                 <div className="payment-reminder-banner" style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5' }}>
                   <AlertCircleIcon size={14} style={{ color: '#f87171' }} />
                   <span>Payment overdue! Please upload your GCash proof now.</span>
                 </div>
               ) : (
-                <div className="payment-countdown" style={{ display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
+                <div className="payment-countdown" style={{ display: 'flex', alignItems: 'center', gap: 6, margin: 0, justifyContent: 'center' }}>
                   <ClockIcon size={14} />
                   <span>Upload payment proof within {minutesRemaining} min</span>
                 </div>
@@ -84,7 +85,7 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
           )}
 
           {/* Salon Info */}
-          <div style={{ marginBottom: 20, textAlign: 'center' }}>
+          <div style={{ marginBottom: 20, textAlign: 'center', width: '100%' }}>
             <h3 style={{ fontSize: 18, color: 'var(--text-white)', margin: '0 0 4px 0', fontFamily: 'var(--font-display)' }}>
               {salon?.name}
             </h3>
@@ -93,84 +94,178 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
             </p>
           </div>
 
-          {/* QR Code */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24 }}>
-            <div className="gcash-qr-wrap" style={{ background: '#fff', padding: 12, borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.2)', width: 224, height: 224, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              {qrCodeUrl ? (
-                <img 
-                  src={qrCodeUrl} 
-                  alt="GCash QR" 
-                  style={{ width: 180, height: 180, objectFit: 'contain' }}
-                />
-              ) : (
-                <div style={{ color: '#000', fontSize: 12, fontWeight: 600 }}>Loading QR...</div>
-              )}
-              <span className="gcash-scan-label" style={{ color: '#111', fontSize: 10, fontWeight: 700, letterSpacing: 0.5 }}>
-                Scan to pay via GCash
+          {/* --- GCASH STANDEE DESIGN --- */}
+          <div style={{
+            width: '270px',
+            background: 'linear-gradient(to bottom, #0057E7 0%, #0037a5 100%)',
+            borderRadius: '16px',
+            padding: '20px 16px 16px 16px',
+            boxShadow: '0 12px 32px rgba(0, 0, 0, 0.3)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            marginBottom: 24
+          }}>
+            {/* Logo area */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, marginBottom: 16 }}>
+              <img 
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/GCash_logo.svg/1200px-GCash_logo.svg.png" 
+                alt="GCash Logo" 
+                style={{ height: 20, filter: 'brightness(1.5)' }} 
+              />
+              <span style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 10, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' }}>
+                Scan to Pay
               </span>
             </div>
-          </div>
 
-          {/* Payment Details List */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
-              <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>GCash Number</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontFamily: 'monospace', fontSize: 14, fontWeight: 600, color: 'var(--text-white)' }}>{gcashNumber}</span>
+            {/* White standee board */}
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '12px',
+              width: '100%',
+              padding: '16px 12px 12px 12px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)'
+            }}>
+              {/* Salon Name on Standee */}
+              <div style={{ 
+                color: '#0057E7', 
+                fontSize: 12, 
+                fontWeight: 800, 
+                fontFamily: 'var(--font-body)', 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.5px',
+                textAlign: 'center',
+                width: '100%',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                borderBottom: '1px solid rgba(0, 87, 231, 0.1)',
+                paddingBottom: 8,
+                marginBottom: 10
+              }}>
+                {salon?.name || 'Brush Up Salon'}
+              </div>
+
+              {/* QR Image */}
+              <div style={{ 
+                width: 176, 
+                height: 176, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                background: '#fff' 
+              }}>
+                {qrCodeUrl ? (
+                  <img 
+                    src={qrCodeUrl} 
+                    alt="GCash QR" 
+                    style={{ width: 168, height: 168, objectFit: 'contain' }}
+                  />
+                ) : (
+                  <div style={{ color: '#0057E7', fontSize: 12, fontWeight: 600 }}>Generating QR...</div>
+                )}
+              </div>
+
+              {/* Scan directions */}
+              <span style={{ color: '#666666', fontSize: 9, fontWeight: 700, letterSpacing: '0.3px', textTransform: 'uppercase', marginTop: 10 }}>
+                Scan via GCash App
+              </span>
+            </div>
+
+            {/* Spaced Phone Number Footer */}
+            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, width: '100%' }}>
+              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                GCash Number
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%' }}>
+                <span style={{ color: '#ffffff', fontFamily: 'monospace', fontSize: 15, fontWeight: 700, letterSpacing: '1px' }}>
+                  {gcashNumber ? `${gcashNumber.slice(0, 4)} ${gcashNumber.slice(4, 7)} ${gcashNumber.slice(7)}` : ''}
+                </span>
                 <button 
                   onClick={handleCopy}
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-white)', fontSize: 11, padding: '2px 8px', borderRadius: 4, cursor: 'pointer', transition: 'all 0.2s' }}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    border: 'none',
+                    color: '#ffffff',
+                    fontSize: 9,
+                    fontWeight: 700,
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    textTransform: 'uppercase'
+                  }}
+                  onMouseEnter={e => e.target.style.background = 'rgba(255, 255, 255, 0.25)'}
+                  onMouseLeave={e => e.target.style.background = 'rgba(255, 255, 255, 0.15)'}
                 >
-                  {copied ? 'Copied ✓' : 'Copy'}
+                  {copied ? 'Copied' : 'Copy'}
                 </button>
               </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
-              <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>Amount to Pay</span>
-              <span style={{ color: 'var(--gold)', fontSize: 16, fontWeight: 700 }}>₱{(booking.servicePrice || 0).toLocaleString()}</span>
-            </div>
           </div>
 
-          {/* Payment Proof Section */}
-          {booking.paymentProof ? (
-            <div className="gcash-proof-done" style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center', background: 'rgba(74, 222, 128, 0.05)', border: '1px solid rgba(74, 222, 128, 0.15)', borderRadius: 8, padding: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#4ade80', fontSize: 13 }}>
-                <CheckCircleIcon size={16} />
-                <span>Payment proof submitted successfully!</span>
+          {/* Amount Box */}
+          <div style={{
+            width: '100%',
+            background: 'rgba(255, 255, 255, 0.02)',
+            border: '1px solid rgba(255, 255, 255, 0.06)',
+            borderRadius: '12px',
+            padding: '12px 16px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 20
+          }}>
+            <span style={{ color: 'var(--text-dim)', fontSize: 13, fontWeight: 500 }}>Total Amount to Pay</span>
+            <span style={{ color: 'var(--gold)', fontSize: 18, fontWeight: 700 }}>₱{(booking.servicePrice || 0).toLocaleString()}</span>
+          </div>
+
+          {/* Proof Upload / Submitted Image */}
+          <div style={{ width: '100%' }}>
+            {booking.paymentProof ? (
+              <div className="gcash-proof-done" style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center', background: 'rgba(74, 222, 128, 0.05)', border: '1px solid rgba(74, 222, 128, 0.15)', borderRadius: 8, padding: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#4ade80', fontSize: 13 }}>
+                  <CheckCircleIcon size={16} />
+                  <span>Payment proof submitted successfully!</span>
+                </div>
+                <img 
+                  src={booking.paymentProof} 
+                  alt="Proof" 
+                  style={{ width: '100%', maxHeight: 180, objectFit: 'contain', borderRadius: 8, border: '1px solid rgba(255, 255, 255, 0.1)', background: 'rgba(0,0,0,0.2)', padding: 4 }} 
+                />
+                <button 
+                  className="btn small outline" 
+                  onClick={() => onUpload(booking.id)}
+                  style={{ marginTop: 4, width: '100%', border: '1px solid rgba(251, 191, 36, 0.3)', color: 'var(--gold)' }}
+                >
+                  Change Proof Screenshot
+                </button>
               </div>
-              <img 
-                src={booking.paymentProof} 
-                alt="Proof" 
-                style={{ width: '100%', maxHeight: 180, objectFit: 'contain', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)', padding: 4 }} 
-              />
+            ) : (
               <button 
-                className="btn small outline" 
+                className="btn" 
                 onClick={() => onUpload(booking.id)}
-                style={{ marginTop: 4, width: '100%', border: '1px solid rgba(251, 191, 36, 0.3)', color: 'var(--gold)' }}
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)',
+                  color: '#0e1118',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  border: 'none',
+                  boxShadow: '0 4px 12px rgba(201, 168, 76, 0.2)'
+                }}
               >
-                Change Proof Screenshot
+                Upload Payment Receipt
               </button>
-            </div>
-          ) : (
-            <button 
-              className="btn" 
-              onClick={() => onUpload(booking.id)}
-              style={{
-                width: '100%',
-                background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)',
-                color: '#0e1118',
-                fontWeight: 700,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                border: 'none',
-                boxShadow: '0 4px 12px rgba(201, 168, 76, 0.2)'
-              }}
-            >
-              Upload Payment Receipt
-            </button>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
