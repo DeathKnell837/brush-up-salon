@@ -49,14 +49,29 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
         {/* Header */}
         <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <img 
-              src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/GCash_logo.svg/1200px-GCash_logo.svg.png" 
-              alt="GCash" 
-              style={{ height: 18, filter: 'brightness(1.2)' }} 
-              onError={(e) => { e.target.style.display = 'none'; }} 
-            />
-            <h2 style={{ fontSize: 16, color: 'var(--text-white)', margin: 0, fontFamily: 'var(--font-display)', fontWeight: 600 }}>
-              GCash Payment
+            {/* GCash Pure CSS Brand Logo */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                background: '#0057E7',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                fontWeight: '900',
+                fontSize: 12,
+                fontFamily: 'system-ui, -apple-system, sans-serif'
+              }}>
+                G
+              </div>
+              <span style={{ color: '#0057E7', fontSize: 15, fontWeight: 900, fontFamily: 'system-ui, -apple-system, sans-serif', letterSpacing: '-0.3px' }}>
+                GCash
+              </span>
+            </div>
+            <h2 style={{ fontSize: 15, color: 'var(--text-white)', margin: 0, fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+              Payment Details
             </h2>
           </div>
           <button className="close-btn" onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', padding: 4 }}>
@@ -108,13 +123,29 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
             marginBottom: 24
           }}>
             {/* Logo area */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, marginBottom: 16 }}>
-              <img 
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/GCash_logo.svg/1200px-GCash_logo.svg.png" 
-                alt="GCash Logo" 
-                style={{ height: 20, filter: 'brightness(1.5)' }} 
-              />
-              <span style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 10, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginBottom: 16 }}>
+              {/* Standee White GCash Logo */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: '50%',
+                  background: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#0057E7',
+                  fontWeight: '900',
+                  fontSize: 13,
+                  fontFamily: 'system-ui, -apple-system, sans-serif'
+                }}>
+                  G
+                </div>
+                <span style={{ color: '#ffffff', fontSize: 16, fontWeight: 900, fontFamily: 'system-ui, -apple-system, sans-serif', letterSpacing: '-0.3px' }}>
+                  GCash
+                </span>
+              </div>
+              <span style={{ color: 'rgba(255, 255, 255, 0.75)', fontSize: 9, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', marginTop: 2 }}>
                 Scan to Pay
               </span>
             </div>
