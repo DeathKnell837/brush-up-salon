@@ -97,7 +97,7 @@ function BookingModal({ salon, initialDetails, onClose, onSubmit, currentUser })
               <label>Time</label>
               <input type="time" value={bookTime} onChange={(e) => setBookTime(e.target.value)} />
             </div>
-            <button type="submit" className="btn">Confirm Booking</button>
+            <button type="submit" className="btn">Book</button>
           </form>
         </div>
       </div>

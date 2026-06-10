@@ -29,6 +29,33 @@ const _ak = ['AIza','SyAJ4_zJXgkY','rZyl9u2yLaUi','1rToxmBm_p8'];
 const GROQ_KEY = process.env.REACT_APP_GROQ_API_KEY || _gk.join('');
 const GEMINI_KEY = process.env.REACT_APP_GEMINI_API_KEY || _ak.join('');
 
+// ─── Customer Trust Badge Logic ───
+const getCustomerTrustLevel = (userId, allBookings) => {
+  const customerBookings = allBookings.filter(b => b.userId === userId);
+  const completed = customerBookings.filter(b => b.status === 'Completed');
+  const hasReview = completed.some(b => b.review);
+  const cancelled = customerBookings.filter(b => b.status === 'Cancelled' || b.status === 'Rejected');
+  const hasNoContact = customerBookings.some(b => !b.contact || b.contact === 'N/A');
+
+  if (cancelled.length >= 2 || (hasNoContact && customerBookings.length >= 2)) {
+    return { level: 'suspicious', label: 'Suspicious', icon: '⚠', color: '#f59e0b', tooltip: '2+ cancelled/rejected bookings or missing contact info' };
+  }
+  if (completed.length >= 2 && hasReview && cancelled.length === 0) {
+    return { level: 'verified', label: 'Verified', icon: '★', color: '#c9a84c', tooltip: '2+ completed bookings with reviews and no cancellations' };
+  }
+  return { level: 'new', label: 'New', icon: '●', color: '#6b7280', tooltip: 'First-time or new customer' };
+};
+
+const TrustBadge = ({ userId, allBookings }) => {
+  const trust = getCustomerTrustLevel(userId, allBookings);
+  return (
+    <span className={`trust-badge trust-badge-${trust.level}`} title={trust.tooltip}>
+      <span className="trust-badge-icon">{trust.icon}</span>
+      {trust.label}
+    </span>
+  );
+};
+
 function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, showToast, syncTick, onOpenProfile }) {
   const allSalons = getSalons();
   const isSuperAdmin = currentUser.salonId === 'all' || currentUser.role === 'superadmin';
@@ -167,6 +194,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
     const all = getBookings(); const i = all.findIndex(b => b.id === id);
     if (i !== -1) { 
       all[i].status = status; 
+      if (status === 'Approved') {
+        all[i].approvedAt = new Date().toISOString();
+      }
       if (status === 'Completed') {
         all[i].paidAmount = all[i].servicePrice !== undefined ? all[i].servicePrice : 0;
       }
@@ -1252,7 +1282,10 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     <div key={b.id} className="booking-card">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
-                          <div className="booking-customer">{b.customer}</div>
+                          <div className="booking-customer" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {b.customer}
+                            <TrustBadge userId={b.userId} allBookings={networkBookings} />
+                          </div>
                           <div className="booking-meta" style={{ marginTop: 4 }}>
                             <ScissorsIcon size={12} /> {b.service}
                             <span style={{ color: 'var(--gold)', marginLeft: 8, fontWeight: 600 }}>
@@ -1265,6 +1298,23 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         </span>
                       </div>
                       <div className="booking-meta"><CalendarIcon size={12} /> {b.date} <ClockIcon size={12} /> {b.time}{b.contact && <><PhoneIcon size={12} /> {b.contact}</>}</div>
+                      {/* Payment proof indicator */}
+                      {b.status === 'Approved' && (
+                        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                          {b.paymentProof ? (
+                            <div className="payment-proof-admin">
+                              <CheckCircleIcon size={12} />
+                              <span style={{ color: '#4ade80', fontSize: 11, fontWeight: 600 }}>Payment Proof Uploaded</span>
+                              <img src={b.paymentProof} alt="Payment proof" className="payment-proof-thumb" onClick={() => window.open(b.paymentProof, '_blank')} />
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <HourglassIcon size={12} />
+                              <span style={{ color: '#f59e0b', fontSize: 11, fontWeight: 600 }}>Awaiting Payment</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       {b.review && (
                         <div style={{ marginTop: 8 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1315,7 +1365,10 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       <div key={b.id} className="booking-card schedule-today">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div>
-                            <strong style={{ color: 'var(--text-white)', fontSize: 14 }}>{b.customer}</strong>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <strong style={{ color: 'var(--text-white)', fontSize: 14 }}>{b.customer}</strong>
+                              <TrustBadge userId={b.userId} allBookings={networkBookings} />
+                            </div>
                             <div className="booking-meta" style={{ marginTop: 4 }}>
                               <ScissorsIcon size={12} /> {b.service}
                               <span style={{ color: 'var(--gold)', marginLeft: 8, fontWeight: 600 }}>
@@ -1344,7 +1397,10 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         <div key={b.id} className="booking-card">
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                              <strong style={{ color: 'var(--text-white)', fontSize: 14 }}>{b.customer}</strong>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <strong style={{ color: 'var(--text-white)', fontSize: 14 }}>{b.customer}</strong>
+                                <TrustBadge userId={b.userId} allBookings={networkBookings} />
+                              </div>
                               <div className="booking-meta" style={{ marginTop: 4 }}>
                                 <ScissorsIcon size={12} /> {b.service}
                                 <span style={{ color: 'var(--gold)', marginLeft: 8, fontWeight: 600 }}>

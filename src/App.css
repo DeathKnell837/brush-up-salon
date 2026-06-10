@@ -795,3 +795,251 @@ select.search-input option{background:#1a1a1a;color:var(--text);padding:8px}
   .ci-search-wrap{width:100%}
 }
 
+/* --- Customer Trust Badges --- */
+.trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: help;
+  position: relative;
+}
+.trust-badge-icon {
+  font-size: 11px;
+}
+.trust-badge-verified {
+  background: rgba(201, 168, 76, 0.1);
+  color: var(--gold);
+  border: 1px solid rgba(201, 168, 76, 0.3);
+}
+.trust-badge-suspicious {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.trust-badge-new {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-dim);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* --- GCash Payment Section --- */
+.gcash-payment-section {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.gcash-payment-section.payment-reminder-urgent {
+  border: 1px solid rgba(201, 168, 76, 0.4);
+  background: rgba(201, 168, 76, 0.03);
+  animation: pulseGoldBorder 2s infinite ease-in-out;
+}
+
+@keyframes pulseGoldBorder {
+  0%, 100% {
+    border-color: rgba(201, 168, 76, 0.3);
+    box-shadow: 0 0 4px rgba(201, 168, 76, 0.1);
+  }
+  50% {
+    border-color: rgba(201, 168, 76, 0.8);
+    box-shadow: 0 0 12px rgba(201, 168, 76, 0.3);
+  }
+}
+
+.payment-reminder-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(201, 168, 76, 0.15);
+  border: 1px solid rgba(201, 168, 76, 0.3);
+  color: var(--gold-light);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.payment-countdown {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #f59e0b;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(245, 158, 11, 0.08);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  align-self: flex-start;
+}
+
+.gcash-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-white);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 8px;
+}
+
+.gcash-body {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+@media(max-width: 600px) {
+  .gcash-body {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.gcash-qr-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  padding: 8px;
+  border-radius: 8px;
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.gcash-qr-img {
+  width: 124px;
+  height: 124px;
+  object-fit: contain;
+}
+
+.gcash-scan-label {
+  color: #111;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.gcash-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-grow: 1;
+  width: 100%;
+}
+
+.gcash-number-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  padding: 4px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+}
+
+.gcash-label {
+  color: var(--text-dim);
+}
+
+.gcash-number {
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-white);
+  letter-spacing: 0.5px;
+}
+
+.gcash-amount {
+  color: var(--gold);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.gcash-proof-done {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.08);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(74, 222, 128, 0.15);
+  margin-top: 4px;
+}
+
+.gcash-proof-thumb {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-left: auto;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.gcash-proof-thumb:hover {
+  transform: scale(1.1);
+}
+
+.gcash-upload-btn {
+  background: var(--gold-dim);
+  border: 1px solid rgba(201, 168, 76, 0.3);
+  color: var(--gold);
+  font-weight: 600;
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.gcash-upload-btn:hover {
+  background: var(--gold);
+  color: #111;
+}
+
+/* --- Admin Payment Proof Styles --- */
+.payment-proof-admin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(74, 222, 128, 0.05);
+  border: 1px solid rgba(74, 222, 128, 0.15);
+  padding: 4px 8px 4px 8px;
+  border-radius: 6px;
+}
+
+.payment-proof-thumb {
+  width: 24px;
+  height: 24px;
+  object-fit: cover;
+  border-radius: 4px;
+  cursor: zoom-in;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+

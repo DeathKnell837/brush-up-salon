@@ -5,7 +5,8 @@ export const SALON_DATA = [
     description: 'Timeless beauty and sophisticated styling.',
     image: '/images/elegant.png',
     address: 'Midsayap, Cotabato',
-    contact: '0951-204-2xxx',
+    contact: '09512042379',
+    gcashNumber: '09512042379',
     hours: '9:00 AM - 8:00 PM',
     promotions: [],
     staff: [
@@ -54,7 +55,8 @@ export const SALON_DATA = [
     description: 'Full-service beauty salon for all occasions.',
     image: '/images/karen-green.png',
     address: 'Midsayap, Cotabato',
-    contact: '+63 923 456 7890',
+    contact: '09630649558',
+    gcashNumber: '09630649558',
     hours: '8:00 AM - 8:00 PM',
     promotions: [],
     staff: [
@@ -132,7 +134,8 @@ export const SALON_DATA = [
     description: 'Where every angle is your best angle.',
     image: '/images/pretty-aspects.png',
     address: 'Poblacion 8, Midsayap, Cotabato',
-    contact: '0938-1199713 / 0938-7057764',
+    contact: '09632185329',
+    gcashNumber: '09632185329',
     hours: '9:00 AM - 9:00 PM',
     promotions: ['Free Haircut with all rebond services!'],
     staff: [
@@ -170,7 +173,8 @@ export const SALON_DATA = [
     description: 'Premium grooming for the modern gentleman.',
     image: '/images/sir-james.png',
     address: 'Midsayap, Cotabato',
-    contact: '+63 945 678 9012',
+    contact: '09917332491',
+    gcashNumber: '09917332491',
     hours: '8:00 AM - 10:00 PM',
     promotions: [],
     staff: [
@@ -191,7 +195,8 @@ export const SALON_DATA = [
     description: 'For men and women — quality service at great prices.',
     image: '/images/palma.png',
     address: 'Midsayap, Cotabato',
-    contact: '+63 956 789 0123',
+    contact: '09099036659',
+    gcashNumber: '09099036659',
     hours: '8:00 AM - 7:00 PM',
     promotions: [],
     staff: [
@@ -234,7 +239,8 @@ export const SALON_DATA = [
     description: 'Full-service beauty and relaxation retreat.',
     image: '/images/babie-co.png',
     address: 'Midsayap, Cotabato',
-    contact: '+63 967 890 1234',
+    contact: '09756872664',
+    gcashNumber: '09756872664',
     hours: '9:00 AM - 9:00 PM',
     promotions: [],
     staff: [

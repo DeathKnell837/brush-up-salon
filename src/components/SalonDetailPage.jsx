@@ -341,7 +341,7 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
                     </div>
                   </div>
                   <button type="submit" className="btn sdp-book-btn">
-                    <CalendarIcon size={14} /> Confirm Booking
+                    <CalendarIcon size={14} /> Book
                   </button>
                 </form>
               )}

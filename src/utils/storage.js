@@ -111,7 +111,7 @@ const DEFAULT_ADMINS = [
 
 // ─── Seed admin accounts + salons into localStorage on first load ───
 export const seedAdminAccounts = async () => {
-  const version = 'v13_predictive_analytics_update'; // Bump for predictive analytics cost fields
+  const version = 'v14_gcash_payment_update'; // Bump for GCash numbers + payment features
   const seededVersion = storage.get('luxurySeedVersion', '');
   
   if (seededVersion === version) return;

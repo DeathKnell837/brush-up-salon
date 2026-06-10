@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { getBookings, setBookings, getAnnouncements } from '../utils/storage';
+import { getBookings, setBookings, getAnnouncements, getSalons } from '../utils/storage';
 import BrushUpLogo from './BrushUpLogo';
 import Chatbot from './Chatbot';
 import ReviewModal from './ReviewModal';
@@ -145,6 +145,41 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
     setReviewBooking(null);
   };
 
+  // ─── Payment Proof Upload ───
+  const handlePaymentProofUpload = (bookingId) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) { showToast('File too large. Max 5MB.'); return; }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const allBookings = getBookings();
+        const idx = allBookings.findIndex(b => b.id === bookingId);
+        if (idx !== -1) {
+          allBookings[idx].paymentProof = reader.result;
+          allBookings[idx].paymentProofAt = new Date().toISOString();
+          setBookings(allBookings);
+          setLocalTick(t => t + 1);
+          showToast('Payment proof uploaded! The salon will verify your payment.');
+        }
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  };
+
+  // ─── Timer tick for payment reminders (refresh every 30s) ───
+  const [timerTick, setTimerTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setTimerTick(t => t + 1), 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // ─── Get salon data with gcashNumber ───
+  const salonDataWithGcash = getSalons();
 
   const salonsWithStats = salons.map(s => {
     const sBookings = allBookings.filter(b => b.salonId === s.id && b.review);
@@ -568,6 +603,14 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                 <div className="history-grid">
                 {bookings.map((b, i) => {
                   const salon = salons.find(s => s.id === b.salonId);
+                  const salonGcash = salonDataWithGcash.find(s => s.id === b.salonId);
+                  const gcashNumber = salonGcash?.gcashNumber;
+                  
+                  // Payment reminder logic
+                  const approvedMinutesAgo = b.approvedAt ? Math.floor((Date.now() - new Date(b.approvedAt).getTime()) / 60000) : 0;
+                  const isPaymentOverdue = b.status === 'Approved' && b.approvedAt && approvedMinutesAgo >= 30 && !b.paymentProof;
+                  const minutesRemaining = b.status === 'Approved' && b.approvedAt && !b.paymentProof ? Math.max(0, 30 - approvedMinutesAgo) : 0;
+                  
                   return (
                     <div key={b.id} className="history-card" style={{ animationDelay: `${i * 0.08}s` }}>
                       <div className="history-card-image" style={{ backgroundImage: `url(${salon?.image})` }} />
@@ -586,6 +629,69 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                             {b.status}
                           </span>
                         </div>
+
+                        {/* ─── GCash Payment Section (Approved bookings) ─── */}
+                        {b.status === 'Approved' && gcashNumber && (
+                          <div className={`gcash-payment-section ${isPaymentOverdue ? 'payment-reminder-urgent' : ''}`}>
+                            {/* Payment reminder banner */}
+                            {isPaymentOverdue && !b.paymentProof && (
+                              <div className="payment-reminder-banner">
+                                <span>⏰</span>
+                                <span>Payment overdue! Please upload your GCash proof now.</span>
+                              </div>
+                            )}
+                            {!isPaymentOverdue && minutesRemaining > 0 && !b.paymentProof && (
+                              <div className="payment-countdown">
+                                <HourglassIcon size={12} />
+                                <span>Upload payment proof within {minutesRemaining} min</span>
+                              </div>
+                            )}
+
+                            <div className="gcash-header">
+                              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/GCash_logo.svg/1200px-GCash_logo.svg.png" alt="GCash" style={{ height: 20, filter: 'brightness(1.2)' }} onError={(e) => { e.target.style.display = 'none'; }} />
+                              <span>Pay via GCash</span>
+                            </div>
+                            
+                            <div className="gcash-body">
+                              <div className="gcash-qr-wrap">
+                                <img 
+                                  src={`https://chart.googleapis.com/chart?chs=180x180&cht=qr&chl=${gcashNumber}&choe=UTF-8`} 
+                                  alt="GCash QR" 
+                                  className="gcash-qr-img"
+                                />
+                                <span className="gcash-scan-label">Scan to pay via GCash</span>
+                              </div>
+                              <div className="gcash-details">
+                                <div className="gcash-number-row">
+                                  <span className="gcash-label">GCash Number</span>
+                                  <span className="gcash-number">{gcashNumber}</span>
+                                </div>
+                                <div className="gcash-number-row">
+                                  <span className="gcash-label">Amount to Pay</span>
+                                  <span className="gcash-amount">₱{(b.servicePrice || 0).toLocaleString()}</span>
+                                </div>
+                                <div className="gcash-number-row">
+                                  <span className="gcash-label">Service</span>
+                                  <span style={{ color: 'var(--text-white)', fontSize: 12 }}>{b.service}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Payment proof */}
+                            {b.paymentProof ? (
+                              <div className="gcash-proof-done">
+                                <CheckCircleIcon size={14} />
+                                <span>Payment proof submitted</span>
+                                <img src={b.paymentProof} alt="Proof" className="gcash-proof-thumb" />
+                              </div>
+                            ) : (
+                              <button className="btn small gcash-upload-btn" onClick={() => handlePaymentProofUpload(b.id)}>
+                                📸 Upload Payment Screenshot
+                              </button>
+                            )}
+                          </div>
+                        )}
+
                         {(b.status === 'Pending' || b.status === 'Approved') && (
                           <div style={{ marginTop: '12px' }}>
                             <button className="btn small outline danger" onClick={() => handleCancelBooking(b.id)}>Cancel Appointment</button>
