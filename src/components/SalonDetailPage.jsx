@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { getBookings, setBookings } from '../utils/storage';
 import BrushUpLogo from './BrushUpLogo';
 import {
-  ScissorsIcon, CalendarIcon, CloseIcon, StoreIcon
+  ScissorsIcon, CalendarIcon, CloseIcon, StoreIcon, WalletIcon, SmartphoneIcon
 } from './Icons';
 
 function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, showToast }) {
@@ -345,8 +345,12 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
                   <div className="input-group">
                     <label>Payment Method</label>
                     <div className="payment-method-toggle">
-                      <button type="button" className={`pmt-btn ${bookPaymentMethod === 'Cash' ? 'active' : ''}`} onClick={() => setBookPaymentMethod('Cash')}>💵 Cash</button>
-                      <button type="button" className={`pmt-btn ${bookPaymentMethod === 'GCash' ? 'active' : ''}`} onClick={() => setBookPaymentMethod('GCash')}>📱 GCash</button>
+                      <button type="button" className={`pmt-btn ${bookPaymentMethod === 'Cash' ? 'active' : ''}`} onClick={() => setBookPaymentMethod('Cash')}>
+                        <WalletIcon size={14} style={{ marginRight: 6 }} /> Cash
+                      </button>
+                      <button type="button" className={`pmt-btn ${bookPaymentMethod === 'GCash' ? 'active' : ''}`} onClick={() => setBookPaymentMethod('GCash')}>
+                        <SmartphoneIcon size={14} style={{ marginRight: 6 }} /> GCash
+                      </button>
                     </div>
                   </div>
                   <button type="submit" className="btn sdp-book-btn">

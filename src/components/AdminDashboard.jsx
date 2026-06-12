@@ -13,7 +13,8 @@ import ReactMarkdown from 'react-markdown';
 import {
   HourglassIcon, CheckCircleIcon, XCircleIcon, CalendarIcon, ClockIcon, 
   PhoneIcon, ScissorsIcon, UserIcon, ListIcon, SettingsIcon, AlertCircleIcon, 
-  ChartIcon, CloseIcon, StoreIcon, ShieldIcon, ClipboardIcon, SparklesIcon, BellIcon, SearchIcon
+  ChartIcon, CloseIcon, StoreIcon, ShieldIcon, ClipboardIcon, SparklesIcon, BellIcon, SearchIcon,
+  WalletIcon, SmartphoneIcon
 } from './Icons';
 
 // Helper: convert file to base64 data URL
@@ -585,7 +586,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
         alerts.push({
           type: 'duplicate_contact',
           severity: 'high',
-          icon: '📱',
+          icon: 'smartphone',
           title: 'Same phone number across multiple accounts',
           detail: `Phone ${contact} is used by ${users.size} different accounts: ${[...users].join(', ')}`,
           affectedBookings: networkBookings.filter(b => b.contact && b.contact.replace(/[\s\-()]/g, '') === contact).map(b => b.id)
@@ -611,7 +612,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           alerts.push({
             type: 'price_mismatch',
             severity: 'medium',
-            icon: '💰',
+            icon: 'wallet',
             title: 'Payment amount doesn\'t match service price',
             detail: `Booking #${b.id} for "${b.service}" has price ₱${b.servicePrice} but service range is ₱${minPrice}–₱${maxPrice}`,
             affectedBookings: [b.id]
@@ -623,7 +624,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           alerts.push({
             type: 'price_mismatch',
             severity: 'medium',
-            icon: '💰',
+            icon: 'wallet',
             title: 'Payment amount doesn\'t match service price',
             detail: `Booking #${b.id} for "${b.service}" has price ₱${b.servicePrice} but expected ₱${expectedPrice}`,
             affectedBookings: [b.id]
@@ -1284,17 +1285,18 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 ))}
               </div>
 
-              {/* ─── Fraud Detection Alerts ─── */}
               {fraudAlerts.length > 0 && (
                 <div className="fraud-alert-banner">
-                  <div className="fraud-alert-header">
-                    <span className="fraud-alert-icon">⚠️</span>
+                  <div className="fraud-alert-header" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <AlertCircleIcon size={16} style={{ color: '#f87171' }} />
                     <strong>Fraud Detection: {fraudAlerts.length} alert{fraudAlerts.length > 1 ? 's' : ''} found</strong>
                   </div>
                   <div className="fraud-alert-list">
                     {fraudAlerts.map((alert, idx) => (
                       <div key={idx} className={`fraud-alert-item fraud-alert-${alert.severity}`}>
-                        <span className="fraud-alert-item-icon">{alert.icon}</span>
+                        <span className="fraud-alert-item-icon" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                          {alert.icon === 'smartphone' ? <SmartphoneIcon size={16} /> : <WalletIcon size={16} />}
+                        </span>
                         <div>
                           <div className="fraud-alert-item-title">{alert.title}</div>
                           <div className="fraud-alert-item-detail">{alert.detail}</div>
@@ -1331,11 +1333,13 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       <div className="booking-meta"><CalendarIcon size={12} /> {b.date} <ClockIcon size={12} /> {b.time}{b.contact && <><PhoneIcon size={12} /> {b.contact}</>}</div>
                       {/* Payment method + fraud flag */}
                       <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span className={`pmt-badge pmt-badge-${(b.paymentMethod || 'Cash').toLowerCase()}`}>
-                          {b.paymentMethod === 'GCash' ? '📱 GCash' : '💵 Cash'}
+                        <span className={`pmt-badge pmt-badge-${(b.paymentMethod || 'Cash').toLowerCase()}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          {b.paymentMethod === 'GCash' ? <><SmartphoneIcon size={10} /> GCash</> : <><WalletIcon size={10} /> Cash</>}
                         </span>
                         {fraudFlaggedBookingIds.has(b.id) && (
-                          <span className="fraud-flag-badge" title="This booking has been flagged by fraud detection">⚠ Flagged</span>
+                          <span className="fraud-flag-badge" title="This booking has been flagged by fraud detection" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <AlertCircleIcon size={10} /> Flagged
+                          </span>
                         )}
                       </div>
                       {/* Payment proof indicator */}
@@ -1358,7 +1362,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       {b.status === 'Approved' && (!b.paymentMethod || b.paymentMethod === 'Cash') && (
                         <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                           <CheckCircleIcon size={12} />
-                          <span style={{ color: '#4ade80', fontSize: 11, fontWeight: 600 }}>💵 Cash — Collect at salon</span>
+                          <span style={{ color: '#4ade80', fontSize: 11, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <WalletIcon size={12} /> Cash — Collect at salon
+                          </span>
                         </div>
                       )}
                       {b.review && (

@@ -238,4 +238,20 @@ export const CreditCardIcon = (props) => (
   </Svg>
 );
 
+export const WalletIcon = (props) => (
+  <Svg {...props}>
+    <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4" />
+    <path d="M4 6v12a2 2 0 0 0 2 2h14v-4" />
+    <path d="M18 12a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h4v-6z" />
+  </Svg>
+);
+
+export const SmartphoneIcon = (props) => (
+  <Svg {...props}>
+    <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+    <line x1="12" y1="18" x2="12.01" y2="18" />
+  </Svg>
+);
+
+
 
