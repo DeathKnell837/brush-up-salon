@@ -51,21 +51,7 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {/* GCash Pure CSS Brand Logo */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{
-                width: 20,
-                height: 20,
-                borderRadius: '50%',
-                background: '#0057E7',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                fontWeight: '900',
-                fontSize: 12,
-                fontFamily: 'system-ui, -apple-system, sans-serif'
-              }}>
-                G
-              </div>
+              <GcashIcon size={20} />
               <span style={{ color: '#0057E7', fontSize: 15, fontWeight: 900, fontFamily: 'system-ui, -apple-system, sans-serif', letterSpacing: '-0.3px' }}>
                 GCash
               </span>
@@ -126,21 +112,7 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginBottom: 16 }}>
               {/* Standee White GCash Logo */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <div style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: '50%',
-                  background: '#ffffff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#0057E7',
-                  fontWeight: '900',
-                  fontSize: 13,
-                  fontFamily: 'system-ui, -apple-system, sans-serif'
-                }}>
-                  G
-                </div>
+                <GcashIcon size={22} white={true} />
                 <span style={{ color: '#ffffff', fontSize: 16, fontWeight: 900, fontFamily: 'system-ui, -apple-system, sans-serif', letterSpacing: '-0.3px' }}>
                   GCash
                 </span>
