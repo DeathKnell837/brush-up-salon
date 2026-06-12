@@ -568,6 +568,79 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const adminUsers = getUsers().filter(u => u.role === 'admin' || u.role === 'superadmin');
   const auditLogs = getAuditLogs().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
+  // ─── Fraud Detection ───
+  const fraudAlerts = React.useMemo(() => {
+    const alerts = [];
+
+    // 1. Same contact number used by different userId accounts
+    const contactToUsers = {};
+    networkBookings.forEach(b => {
+      if (!b.contact || b.contact === 'N/A') return;
+      const normalizedContact = b.contact.replace(/[\s\-()]/g, '');
+      if (!contactToUsers[normalizedContact]) contactToUsers[normalizedContact] = new Set();
+      contactToUsers[normalizedContact].add(b.userId);
+    });
+    Object.entries(contactToUsers).forEach(([contact, users]) => {
+      if (users.size > 1) {
+        alerts.push({
+          type: 'duplicate_contact',
+          severity: 'high',
+          icon: '📱',
+          title: 'Same phone number across multiple accounts',
+          detail: `Phone ${contact} is used by ${users.size} different accounts: ${[...users].join(', ')}`,
+          affectedBookings: networkBookings.filter(b => b.contact && b.contact.replace(/[\s\-()]/g, '') === contact).map(b => b.id)
+        });
+      }
+    });
+
+    // 2. Payment amounts don't match service price
+    networkBookings.forEach(b => {
+      if (b.status !== 'Approved' && b.status !== 'Completed') return;
+      if (b.paymentMethod !== 'GCash') return;
+      const salon = allSalons.find(s => s.id === b.salonId);
+      if (!salon) return;
+      const svc = salon.services.find(sv => sv.name === b.service);
+      if (!svc) return;
+
+      let expectedPrice = 0;
+      if (svc.pricingTable) {
+        const values = Object.values(svc.pricingTable).map(v => parseFloat(v) || 0);
+        const minPrice = Math.min(...values);
+        const maxPrice = Math.max(...values);
+        if (b.servicePrice < minPrice * 0.8 || b.servicePrice > maxPrice * 1.2) {
+          alerts.push({
+            type: 'price_mismatch',
+            severity: 'medium',
+            icon: '💰',
+            title: 'Payment amount doesn\'t match service price',
+            detail: `Booking #${b.id} for "${b.service}" has price ₱${b.servicePrice} but service range is ₱${minPrice}–₱${maxPrice}`,
+            affectedBookings: [b.id]
+          });
+        }
+      } else {
+        expectedPrice = parseFloat((svc.price || '0').replace(/[^0-9.]/g, '')) || 0;
+        if (expectedPrice > 0 && Math.abs(b.servicePrice - expectedPrice) > expectedPrice * 0.2) {
+          alerts.push({
+            type: 'price_mismatch',
+            severity: 'medium',
+            icon: '💰',
+            title: 'Payment amount doesn\'t match service price',
+            detail: `Booking #${b.id} for "${b.service}" has price ₱${b.servicePrice} but expected ₱${expectedPrice}`,
+            affectedBookings: [b.id]
+          });
+        }
+      }
+    });
+
+    return alerts;
+  }, [networkBookings, allSalons]);
+
+  const fraudFlaggedBookingIds = React.useMemo(() => {
+    const ids = new Set();
+    fraudAlerts.forEach(a => a.affectedBookings.forEach(id => ids.add(id)));
+    return ids;
+  }, [fraudAlerts]);
+
   // Salon Performance Comparison calculations
   const comparisonData = React.useMemo(() => {
     const todayDate = new Date(today);
@@ -899,57 +972,25 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   return (
     <div className="app-shell">
       {/* Navigation Header */}
-      <nav className="navbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 24px', height: '70px', borderBottom: '1px solid var(--border)', background: 'rgba(10, 10, 10, 0.95)', backdropFilter: 'blur(10px)', zIndex: 1000 }}>
+      <nav className="navbar admin-navbar" style={{ borderBottom: '1px solid var(--border)', background: 'rgba(10, 10, 10, 0.95)', backdropFilter: 'blur(10px)', zIndex: 1000 }}>
         {/* Left: Brand / Logo */}
-        <div className="brand" style={{ display: 'flex', alignItems: 'center' }}>
+        <div className="brand admin-brand">
           <BrushUpLogo size="small" />
         </div>
 
         {/* Center: Toggle Tabs and Optional Salon Switcher */}
-        <div className="navbar-center" style={{ display: 'flex', alignItems: 'center', gap: 32, height: '100%' }}>
+        <div className="navbar-center admin-navbar-center">
           {/* Toggle Tabs */}
-          <div style={{ display: 'flex', gap: 24, height: '100%', alignItems: 'center' }}>
+          <div className="admin-navbar-tabs">
             <button 
-              className={`navbar-tab ${viewScope === 'branch' ? 'active' : ''}`}
-              style={{
-                background: 'none',
-                border: 'none',
-                borderBottom: viewScope === 'branch' ? '2px solid var(--gold)' : '2px solid transparent',
-                color: viewScope === 'branch' ? 'var(--gold)' : 'var(--text-dim)',
-                padding: '24px 4px',
-                fontSize: '13px',
-                fontWeight: '600',
-                letterSpacing: '0.5px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                transition: 'all 0.2s ease',
-                height: '70px'
-              }}
+              className={`navbar-tab ${viewScope === 'branch' ? 'active' : ''} admin-navbar-tab`}
               onClick={() => { setViewScope('branch'); setActiveTab('bookings'); }}
             >
               <StoreIcon size={14} /> Branch Operations
             </button>
             {isSuperAdmin && (
               <button
-                className={`navbar-tab ${viewScope === 'network' ? 'active' : ''}`}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: viewScope === 'network' ? '2px solid var(--gold)' : '2px solid transparent',
-                  color: viewScope === 'network' ? 'var(--gold)' : 'var(--text-dim)',
-                  padding: '24px 4px',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  letterSpacing: '0.5px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  transition: 'all 0.2s ease',
-                  height: '70px'
-                }}
+                className={`navbar-tab ${viewScope === 'network' ? 'active' : ''} admin-navbar-tab`}
                 onClick={() => { setViewScope('network'); setActiveTab('network-overview'); }}
               >
                 <ShieldIcon size={14} /> Network HQ View
@@ -958,55 +999,23 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           </div>
 
           {/* Vertical separator if superadmin / has switcher */}
-          {viewScope === 'branch' && <div style={{ width: '1px', height: '24px', background: 'rgba(255, 255, 255, 0.1)' }} />}
+          {viewScope === 'branch' && <div className="admin-nav-separator" />}
 
           {/* Salon Switcher (Dropdown for super admin, styled label for normal admin) */}
           {viewScope === 'branch' && (
             currentUser.salonId === 'all' ? (
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <div className="admin-salon-switcher">
                 <select 
                   value={currentSalonId} 
                   onChange={e => setCurrentSalonId(e.target.value)} 
-                  style={{
-                    appearance: 'none',
-                    WebkitAppearance: 'none',
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(201, 168, 76, 0.3)',
-                    borderRadius: '8px',
-                    padding: '8px 36px 8px 16px',
-                    fontSize: '13px',
-                    fontWeight: '500',
-                    color: 'var(--gold)',
-                    cursor: 'pointer',
-                    outline: 'none',
-                    transition: 'all 0.2s ease',
-                    minWidth: '200px',
-                    fontFamily: 'var(--font-body)',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
-                  }}
+                  className="admin-salon-select"
                 >
                   {allSalons.map(s => <option key={s.id} value={s.id} style={{ background: '#0f1118', color: '#fff' }}>{s.name}</option>)}
                 </select>
-                <span style={{
-                  position: 'absolute',
-                  right: '14px',
-                  pointerEvents: 'none',
-                  borderLeft: '4px solid transparent',
-                  borderRight: '4px solid transparent',
-                  borderTop: '5px solid var(--gold)'
-                }} />
+                <span className="admin-select-arrow" />
               </div>
             ) : (
-              <div style={{
-                background: 'rgba(201, 168, 76, 0.05)',
-                border: '1px solid rgba(201, 168, 76, 0.2)',
-                borderRadius: '8px',
-                padding: '8px 16px',
-                fontSize: '13px',
-                fontWeight: '600',
-                color: 'var(--gold)',
-                letterSpacing: '0.5px'
-              }}>
+              <div className="admin-salon-label">
                 {salonName || salon?.name}
               </div>
             )
@@ -1274,6 +1283,28 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   </button>
                 ))}
               </div>
+
+              {/* ─── Fraud Detection Alerts ─── */}
+              {fraudAlerts.length > 0 && (
+                <div className="fraud-alert-banner">
+                  <div className="fraud-alert-header">
+                    <span className="fraud-alert-icon">⚠️</span>
+                    <strong>Fraud Detection: {fraudAlerts.length} alert{fraudAlerts.length > 1 ? 's' : ''} found</strong>
+                  </div>
+                  <div className="fraud-alert-list">
+                    {fraudAlerts.map((alert, idx) => (
+                      <div key={idx} className={`fraud-alert-item fraud-alert-${alert.severity}`}>
+                        <span className="fraud-alert-item-icon">{alert.icon}</span>
+                        <div>
+                          <div className="fraud-alert-item-title">{alert.title}</div>
+                          <div className="fraud-alert-item-detail">{alert.detail}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {filtered.length === 0 ? (
                 <div className="empty-state"><div className="empty-icon"><ListIcon size={48} /></div><h3 className="empty-title">No Bookings</h3><p>No {statusFilter === 'all' ? '' : statusFilter} bookings.</p></div>
               ) : (
@@ -1298,8 +1329,17 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         </span>
                       </div>
                       <div className="booking-meta"><CalendarIcon size={12} /> {b.date} <ClockIcon size={12} /> {b.time}{b.contact && <><PhoneIcon size={12} /> {b.contact}</>}</div>
+                      {/* Payment method + fraud flag */}
+                      <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span className={`pmt-badge pmt-badge-${(b.paymentMethod || 'Cash').toLowerCase()}`}>
+                          {b.paymentMethod === 'GCash' ? '📱 GCash' : '💵 Cash'}
+                        </span>
+                        {fraudFlaggedBookingIds.has(b.id) && (
+                          <span className="fraud-flag-badge" title="This booking has been flagged by fraud detection">⚠ Flagged</span>
+                        )}
+                      </div>
                       {/* Payment proof indicator */}
-                      {b.status === 'Approved' && (
+                      {b.status === 'Approved' && b.paymentMethod === 'GCash' && (
                         <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
                           {b.paymentProof ? (
                             <div className="payment-proof-admin">
@@ -1310,9 +1350,15 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                           ) : (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                               <HourglassIcon size={12} />
-                              <span style={{ color: '#f59e0b', fontSize: 11, fontWeight: 600 }}>Awaiting Payment</span>
+                              <span style={{ color: '#f59e0b', fontSize: 11, fontWeight: 600 }}>Awaiting GCash Payment</span>
                             </div>
                           )}
+                        </div>
+                      )}
+                      {b.status === 'Approved' && (!b.paymentMethod || b.paymentMethod === 'Cash') && (
+                        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <CheckCircleIcon size={12} />
+                          <span style={{ color: '#4ade80', fontSize: 11, fontWeight: 600 }}>💵 Cash — Collect at salon</span>
                         </div>
                       )}
                       {b.review && (
@@ -1506,7 +1552,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               </div>
 
               {/* Health Ring Meter and Core Metrics */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr', gap: 36, marginBottom: 36, alignItems: 'stretch', position: 'relative', zIndex: 1 }}>
+              <div className="analytics-core-grid">
                 {/* Glowing Risk Circle (Enlarged & Pulsing if Critical) */}
                 <div style={{ 
                   background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.55), rgba(15, 15, 15, 0.75))',
@@ -1610,7 +1656,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 </div>
 
                 {/* Grid metrics details */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                <div className="analytics-metrics-grid">
                   
                   {/* Card 1: Operational Cash Runway */}
                   <div style={{ 
@@ -1979,7 +2025,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 <p style={{ fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.6, marginBottom: 20 }}>
                   These parameters represent the monthly baseline expenses and reserves of the branch. You can update these values inside the <strong>Settings</strong> tab.
                 </p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
+                <div className="analytics-params-grid">
                   <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px 20px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.03)' }}>
                     <span style={{ fontSize: 9, color: 'var(--text-dim)', letterSpacing: 0.8, display: 'block', textTransform: 'uppercase', fontWeight: '600' }}>MONTHLY FIXED EXPENSES</span>
                     <strong style={{ display: 'block', fontSize: 18, color: 'var(--gold)', marginTop: 6, fontFamily: 'var(--font-display)' }}>
@@ -2371,7 +2417,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               {showAddStaff && (
                 <div style={{ background: 'rgba(201,168,76,0.04)', border: '1px solid rgba(201,168,76,0.15)', borderRadius: 16, padding: 24, marginBottom: 24 }}>
                   <h3 style={{ fontSize: 15, fontFamily: 'var(--font-display)', color: 'var(--text-white)', marginBottom: 16 }}>New Team Member</h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 12, alignItems: 'flex-end' }}>
+                  <div className="admin-staff-form-grid">
                     <div className="input-group" style={{ marginBottom: 0 }}><label>Full Name</label><input type="text" placeholder="e.g. Maria Santos" value={newStaffName} onChange={e => setNewStaffName(e.target.value)} /></div>
                     <div className="input-group" style={{ marginBottom: 0 }}><label>Role / Position</label>
                       <select value={newStaffRole} onChange={e => setNewStaffRole(e.target.value)}>
@@ -2700,7 +2746,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       ))}
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr', gap: 28, position: 'relative', zIndex: 1 }}>
+                    <div className="reports-main-grid">
                       {/* Left: Top Services Distribution */}
                       <div style={{
                         background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.45), rgba(15, 15, 15, 0.65))',
@@ -2865,7 +2911,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   <div className="input-group"><label>Description</label><input type="text" value={salonDesc} onChange={e => setSalonDesc(e.target.value)} /></div>
                   
                   {/* Financial inputs (NEW!) */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                  <div className="admin-settings-financials-grid">
                     <div className="input-group" style={{ marginBottom: 0 }}>
                       <label>Monthly Fixed Expenses (PHP)</label>
                       <input type="number" value={salonOverhead} onChange={e => setSalonOverhead(e.target.value)} />
@@ -2951,7 +2997,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   {/* Franchise Risk Distribution */}
                   <div style={panelCard}>
                     <h3 style={{ fontSize: 16, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Franchise Risk Distribution</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                    <div className="admin-hq-kpi-grid">
                       <div style={{ textAlign: 'center', padding: 12, background: 'rgba(74, 222, 128, 0.05)', border: '1px solid rgba(74, 222, 128, 0.15)', borderRadius: 8 }}>
                         <div style={{ fontSize: 24, fontWeight: 700, color: '#4ade80', fontFamily: 'var(--font-display)' }}>{riskDistribution.stable}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4 }}>Stable</div>
@@ -3393,7 +3439,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               <div className="section-header"><p className="section-label">COOPERATIVE</p><h2 className="section-heading">Manage Salons</h2></div>
               <div style={panelCard}>
                 <h3 style={{ fontSize: 15, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Register New Salon</h3>
-                <form onSubmit={handleAddSalon} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <form onSubmit={handleAddSalon} className="admin-hq-add-salon-form">
                   <div className="input-group" style={{ marginBottom: 0 }}><label>Salon Name *</label><input type="text" placeholder="e.g. Luxe Studio" value={ns.name} onChange={e => setNs({ ...ns, name: e.target.value })} /></div>
                   <div className="input-group" style={{ marginBottom: 0 }}><label>Description</label><input type="text" placeholder="Tagline" value={ns.desc} onChange={e => setNs({ ...ns, desc: e.target.value })} /></div>
                   <div className="input-group" style={{ marginBottom: 0 }}><label>Admin Username *</label><input type="text" placeholder="e.g. luxeadmin" value={ns.admin} onChange={e => setNs({ ...ns, admin: e.target.value })} /></div>
@@ -3460,7 +3506,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           {activeTab === 'network-broadcasts' && (
             <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
               <div className="section-header"><p className="section-label">COMMUNICATION</p><h2 className="section-heading">Network Broadcasts</h2></div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 24, alignItems: 'start' }}>
+              <div className="admin-hq-broadcasts-grid">
                 <div style={panelCard}>
                   <h3 style={{ fontSize: 16, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>New Broadcast</h3>
                   <form onSubmit={handleSetAnnouncement} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -3732,30 +3778,15 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       {/* AI Financial Health Audit Modal (NEW! Fix 9: Strip emojis from header indicator) */}
       {showAuditModal && (
         <div className="modal" onClick={() => setShowAuditModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ 
-            maxWidth: '920px', 
-            width: '94vw', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            background: '#0e1118', 
-            border: '1px solid rgba(201, 168, 76, 0.3)',
-            gridTemplateColumns: 'none', /* Bypasses App.css grid layout */
-            gap: 0,
-            padding: '24px',
-            boxShadow: '0 24px 48px rgba(0, 0, 0, 0.6)'
-          }}>
-            <div className="modal-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 14, width: '100%', marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ 
-                  width: 32, height: 32, borderRadius: '50%', background: 'rgba(201,168,76,0.15)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)',
-                  boxShadow: '0 0 10px rgba(201,168,76,0.2)'
-                }}><ShieldIcon size={16} /></div>
+          <div className="modal-content admin-audit-modal-content">
+            <div className="modal-header admin-audit-modal-header">
+              <div className="admin-audit-header-wrap">
+                <div className="admin-audit-icon-wrap"><ShieldIcon size={16} /></div>
                 <div>
-                  <h2 style={{ fontSize: 16, color: 'var(--text-white)', margin: 0, fontFamily: 'var(--font-display)', letterSpacing: '0.3px' }}>
+                  <h2 className="admin-audit-title">
                     Brush Up Oracle AI Financial Audit
                   </h2>
-                  <span style={{ fontSize: 10, color: riskColor, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <span className="admin-audit-profile">
                     Active Risk Profile: {riskLabel}
                   </span>
                 </div>
@@ -3765,25 +3796,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               </button>
             </div>
             
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: '1fr 1fr', 
-              gap: '32px', 
-              width: '100%', 
-              color: '#d1d5db', 
-              fontSize: 13, 
-              lineHeight: 1.6,
-              marginBottom: 10
-            }}>
+            <div className="admin-audit-modal-grid">
               {/* Left Column: Risk Gauge, Risk Badge, and Key Metrics Stacked */}
-              <div style={{
-                borderRight: '1px solid rgba(201, 168, 76, 0.18)', /* Elegant gold divider */
-                paddingRight: '32px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '20px'
-              }}>
+              <div className="admin-audit-modal-left">
                 {/* Risk Gauge Circle */}
                 <div style={{ 
                   width: 155, 

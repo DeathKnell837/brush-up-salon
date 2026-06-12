@@ -13,6 +13,7 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
   const [bookDate, setBookDate] = useState('');
   const [bookTime, setBookTime] = useState('');
   const [bookStaff, setBookStaff] = useState('');
+  const [bookPaymentMethod, setBookPaymentMethod] = useState('Cash');
   const [reviewSort, setReviewSort] = useState('recent');
 
   const allBookings = getBookings();
@@ -109,7 +110,8 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
       staff: bookStaff || 'Any',
       date: bookDate,
       time: bookTime,
-      status: 'Pending'
+      status: 'Pending',
+      paymentMethod: bookPaymentMethod
     });
     setBookings(bookings);
     showToast('Booking submitted! Awaiting salon approval.');
@@ -338,6 +340,13 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
                     <div className="input-group">
                       <label>Time</label>
                       <input type="time" value={bookTime} onChange={e => setBookTime(e.target.value)} required />
+                    </div>
+                  </div>
+                  <div className="input-group">
+                    <label>Payment Method</label>
+                    <div className="payment-method-toggle">
+                      <button type="button" className={`pmt-btn ${bookPaymentMethod === 'Cash' ? 'active' : ''}`} onClick={() => setBookPaymentMethod('Cash')}>💵 Cash</button>
+                      <button type="button" className={`pmt-btn ${bookPaymentMethod === 'GCash' ? 'active' : ''}`} onClick={() => setBookPaymentMethod('GCash')}>📱 GCash</button>
                     </div>
                   </div>
                   <button type="submit" className="btn sdp-book-btn">

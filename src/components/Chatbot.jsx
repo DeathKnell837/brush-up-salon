@@ -476,6 +476,7 @@ ${salonContext}`;
       <AnimatePresence>
         {isOpen && (
           <motion.div 
+            className="chatbot-container"
             initial={uiConfig.motionInitial}
             animate={uiConfig.motionAnimate}
             exit={uiConfig.motionExit}

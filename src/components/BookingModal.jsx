@@ -4,6 +4,7 @@ import { getBookings } from '../utils/storage';
 
 function BookingModal({ salon, initialDetails, onClose, onSubmit, currentUser }) {
   const [bookName, setBookName] = useState(currentUser?.name || '');
+  const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [bookContact, setBookContact] = useState('');
   
   const initService = initialDetails?.service || (typeof initialDetails === 'string' ? initialDetails : '');
@@ -24,7 +25,7 @@ function BookingModal({ salon, initialDetails, onClose, onSubmit, currentUser })
     if (!bookName || !bookContact || !bookService || !bookDate || !bookTime) { alert('Please complete the booking form.'); return; }
     const phoneRegex = /^[0-9+\-\s()]{7,15}$/;
     if (!phoneRegex.test(bookContact)) { alert('Please enter a valid phone number (7-15 digits).'); return; }
-    onSubmit({ name: bookName, contact: bookContact, service: bookService, date: bookDate, time: bookTime });
+    onSubmit({ name: bookName, contact: bookContact, service: bookService, date: bookDate, time: bookTime, paymentMethod });
   };
 
   return (
@@ -96,6 +97,13 @@ function BookingModal({ salon, initialDetails, onClose, onSubmit, currentUser })
             <div className="input-group">
               <label>Time</label>
               <input type="time" value={bookTime} onChange={(e) => setBookTime(e.target.value)} />
+            </div>
+            <div className="input-group">
+              <label>Payment Method</label>
+              <div className="payment-method-toggle">
+                <button type="button" className={`pmt-btn ${paymentMethod === 'Cash' ? 'active' : ''}`} onClick={() => setPaymentMethod('Cash')}>💵 Cash</button>
+                <button type="button" className={`pmt-btn ${paymentMethod === 'GCash' ? 'active' : ''}`} onClick={() => setPaymentMethod('GCash')}>📱 GCash</button>
+              </div>
             </div>
             <button type="submit" className="btn">Book</button>
           </form>

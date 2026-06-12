@@ -255,7 +255,8 @@ function App() {
       servicePrice: servicePrice,
       servicePriceLabel: servicePriceLabel,
       staff: bookingData.staff || 'Any',
-      date: bookingData.date, time: bookingData.time, status: 'Pending'
+      date: bookingData.date, time: bookingData.time, status: 'Pending',
+      paymentMethod: bookingData.paymentMethod || 'Cash'
     });
     setBookings(bookings);
     showToast('Booking submitted. Await approval.');

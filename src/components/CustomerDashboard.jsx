@@ -357,7 +357,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
   const activeBookings = bookings.filter(b => b.status === 'Approved' || b.status === 'Pending');
   const cancelledBookings = bookings.filter(b => b.status === 'Cancelled' || b.status === 'Rejected');
   const approvedBookings = bookings.filter(b => b.status === 'Approved');
-  const pendingPaymentsCount = approvedBookings.filter(b => !b.paymentProof).length;
+  const pendingPaymentsCount = approvedBookings.filter(b => !b.paymentProof && b.paymentMethod === 'GCash').length;
 
   const totalSpent = completedBookings.reduce((sum, b) => {
     if (b.paidAmount !== undefined && b.paidAmount !== null) return sum + b.paidAmount;
@@ -935,7 +935,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                         </div>
 
                         {/* ─── GCash Payment Trigger & Countdown (Approved bookings) ─── */}
-                        {b.status === 'Approved' && gcashNumber && (
+                        {b.status === 'Approved' && b.paymentMethod === 'GCash' && gcashNumber && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                             {isPaymentOverdue && !b.paymentProof && (
                               <div className="payment-reminder-banner" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#fca5a5', padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, marginTop: 10 }}>
@@ -982,6 +982,13 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                           </div>
                         )}
 
+                        {/* ─── Cash Payment Badge ─── */}
+                        {b.status === 'Approved' && (!b.paymentMethod || b.paymentMethod === 'Cash') && (
+                          <div className="cash-payment-badge" style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'rgba(74, 222, 128, 0.08)', border: '1px solid rgba(74, 222, 128, 0.2)', borderRadius: 10, fontSize: 12, fontWeight: 600, color: '#4ade80' }}>
+                            💵 Cash Payment — Pay at the salon
+                          </div>
+                        )}
+
                         {(b.status === 'Pending' || b.status === 'Approved') && (
                           <div style={{ marginTop: '12px' }}>
                             <button className="btn small outline danger" onClick={() => handleCancelBooking(b.id)}>Cancel Appointment</button>
@@ -1016,7 +1023,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
           <section className="content-section">
             <div className="section-header">
               <p className="section-label">PAYMENT ACTIONS</p>
-              <h2 className="section-heading">GCash Payments</h2>
+              <h2 className="section-heading">Payments</h2>
             </div>
 
             {approvedBookings.length === 0 ? (
@@ -1055,7 +1062,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                         </div>
 
                         {/* GCash Payment Trigger & Countdown */}
-                        {gcashNumber && (
+                        {b.paymentMethod === 'GCash' && gcashNumber && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                             {isPaymentOverdue && !b.paymentProof && (
                               <div className="payment-reminder-banner" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#fca5a5', padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, marginTop: 10 }}>
@@ -1099,6 +1106,13 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                                 💳 Pay via GCash
                               </button>
                             )}
+                          </div>
+                        )}
+
+                        {/* Cash Payment Badge */}
+                        {(!b.paymentMethod || b.paymentMethod === 'Cash') && (
+                          <div className="cash-payment-badge" style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'rgba(74, 222, 128, 0.08)', border: '1px solid rgba(74, 222, 128, 0.2)', borderRadius: 10, fontSize: 12, fontWeight: 600, color: '#4ade80' }}>
+                            💵 Cash Payment — Pay at the salon
                           </div>
                         )}
 
