@@ -277,6 +277,8 @@ input[type="text"]:focus, input[type="password"]:focus, input[type="email"]:focu
 .status.pending{background:var(--gold-dim);color:var(--gold)}
 .status.approved{background:rgba(72,187,120,0.1);color:var(--success)}
 .status.rejected{background:rgba(229,62,62,0.1);color:#fc8181}
+.status.completed{background:rgba(72,187,120,0.1);color:var(--success)}
+.status.cancelled{background:rgba(255,255,255,0.05);color:var(--text-dim)}
 
 /* ═══ CUSTOMER HISTORY ═══ */
 .history-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;padding:0 40px;animation:fadeUp .5s ease .2s both}
@@ -434,7 +436,7 @@ select.search-input option{background:#1a1a1a;color:var(--text);padding:8px}
   background:var(--bg-card);border:1px solid var(--border);transition:all var(--t);animation:fadeUp .4s ease both}
 .history-card:hover{border-color:var(--border-light);transform:translateY(-3px)}
 .history-card-image{height:120px;background-size:cover;background-position:center;filter:brightness(0.6)}
-.history-card-body{padding:20px;display:flex;flex-direction:column;gap:8px}
+.history-card-body{padding:20px;display:flex;flex-direction:column;gap:8px;flex-grow:1}
 .history-card-body .history-salon{font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--text-white)}
 .history-card-body .history-service{font-size:13px;color:var(--text-dim);display:flex;align-items:center;gap:6px}
 .history-card-body .history-datetime{font-size:12px;color:var(--text-dim);display:flex;gap:14px}

@@ -891,14 +891,10 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                     <div key={b.id} className="history-card" style={{ animationDelay: `${i * 0.08}s` }}>
                       <div className="history-card-image" style={{ backgroundImage: `url(${salon?.image})` }} />
                       <div className="history-card-body">
-                        <div className="history-salon">{salon?.name || 'Unknown Salon'}</div>
-                        <div className="history-service"><ScissorsIcon size={13} /> {b.service}</div>
-                        <div className="history-datetime">
-                          <span><CalendarIcon size={13} /> {b.date}</span>
-                          <span><ClockIcon size={13} /> {b.time}</span>
-                        </div>
-                        <div className="history-status">
-                          <span className={`status ${b.status.toLowerCase()}`}>
+                        {/* Title Row with Status Badge */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                          <div className="history-salon">{salon?.name || 'Unknown Salon'}</div>
+                          <span className={`status ${b.status.toLowerCase()}`} style={{ flexShrink: 0 }}>
                             {b.status === 'Pending' && <HourglassIcon size={10} />}
                             {(b.status === 'Approved' || b.status === 'Completed') && <CheckCircleIcon size={10} />}
                             {b.status === 'Rejected' || b.status === 'Cancelled' ? <XCircleIcon size={10} /> : null}
@@ -906,75 +902,130 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                           </span>
                         </div>
 
-                        {/* ─── GCash Payment Trigger & Countdown (Approved bookings) ─── */}
-                        {b.status === 'Approved' && b.paymentMethod === 'GCash' && gcashNumber && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            {isPaymentOverdue && !b.paymentProof && (
-                              <div className="payment-reminder-banner" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#fca5a5', padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, marginTop: 10 }}>
-                                <AlertCircleIcon size={12} style={{ color: '#f87171' }} />
-                                <span>Payment Overdue</span>
-                              </div>
+                        {/* Service name (Clamped to 2 lines for uniform height) */}
+                        <div className="history-service" style={{ minHeight: '38px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 6, lineHeight: '1.4' }}>
+                          <ScissorsIcon size={13} style={{ flexShrink: 0, marginRight: 6, display: 'inline' }} />
+                          <span>{b.service}</span>
+                        </div>
+
+                        {/* Date and Time Row */}
+                        <div className="history-datetime" style={{ marginTop: 6 }}>
+                          <span><CalendarIcon size={13} /> {b.date}</span>
+                          <span><ClockIcon size={13} /> {b.time}</span>
+                        </div>
+
+                        {/* Amount to Pay (Uniform layout) */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 4 }}>
+                          <span style={{ fontSize: 13, color: 'var(--text-dim)', fontWeight: 500 }}>Amount to Pay</span>
+                          <span style={{ fontSize: 16, color: 'var(--gold)', fontWeight: 700 }}>₱{(b.servicePrice || 0).toLocaleString()}</span>
+                        </div>
+
+                        {/* Action Area wrapped in a bottom-aligned section */}
+                        {(b.status === 'Pending' || b.status === 'Approved' || b.status === 'Completed' || b.status === 'Cancelled' || b.status === 'Rejected') && (
+                          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                            {/* 1. Pending Status banner */}
+                            {b.status === 'Pending' && (
+                              <>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center', padding: '6px 10px', background: 'rgba(201, 168, 76, 0.05)', border: '1px solid rgba(201, 168, 76, 0.12)', borderRadius: 8, fontSize: 11, color: 'var(--gold)', fontWeight: 500 }}>
+                                  <HourglassIcon size={12} />
+                                  <span>Awaiting salon approval</span>
+                                </div>
+                                <button className="btn small outline danger" style={{ width: '100%' }} onClick={() => handleCancelBooking(b.id)}>Cancel Appointment</button>
+                              </>
                             )}
-                            {!isPaymentOverdue && minutesRemaining > 0 && !b.paymentProof && (
-                              <div className="payment-countdown" style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '10px 0 0 0', alignSelf: 'stretch', justifyContent: 'center' }}>
-                                <ClockIcon size={12} />
-                                <span>Pay within {minutesRemaining} min</span>
+
+                            {/* 2. Approved Status */}
+                            {b.status === 'Approved' && (
+                              <>
+                                {/* GCash Payment Trigger & Countdown */}
+                                {b.paymentMethod === 'GCash' && gcashNumber && (
+                                  <>
+                                    {isPaymentOverdue && !b.paymentProof && (
+                                      <div className="payment-reminder-banner" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#fca5a5', padding: '8px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, justifyContent: 'center' }}>
+                                        <AlertCircleIcon size={12} style={{ color: '#f87171' }} />
+                                        <span>Payment Overdue</span>
+                                      </div>
+                                    )}
+                                    {!isPaymentOverdue && minutesRemaining > 0 && !b.paymentProof && (
+                                      <div className="payment-countdown" style={{ display: 'flex', alignItems: 'center', gap: 6, alignSelf: 'stretch', justifyContent: 'center', padding: '6px 10px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 8, fontSize: 11 }}>
+                                        <ClockIcon size={12} />
+                                        <span>Pay within {minutesRemaining} min</span>
+                                      </div>
+                                    )}
+                                    {b.paymentProof && (
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center', padding: '6px 10px', background: 'rgba(74, 222, 128, 0.05)', border: '1px solid rgba(74, 222, 128, 0.12)', borderRadius: 8, fontSize: 11, color: '#4ade80', fontWeight: 500 }}>
+                                        <CheckCircleIcon size={12} />
+                                        <span>Proof uploaded (verifying)</span>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+
+                                {/* Cash Payment Badge */}
+                                {(!b.paymentMethod || b.paymentMethod === 'Cash') && (
+                                  <div className="cash-payment-badge" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'rgba(74, 222, 128, 0.08)', border: '1px solid rgba(74, 222, 128, 0.2)', borderRadius: 10, fontSize: 12, fontWeight: 600, color: '#4ade80', justifyContent: 'center' }}>
+                                    <CashIcon size={14} /> Cash Payment — Pay at salon
+                                  </div>
+                                )}
+
+                                {/* Action buttons side-by-side */}
+                                <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                                  <button className="btn small outline danger" style={{ flex: 1 }} onClick={() => handleCancelBooking(b.id)}>Cancel</button>
+                                  
+                                  {b.paymentMethod === 'GCash' && gcashNumber && (
+                                    b.paymentProof ? (
+                                      <button 
+                                        className="btn small outline" 
+                                        onClick={() => setPaymentBookingId(b.id)}
+                                        style={{ flex: 1.5, border: '1px solid rgba(74, 222, 128, 0.3)', color: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                                      >
+                                        <CheckCircleIcon size={12} /> Details
+                                      </button>
+                                    ) : (
+                                      <button 
+                                        className="btn small" 
+                                        onClick={() => setPaymentBookingId(b.id)}
+                                        style={{ 
+                                          flex: 1.5, 
+                                          background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)', 
+                                          color: '#0e1118', 
+                                          fontWeight: 700, 
+                                          display: 'flex', 
+                                          alignItems: 'center', 
+                                          justifyContent: 'center', 
+                                          gap: 6,
+                                          border: 'none',
+                                          boxShadow: '0 4px 10px rgba(201, 168, 76, 0.15)'
+                                        }}
+                                      >
+                                        <GcashIcon size={12} /> Pay via GCash
+                                      </button>
+                                    )
+                                  )}
+                                </div>
+                              </>
+                            )}
+
+                            {/* 3. Completed Status */}
+                            {b.status === 'Completed' && (
+                              <div style={{ width: '100%' }}>
+                                {b.review ? (
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                                    <div style={{ color: 'var(--gold)', fontSize: '16px' }}>{'★'.repeat(b.review)}{'☆'.repeat(5-b.review)}</div>
+                                    <button className="btn small outline" onClick={() => handleLeaveReview(b.id)}>Edit Review</button>
+                                  </div>
+                                ) : (
+                                  <button className="btn small outline" style={{ width: '100%' }} onClick={() => handleLeaveReview(b.id)}>Leave Review</button>
+                                )}
                               </div>
                             )}
 
-                            {b.paymentProof ? (
-                              <button 
-                                className="btn small outline" 
-                                onClick={() => setPaymentBookingId(b.id)}
-                                style={{ marginTop: 10, width: '100%', border: '1px solid rgba(74, 222, 128, 0.3)', color: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                              >
-                                <CheckCircleIcon size={12} /> View Payment Details
-                              </button>
-                            ) : (
-                              <button 
-                                className="btn small" 
-                                onClick={() => setPaymentBookingId(b.id)}
-                                style={{ 
-                                  marginTop: 10, 
-                                  width: '100%', 
-                                  background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)', 
-                                  color: '#0e1118', 
-                                  fontWeight: 700, 
-                                  display: 'flex', 
-                                  alignItems: 'center', 
-                                  justifyContent: 'center', 
-                                  gap: 6,
-                                  border: 'none',
-                                  boxShadow: '0 4px 10px rgba(201, 168, 76, 0.15)'
-                                }}
-                              >
-                                <GcashIcon size={12} style={{ marginRight: 4 }} /> Pay via GCash
-                              </button>
-                            )}
-                          </div>
-                        )}
-
-                        {/* ─── Cash Payment Badge ─── */}
-                        {b.status === 'Approved' && (!b.paymentMethod || b.paymentMethod === 'Cash') && (
-                          <div className="cash-payment-badge" style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'rgba(74, 222, 128, 0.08)', border: '1px solid rgba(74, 222, 128, 0.2)', borderRadius: 10, fontSize: 12, fontWeight: 600, color: '#4ade80' }}>
-                            <CashIcon size={14} /> Cash Payment — Pay at the salon
-                          </div>
-                        )}
-
-                        {(b.status === 'Pending' || b.status === 'Approved') && (
-                          <div style={{ marginTop: '12px' }}>
-                            <button className="btn small outline danger" onClick={() => handleCancelBooking(b.id)}>Cancel Appointment</button>
-                          </div>
-                        )}
-                        {(b.status === 'Completed') && (
-                          <div style={{ marginTop: '12px' }}>
-                            {b.review ? (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <div style={{ color: 'var(--gold)', fontSize: '16px' }}>{'★'.repeat(b.review)}{'☆'.repeat(5-b.review)}</div>
-                                <button className="btn small outline" onClick={() => handleLeaveReview(b.id)}>Edit Review</button>
+                            {/* 4. Cancelled or Rejected Status */}
+                            {(b.status === 'Cancelled' || b.status === 'Rejected') && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center', padding: '10px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 8, fontSize: 11, color: 'var(--text-dim)', fontWeight: 500 }}>
+                                <XCircleIcon size={12} />
+                                <span>Appointment {b.status}</span>
                               </div>
-                            ) : (
-                              <button className="btn small outline" onClick={() => handleLeaveReview(b.id)}>Leave Review</button>
                             )}
                           </div>
                         )}
@@ -1022,74 +1073,101 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                     <div key={b.id} className="history-card" style={{ animationDelay: `${i * 0.08}s` }}>
                       <div className="history-card-image" style={{ backgroundImage: `url(${salon?.image})` }} />
                       <div className="history-card-body">
-                        <div className="history-salon">{salon?.name || 'Unknown Salon'}</div>
-                        <div className="history-service"><ScissorsIcon size={13} /> {b.service}</div>
-                        <div className="history-datetime">
+                        {/* Title Row with Status Badge */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                          <div className="history-salon">{salon?.name || 'Unknown Salon'}</div>
+                          <span className={`status ${b.status.toLowerCase()}`} style={{ flexShrink: 0 }}>
+                            <CheckCircleIcon size={10} />
+                            {b.status}
+                          </span>
+                        </div>
+
+                        {/* Service name (Clamped to 2 lines for uniform height) */}
+                        <div className="history-service" style={{ minHeight: '38px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 6, lineHeight: '1.4' }}>
+                          <ScissorsIcon size={13} style={{ flexShrink: 0, marginRight: 6, display: 'inline' }} />
+                          <span>{b.service}</span>
+                        </div>
+
+                        {/* Date and Time Row */}
+                        <div className="history-datetime" style={{ marginTop: 6 }}>
                           <span><CalendarIcon size={13} /> {b.date}</span>
                           <span><ClockIcon size={13} /> {b.time}</span>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
-                          <span style={{ fontSize: 13, color: 'var(--text-white)', fontWeight: 600 }}>Amount to Pay</span>
-                          <span style={{ fontSize: 15, color: 'var(--gold)', fontWeight: 700 }}>₱{(b.servicePrice || 0).toLocaleString()}</span>
+
+                        {/* Amount to Pay (Uniform layout) */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 4 }}>
+                          <span style={{ fontSize: 13, color: 'var(--text-dim)', fontWeight: 500 }}>Amount to Pay</span>
+                          <span style={{ fontSize: 16, color: 'var(--gold)', fontWeight: 700 }}>₱{(b.servicePrice || 0).toLocaleString()}</span>
                         </div>
 
-                        {/* GCash Payment Trigger & Countdown */}
-                        {b.paymentMethod === 'GCash' && gcashNumber && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            {isPaymentOverdue && !b.paymentProof && (
-                              <div className="payment-reminder-banner" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#fca5a5', padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, marginTop: 10 }}>
-                                <AlertCircleIcon size={12} style={{ color: '#f87171' }} />
-                                <span>Payment Overdue</span>
-                              </div>
-                            )}
-                            {!isPaymentOverdue && minutesRemaining > 0 && !b.paymentProof && (
-                              <div className="payment-countdown" style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '10px 0 0 0', alignSelf: 'stretch', justifyContent: 'center' }}>
-                                <ClockIcon size={12} />
-                                <span>Pay within {minutesRemaining} min</span>
-                              </div>
-                            )}
+                        {/* Action Area wrapped in a bottom-aligned section */}
+                        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                          {/* GCash Payment Trigger & Countdown */}
+                          {b.paymentMethod === 'GCash' && gcashNumber && (
+                            <>
+                              {isPaymentOverdue && !b.paymentProof && (
+                                <div className="payment-reminder-banner" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#fca5a5', padding: '8px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, justifyContent: 'center' }}>
+                                  <AlertCircleIcon size={12} style={{ color: '#f87171' }} />
+                                  <span>Payment Overdue</span>
+                                </div>
+                              )}
+                              {!isPaymentOverdue && minutesRemaining > 0 && !b.paymentProof && (
+                                <div className="payment-countdown" style={{ display: 'flex', alignItems: 'center', gap: 6, alignSelf: 'stretch', justifyContent: 'center', padding: '6px 10px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 8, fontSize: 11 }}>
+                                  <ClockIcon size={12} />
+                                  <span>Pay within {minutesRemaining} min</span>
+                                </div>
+                              )}
+                              {b.paymentProof && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center', padding: '6px 10px', background: 'rgba(74, 222, 128, 0.05)', border: '1px solid rgba(74, 222, 128, 0.12)', borderRadius: 8, fontSize: 11, color: '#4ade80', fontWeight: 500 }}>
+                                  <CheckCircleIcon size={12} />
+                                  <span>Proof uploaded (verifying)</span>
+                                </div>
+                              )}
+                            </>
+                          )}
 
-                            {b.paymentProof ? (
-                              <button 
-                                className="btn small outline" 
-                                onClick={() => setPaymentBookingId(b.id)}
-                                style={{ marginTop: 10, width: '100%', border: '1px solid rgba(74, 222, 128, 0.3)', color: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                              >
-                                <CheckCircleIcon size={12} /> View Payment Details
-                              </button>
-                            ) : (
-                              <button 
-                                className="btn small" 
-                                onClick={() => setPaymentBookingId(b.id)}
-                                style={{ 
-                                  marginTop: 10, 
-                                  width: '100%', 
-                                  background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)', 
-                                  color: '#0e1118', 
-                                  fontWeight: 700, 
-                                  display: 'flex', 
-                                  alignItems: 'center', 
-                                  justifyContent: 'center', 
-                                  gap: 6,
-                                  border: 'none',
-                                  boxShadow: '0 4px 10px rgba(201, 168, 76, 0.15)'
-                                }}
-                              >
-                                <GcashIcon size={12} style={{ marginRight: 4 }} /> Pay via GCash
-                              </button>
+                          {/* Cash Payment Badge */}
+                          {(!b.paymentMethod || b.paymentMethod === 'Cash') && (
+                            <div className="cash-payment-badge" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'rgba(74, 222, 128, 0.08)', border: '1px solid rgba(74, 222, 128, 0.2)', borderRadius: 10, fontSize: 12, fontWeight: 600, color: '#4ade80', justifyContent: 'center' }}>
+                              <CashIcon size={14} /> Cash Payment — Pay at salon
+                            </div>
+                          )}
+
+                          {/* Action buttons side-by-side */}
+                          <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                            <button className="btn small outline danger" style={{ flex: 1 }} onClick={() => handleCancelBooking(b.id)}>Cancel</button>
+                            
+                            {b.paymentMethod === 'GCash' && gcashNumber && (
+                              b.paymentProof ? (
+                                <button 
+                                  className="btn small outline" 
+                                  onClick={() => setPaymentBookingId(b.id)}
+                                  style={{ flex: 1.5, border: '1px solid rgba(74, 222, 128, 0.3)', color: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                                >
+                                  <CheckCircleIcon size={12} /> Details
+                                </button>
+                              ) : (
+                                <button 
+                                  className="btn small" 
+                                  onClick={() => setPaymentBookingId(b.id)}
+                                  style={{ 
+                                    flex: 1.5, 
+                                    background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)', 
+                                    color: '#0e1118', 
+                                    fontWeight: 700, 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center', 
+                                    gap: 6,
+                                    border: 'none',
+                                    boxShadow: '0 4px 10px rgba(201, 168, 76, 0.15)'
+                                  }}
+                                >
+                                  <GcashIcon size={12} /> Pay via GCash
+                                </button>
+                              )
                             )}
                           </div>
-                        )}
-
-                        {/* Cash Payment Badge */}
-                        {(!b.paymentMethod || b.paymentMethod === 'Cash') && (
-                          <div className="cash-payment-badge" style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'rgba(74, 222, 128, 0.08)', border: '1px solid rgba(74, 222, 128, 0.2)', borderRadius: 10, fontSize: 12, fontWeight: 600, color: '#4ade80' }}>
-                            <CashIcon size={14} /> Cash Payment — Pay at the salon
-                          </div>
-                        )}
-
-                        <div style={{ marginTop: '12px' }}>
-                          <button className="btn small outline danger" onClick={() => handleCancelBooking(b.id)}>Cancel Appointment</button>
                         </div>
                       </div>
                     </div>
