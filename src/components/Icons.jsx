@@ -253,26 +253,54 @@ export const SmartphoneIcon = (props) => (
   </Svg>
 );
 
-export const GcashIcon = ({ size = 20, style = {}, className = '', white = false }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width={size}
-    height={size}
-    viewBox="0 0 110 100"
-    fill="none"
-    className={className}
-    style={{ flexShrink: 0, ...style }}
-  >
-    {/* Outer C-ring */}
-    <path d="M 74 33 A 34 34 0 1 0 74 67" stroke={white ? "#ffffff" : "#007DFE"} strokeWidth="10" strokeLinecap="round" fill="none" />
-    {/* Inner G */}
-    <path d="M 62 40 A 20 20 0 1 0 62 60 M 62 50 H 46" stroke={white ? "#ffffff" : "#002AAB"} strokeWidth="11" strokeLinecap="round" fill="none" />
-    {/* Inner Wave */}
-    <path d="M 85 27 A 46 46 0 0 1 85 73" stroke={white ? "#ffffff" : "#4CD3FF"} strokeWidth="9" strokeLinecap="round" fill="none" />
-    {/* Outer Wave */}
-    <path d="M 97 25 A 58 58 0 0 1 97 75" stroke={white ? "#ffffff" : "#4CD3FF"} strokeWidth="9" strokeLinecap="round" fill="none" />
-  </svg>
-);
+export const GcashIcon = ({ size = 20, style = {}, className = '', white = false }) => {
+  if (white) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size}
+        height={size}
+        viewBox="0 0 110 100"
+        fill="none"
+        className={className}
+        style={{ flexShrink: 0, ...style }}
+      >
+        {/* Outer C-ring */}
+        <path d="M 74 33 A 34 34 0 1 0 74 67" stroke="#ffffff" strokeWidth="10" strokeLinecap="round" fill="none" />
+        {/* Inner G */}
+        <path d="M 62 40 A 20 20 0 1 0 62 60 M 62 50 H 46" stroke="#ffffff" strokeWidth="11" strokeLinecap="round" fill="none" />
+        {/* Inner Wave */}
+        <path d="M 85 27 A 46 46 0 0 1 85 73" stroke="#ffffff" strokeWidth="9" strokeLinecap="round" fill="none" />
+        {/* Outer Wave */}
+        <path d="M 97 25 A 58 58 0 0 1 97 75" stroke="#ffffff" strokeWidth="9" strokeLinecap="round" fill="none" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="-10 -10 130 120"
+      fill="none"
+      className={className}
+      style={{ flexShrink: 0, ...style }}
+    >
+      {/* Rounded white background to ensure perfect visibility on dark screens */}
+      <rect x="-5" y="-5" width="120" height="110" rx="18" fill="#ffffff" />
+      
+      {/* Outer C-ring (Medium Blue) */}
+      <path d="M 74 33 A 34 34 0 1 0 74 67" stroke="#007DFE" strokeWidth="10" strokeLinecap="round" fill="none" />
+      {/* Inner G (Dark Blue) */}
+      <path d="M 62 40 A 20 20 0 1 0 62 60 M 62 50 H 46" stroke="#002AAB" strokeWidth="11" strokeLinecap="round" fill="none" />
+      {/* Inner Wave (Light Blue) */}
+      <path d="M 85 27 A 46 46 0 0 1 85 73" stroke="#4CD3FF" strokeWidth="9" strokeLinecap="round" fill="none" />
+      {/* Outer Wave (Light Blue) */}
+      <path d="M 97 25 A 58 58 0 0 1 97 75" stroke="#4CD3FF" strokeWidth="9" strokeLinecap="round" fill="none" />
+    </svg>
+  );
+};
 
 export const CashIcon = (props) => (
   <Svg {...props}>
