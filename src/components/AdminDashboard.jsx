@@ -14,7 +14,7 @@ import {
   HourglassIcon, CheckCircleIcon, XCircleIcon, CalendarIcon, ClockIcon, 
   PhoneIcon, ScissorsIcon, UserIcon, ListIcon, SettingsIcon, AlertCircleIcon, 
   ChartIcon, CloseIcon, StoreIcon, ShieldIcon, ClipboardIcon, SparklesIcon, BellIcon, SearchIcon,
-  WalletIcon, SmartphoneIcon
+  CashIcon, GcashIcon
 } from './Icons';
 
 // Helper: convert file to base64 data URL
@@ -1295,7 +1295,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     {fraudAlerts.map((alert, idx) => (
                       <div key={idx} className={`fraud-alert-item fraud-alert-${alert.severity}`}>
                         <span className="fraud-alert-item-icon" style={{ display: 'inline-flex', alignItems: 'center' }}>
-                          {alert.icon === 'smartphone' ? <SmartphoneIcon size={16} /> : <WalletIcon size={16} />}
+                          {alert.icon === 'smartphone' ? <GcashIcon size={16} /> : <CashIcon size={16} />}
                         </span>
                         <div>
                           <div className="fraud-alert-item-title">{alert.title}</div>
@@ -1334,7 +1334,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       {/* Payment method + fraud flag */}
                       <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <span className={`pmt-badge pmt-badge-${(b.paymentMethod || 'Cash').toLowerCase()}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                          {b.paymentMethod === 'GCash' ? <><SmartphoneIcon size={10} /> GCash</> : <><WalletIcon size={10} /> Cash</>}
+                          {b.paymentMethod === 'GCash' ? <><GcashIcon size={10} /> GCash</> : <><CashIcon size={10} /> Cash</>}
                         </span>
                         {fraudFlaggedBookingIds.has(b.id) && (
                           <span className="fraud-flag-badge" title="This booking has been flagged by fraud detection" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -1363,7 +1363,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                           <CheckCircleIcon size={12} />
                           <span style={{ color: '#4ade80', fontSize: 11, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                            <WalletIcon size={12} /> Cash — Collect at salon
+                            <CashIcon size={12} /> Cash — Collect at salon
                           </span>
                         </div>
                       )}

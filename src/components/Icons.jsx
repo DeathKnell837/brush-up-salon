@@ -253,5 +253,37 @@ export const SmartphoneIcon = (props) => (
   </Svg>
 );
 
+export const GcashIcon = ({ size = 20, style = {}, className = '' }) => (
+  <span className={className} style={{
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: size,
+    height: size,
+    borderRadius: '50%',
+    background: '#0057E7',
+    color: '#ffffff',
+    fontWeight: '900',
+    fontSize: `${Math.round(size * 0.55)}px`,
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+    lineHeight: 1,
+    textAlign: 'center',
+    userSelect: 'none',
+    flexShrink: 0,
+    ...style
+  }}>
+    G
+  </span>
+);
+
+export const CashIcon = (props) => (
+  <Svg {...props}>
+    <rect x="2" y="6" width="20" height="12" rx="2" />
+    <circle cx="12" cy="12" r="2" />
+    <path d="M6 12h.01M18 12h.01" />
+  </Svg>
+);
+
+
 
 

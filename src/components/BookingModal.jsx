@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { CloseIcon, ScissorsIcon, WalletIcon, SmartphoneIcon } from './Icons';
+import { CloseIcon, ScissorsIcon, CashIcon, GcashIcon } from './Icons';
 import { getBookings } from '../utils/storage';
 
 function BookingModal({ salon, initialDetails, onClose, onSubmit, currentUser }) {
@@ -102,10 +102,10 @@ function BookingModal({ salon, initialDetails, onClose, onSubmit, currentUser })
               <label>Payment Method</label>
               <div className="payment-method-toggle">
                 <button type="button" className={`pmt-btn ${paymentMethod === 'Cash' ? 'active' : ''}`} onClick={() => setPaymentMethod('Cash')}>
-                  <WalletIcon size={14} style={{ marginRight: 6 }} /> Cash
+                  <CashIcon size={14} style={{ marginRight: 6 }} /> Cash
                 </button>
                 <button type="button" className={`pmt-btn ${paymentMethod === 'GCash' ? 'active' : ''}`} onClick={() => setPaymentMethod('GCash')}>
-                  <SmartphoneIcon size={14} style={{ marginRight: 6 }} /> GCash
+                  <GcashIcon size={14} style={{ marginRight: 6 }} /> GCash
                 </button>
               </div>
             </div>

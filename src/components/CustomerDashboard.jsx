@@ -6,7 +6,7 @@ import ReviewModal from './ReviewModal';
 import {
   StoreIcon, ClipboardIcon, SearchIcon, ScissorsIcon,
   CalendarIcon, ClockIcon, HourglassIcon, CheckCircleIcon, XCircleIcon, InboxIcon, BellIcon,
-  AlertCircleIcon, CloseIcon, CreditCardIcon, WalletIcon, SmartphoneIcon
+  AlertCircleIcon, CloseIcon, CreditCardIcon, CashIcon, GcashIcon
 } from './Icons';
 
 function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
@@ -976,7 +976,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                                   boxShadow: '0 4px 10px rgba(201, 168, 76, 0.15)'
                                 }}
                               >
-                                <SmartphoneIcon size={12} style={{ marginRight: 4 }} /> Pay via GCash
+                                <GcashIcon size={12} style={{ marginRight: 4 }} /> Pay via GCash
                               </button>
                             )}
                           </div>
@@ -985,7 +985,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                         {/* ─── Cash Payment Badge ─── */}
                         {b.status === 'Approved' && (!b.paymentMethod || b.paymentMethod === 'Cash') && (
                           <div className="cash-payment-badge" style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'rgba(74, 222, 128, 0.08)', border: '1px solid rgba(74, 222, 128, 0.2)', borderRadius: 10, fontSize: 12, fontWeight: 600, color: '#4ade80' }}>
-                            <WalletIcon size={14} /> Cash Payment — Pay at the salon
+                            <CashIcon size={14} /> Cash Payment — Pay at the salon
                           </div>
                         )}
 
@@ -1103,7 +1103,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                                   boxShadow: '0 4px 10px rgba(201, 168, 76, 0.15)'
                                 }}
                               >
-                                <SmartphoneIcon size={12} style={{ marginRight: 4 }} /> Pay via GCash
+                                <GcashIcon size={12} style={{ marginRight: 4 }} /> Pay via GCash
                               </button>
                             )}
                           </div>
@@ -1112,7 +1112,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                         {/* Cash Payment Badge */}
                         {(!b.paymentMethod || b.paymentMethod === 'Cash') && (
                           <div className="cash-payment-badge" style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'rgba(74, 222, 128, 0.08)', border: '1px solid rgba(74, 222, 128, 0.2)', borderRadius: 10, fontSize: 12, fontWeight: 600, color: '#4ade80' }}>
-                            <WalletIcon size={14} /> Cash Payment — Pay at the salon
+                            <CashIcon size={14} /> Cash Payment — Pay at the salon
                           </div>
                         )}
 
