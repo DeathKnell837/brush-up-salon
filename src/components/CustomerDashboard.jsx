@@ -723,7 +723,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
           {bookings.length > 0 && <span className="tab-count">{bookings.length}</span>}
         </button>
         <button className={`tab-btn ${tab === 'payments' ? 'active' : ''}`} onClick={() => setTab('payments')}>
-          <CreditCardIcon size={15} /> GCash Payment
+          <CreditCardIcon size={15} /> Payments
           {pendingPaymentsCount > 0 && <span className="tab-count" style={{ backgroundColor: 'var(--gold)', color: '#000', fontWeight: 'bold' }}>{pendingPaymentsCount}</span>}
         </button>
       </div>
