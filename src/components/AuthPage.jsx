@@ -68,7 +68,7 @@ function AuthPage({ salons = [], onSignup, onLogin, onAdminLogin, isLocked = fal
       <div className="auth-page">
         {/* Animated background */}
         <div className="auth-bg">
-          <div className="auth-gradient" style={{ backgroundImage: "linear-gradient(to bottom, rgba(5, 5, 7, 0.84) 0%, rgba(9, 9, 12, 0.92) 100%), url('/images/auth-luxury-bg.png')" }} />
+          <div className="auth-gradient" style={{ backgroundImage: "linear-gradient(to bottom, rgba(5, 5, 7, 0.84) 0%, rgba(9, 9, 12, 0.92) 100%), url('/images/auth-luxury-bg.webp')" }} />
           <div className="auth-orb auth-orb-1" />
           <div className="auth-orb auth-orb-2" />
           <div className="auth-orb auth-orb-3" />
@@ -78,7 +78,7 @@ function AuthPage({ salons = [], onSignup, onLogin, onAdminLogin, isLocked = fal
         {/* Left — Image + branding */}
         <div className="auth-side-text">
           <div className="auth-image-showcase">
-            <img src="/images/login-art.png" alt="Luxury Salon" />
+            <img src="/images/login-art.webp" alt="Luxury Salon" />
             <div className="auth-image-overlay">
               <BrushUpLogo size="default" />
               <h1>Elegance <em>Redefined</em></h1>
