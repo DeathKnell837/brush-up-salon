@@ -48,7 +48,7 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
   };
 
   return (
-    <div className="modal" onClick={onClose} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+    <div className="modal" onClick={onClose} style={{ zIndex: 1000 }}>
       <div className="modal-content" style={{
         maxWidth: 450,
         padding: 0,

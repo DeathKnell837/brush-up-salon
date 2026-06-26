@@ -2289,6 +2289,18 @@ select.search-input option{background:#1a1a1a;color:var(--text);padding:8px}
     height: 28px !important;
     background: rgba(255, 255, 255, 0.1) !important;
   }
+
+  /* Optimize modal scrolling and spacing on mobile viewports */
+  .modal {
+    padding: 16px 12px !important;
+    align-items: flex-start !important;
+    overflow-y: auto !important;
+  }
+  .modal-content {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    max-height: none !important;
+  }
 }
 
 
