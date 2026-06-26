@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://brush-up-salon.onrender.com/sitemap.xml
+Sitemap: https://brush-up-salon.vercel.app/sitemap.xml
