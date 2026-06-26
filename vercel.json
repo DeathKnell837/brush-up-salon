@@ -3,6 +3,17 @@
   "outputDirectory": "build",
   "framework": "create-react-app",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "experimentalServices": {
+    "brush-up-salon": {
+      "type": "web",
+      "routePrefix": "/",
+      "framework": "create-react-app",
+      "buildCommand": "npm install && npm run build"
+    }
+  }
 }

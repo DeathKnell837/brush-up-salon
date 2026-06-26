@@ -734,18 +734,18 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
               </div>
               <div className="featured-grid">
                 {featured.map((salon, i) => (
-                  <div key={salon.id} className={`featured-card ${i === 0 ? 'large' : ''}`}
+                  <div key={salon.id} className="featured-card"
                     onClick={() => onSelectSalon(salon.id)}
                     style={{ animationDelay: `${i * 0.1}s` }}>
                     <img src={salon.image} alt={salon.name} />
                     <div className="featured-overlay">
                       <span className="featured-tag">{salon.services.length} services</span>
                       <h3>{salon.name}</h3>
-                      <p>{salon.description}</p>
+                      <p>{salon.location}</p>
                       {salon.reviewsCount > 0 && (
-                        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--gold)' }}>
+                        <div className="featured-rating">
                           <span>★ {salon.avgRating}</span>
-                          <span style={{ color: 'var(--text-dim)' }}>({salon.reviewsCount} reviews)</span>
+                          <span style={{ color: 'var(--text-dim)' }}>({salon.reviewsCount})</span>
                         </div>
                       )}
                     </div>

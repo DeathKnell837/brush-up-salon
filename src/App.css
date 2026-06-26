@@ -412,18 +412,18 @@ select.search-input option{background:#1a1a1a;color:var(--text);padding:8px}
 .section-heading{font-family:var(--font-display);font-size:28px;font-weight:600;color:var(--text-white)}
 
 /* ═══ FEATURED GRID ═══ */
-.featured-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px}
-.featured-card{position:relative;border-radius:var(--rl);overflow:hidden;cursor:pointer;min-height:280px;
+.featured-grid{display:grid;grid-template-columns:repeat(3, 1fr);gap:16px;margin-bottom:32px}
+.featured-card{position:relative;border-radius:var(--rl);overflow:hidden;cursor:pointer;height:220px;
   border:1px solid var(--border);transition:all var(--t);animation:fadeUp .5s ease both}
-.featured-card.large{grid-row:span 2;min-height:100%}
-.featured-card img{width:100%;height:100%;object-fit:cover;transition:transform .8s ease;filter:brightness(0.6)}
+.featured-card img{width:100%;height:100%;object-fit:cover;transition:transform .8s ease;filter:brightness(0.55)}
 .featured-card:hover img{transform:scale(1.05);filter:brightness(0.7)}
 .featured-card:hover{border-color:var(--border-light);box-shadow:var(--shadow-lg)}
-.featured-overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:28px;
-  background:linear-gradient(to top,rgba(15,15,15,0.85) 0%,transparent 60%)}
-.featured-tag{font-size:11px;color:var(--gold);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
-.featured-overlay h3{font-family:var(--font-display);font-size:22px;font-weight:600;color:white;margin-bottom:4px}
-.featured-overlay p{font-size:13px;color:var(--text-dim);font-weight:300}
+.featured-overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:20px;
+  background:linear-gradient(to top,rgba(15,15,15,0.9) 0%,rgba(15,15,15,0.3) 50%,transparent 70%)}
+.featured-tag{font-size:10px;color:var(--gold);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+.featured-overlay h3{font-family:var(--font-display);font-size:18px;font-weight:600;color:white;margin-bottom:2px}
+.featured-overlay p{font-size:12px;color:var(--text-dim);font-weight:300}
+.featured-rating{margin-top:6px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gold)}
 
 /* ═══ HISTORY CARD WITH IMAGE ═══ */
 .history-card{display:flex;flex-direction:column;border-radius:var(--rl);overflow:hidden;padding:0;height:100%;
