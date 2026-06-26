@@ -156,7 +156,7 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
   );
 
   return (
-    <div className="app-shell">
+    <div className="app-shell customer-shell">
       {/* ─── Navbar ─── */}
       <nav className="navbar">
         <div className="brand" style={{ cursor: 'pointer' }} onClick={onBack}><BrushUpLogo size="small" /></div>

@@ -509,7 +509,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
     .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
 
   return (
-    <div className="app-shell">
+    <div className="app-shell customer-shell">
       {/* ─── Navbar ─── */}
       <nav className="navbar">
         <div className="brand"><BrushUpLogo size="small" /></div>
