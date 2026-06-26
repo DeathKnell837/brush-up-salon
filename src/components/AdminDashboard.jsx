@@ -1266,6 +1266,172 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
         )}
       </div>
 
+      {/* Mobile Back Header */}
+      {['services', 'staff', 'customers', 'reports', 'settings', 'network-salons', 'network-admins', 'network-broadcasts', 'network-audit'].includes(activeTab) && (
+        <div className="mobile-back-header" style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button 
+            onClick={() => setActiveTab('manage')}
+            style={{ background: 'none', border: 'none', color: 'var(--gold)', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+          >
+            ← Back to Manage
+          </button>
+        </div>
+      )}
+
+      {/* Mobile Manage Tab Panel */}
+      {activeTab === 'manage' && (
+        <div style={{ padding: '24px 20px 40px', animation: 'fadeUp 0.3s ease' }}>
+          <h2 style={{ fontSize: 18, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+            Management Panel
+          </h2>
+
+          {/* View Scope Toggle (if superadmin) */}
+          {isSuperAdmin && (
+            <div style={{ 
+              display: 'flex', 
+              background: 'rgba(255, 255, 255, 0.03)', 
+              border: '1px solid rgba(255, 255, 255, 0.08)', 
+              borderRadius: 10, 
+              padding: 4, 
+              marginBottom: 16 
+            }}>
+              <button 
+                style={{ 
+                  flex: 1, 
+                  padding: '8px 12px', 
+                  borderRadius: 8, 
+                  border: 'none', 
+                  fontFamily: 'var(--font-body)', 
+                  fontSize: 12, 
+                  fontWeight: 600, 
+                  background: viewScope === 'branch' ? 'var(--gold)' : 'transparent',
+                  color: viewScope === 'branch' ? '#111' : 'var(--text-dim)',
+                  cursor: 'pointer',
+                  transition: 'all 0.25s ease'
+                }}
+                onClick={() => setViewScope('branch')}
+              >
+                Branch View
+              </button>
+              <button 
+                style={{ 
+                  flex: 1, 
+                  padding: '8px 12px', 
+                  borderRadius: 8, 
+                  border: 'none', 
+                  fontFamily: 'var(--font-body)', 
+                  fontSize: 12, 
+                  fontWeight: 600, 
+                  background: viewScope === 'network' ? 'var(--gold)' : 'transparent',
+                  color: viewScope === 'network' ? '#111' : 'var(--text-dim)',
+                  cursor: 'pointer',
+                  transition: 'all 0.25s ease'
+                }}
+                onClick={() => { setViewScope('network'); setActiveTab('manage'); }}
+              >
+                Network HQ View
+              </button>
+            </div>
+          )}
+
+          {/* Branch Switcher (if branch scope and superadmin) */}
+          {viewScope === 'branch' && currentUser.salonId === 'all' && (
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>
+                Select Branch
+              </label>
+              <div className="admin-salon-switcher" style={{ width: '100%' }}>
+                <select 
+                  value={currentSalonId} 
+                  onChange={e => setCurrentSalonId(e.target.value)} 
+                  className="admin-salon-select"
+                  style={{ width: '100%', height: 44, padding: '10px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, color: '#fff', fontSize: 13 }}
+                >
+                  {allSalons.map(s => <option key={s.id} value={s.id} style={{ background: '#0f1118', color: '#fff' }}>{s.name}</option>)}
+                </select>
+                <span className="admin-select-arrow" style={{ right: 16 }} />
+              </div>
+            </div>
+          )}
+
+          {/* Grid List of Options */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {viewScope === 'branch' ? (
+              <>
+                <button 
+                  onClick={() => setActiveTab('services')}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
+                >
+                  <ScissorsIcon size={20} style={{ color: 'var(--gold)' }} />
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>Services</span>
+                </button>
+                <button 
+                  onClick={() => setActiveTab('staff')}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
+                >
+                  <UserIcon size={20} style={{ color: 'var(--gold)' }} />
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>Staff</span>
+                </button>
+                <button 
+                  onClick={() => setActiveTab('customers')}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
+                >
+                  <UserIcon size={20} style={{ color: 'var(--gold)' }} />
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>Customers</span>
+                </button>
+                <button 
+                  onClick={() => setActiveTab('reports')}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
+                >
+                  <ChartIcon size={20} style={{ color: 'var(--gold)' }} />
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>Reports</span>
+                </button>
+                <button 
+                  onClick={() => setActiveTab('settings')}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer', gridColumn: 'span 2' }}
+                >
+                  <SettingsIcon size={20} style={{ color: 'var(--gold)' }} />
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>Settings</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button 
+                  onClick={() => setActiveTab('network-salons')}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
+                >
+                  <StoreIcon size={20} style={{ color: 'var(--gold)' }} />
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>Salons</span>
+                </button>
+                {(currentUser.role === 'superadmin' || currentUser.salonId === 'all') && (
+                  <button 
+                    onClick={() => setActiveTab('network-admins')}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
+                  >
+                    <ShieldIcon size={20} style={{ color: 'var(--gold)' }} />
+                    <span style={{ fontSize: 12, fontWeight: 600 }}>Admins</span>
+                  </button>
+                )}
+                <button 
+                  onClick={() => setActiveTab('network-broadcasts')}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
+                >
+                  <AlertCircleIcon size={20} style={{ color: 'var(--gold)' }} />
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>Broadcasts</span>
+                </button>
+                <button 
+                  onClick={() => setActiveTab('network-audit')}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
+                >
+                  <ClipboardIcon size={20} style={{ color: 'var(--gold)' }} />
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>Audit Log</span>
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 🏪 BRANCH PANELS */}
       {viewScope === 'branch' && (
         <>
@@ -4012,6 +4178,82 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           </div>
         </div>
       )}
+
+      {/* Floating Bottom Navigation for Mobile */}
+      <div className="mobile-bottom-nav">
+        {viewScope === 'branch' ? (
+          <>
+            <button 
+              className={`mobile-nav-item ${activeTab === 'bookings' ? 'active' : ''}`} 
+              onClick={() => setActiveTab('bookings')}
+            >
+              <ListIcon size={20} />
+              <span>Bookings</span>
+              {pending > 0 && <span className="mobile-nav-badge">{pending}</span>}
+            </button>
+            <button 
+              className={`mobile-nav-item ${activeTab === 'schedule' ? 'active' : ''}`} 
+              onClick={() => setActiveTab('schedule')}
+            >
+              <CalendarIcon size={20} />
+              <span>Schedule</span>
+              {todaySchedule.length > 0 && <span className="mobile-nav-badge">{todaySchedule.length}</span>}
+            </button>
+            <button 
+              className={`mobile-nav-item ${activeTab === 'analytics' ? 'active' : ''}`} 
+              onClick={() => setActiveTab('analytics')}
+            >
+              <ChartIcon size={20} />
+              <span>Analytics</span>
+            </button>
+            <button 
+              className={`mobile-nav-item ${['manage', 'services', 'staff', 'customers', 'reports', 'settings'].includes(activeTab) ? 'active' : ''}`} 
+              onClick={() => setActiveTab('manage')}
+            >
+              <SettingsIcon size={20} />
+              <span>Manage</span>
+            </button>
+          </>
+        ) : (
+          <>
+            <button 
+              className={`mobile-nav-item ${activeTab === 'network-overview' ? 'active' : ''}`} 
+              onClick={() => setActiveTab('network-overview')}
+            >
+              <ChartIcon size={20} />
+              <span>Overview</span>
+            </button>
+            <button 
+              className={`mobile-nav-item ${activeTab === 'network-comparison' ? 'active' : ''}`} 
+              onClick={() => setActiveTab('network-comparison')}
+            >
+              <ChartIcon size={20} />
+              <span>Compare</span>
+            </button>
+            <button 
+              className={`mobile-nav-item ${activeTab === 'network-transactions' ? 'active' : ''}`} 
+              onClick={() => setActiveTab('network-transactions')}
+            >
+              <ListIcon size={20} />
+              <span>Trans.</span>
+              {networkPending > 0 && <span className="mobile-nav-badge">{networkPending}</span>}
+            </button>
+            <button 
+              className={`mobile-nav-item ${['manage', 'network-salons', 'network-admins', 'network-broadcasts', 'network-audit'].includes(activeTab) ? 'active' : ''}`} 
+              onClick={() => setActiveTab('manage')}
+            >
+              <SettingsIcon size={20} />
+              <span>Manage</span>
+            </button>
+          </>
+        )}
+        <button className="mobile-nav-item" onClick={onOpenProfile}>
+          <div className="mobile-nav-avatar">
+            {(currentUser?.name || 'A')[0].toUpperCase()}
+          </div>
+          <span>Profile</span>
+        </button>
+      </div>
     </div>
   );
 }

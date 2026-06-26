@@ -2306,13 +2306,12 @@ select.search-input option{background:#1a1a1a;color:var(--text);padding:8px}
   .admin-navbar {
     display: flex !important;
     flex-direction: row !important;
-    flex-wrap: wrap !important;
+    flex-wrap: nowrap !important;
     align-items: center !important;
     justify-content: space-between !important;
     padding: 12px 16px !important;
-    height: auto !important;
-    gap: 12px !important;
-    background: rgba(10, 10, 10, 0.85) !important;
+    height: 64px !important;
+    background: rgba(10, 10, 10, 0.8) !important;
     backdrop-filter: blur(16px) !important;
     -webkit-backdrop-filter: blur(16px) !important;
   }
@@ -2333,97 +2332,17 @@ select.search-input option{background:#1a1a1a;color:var(--text);padding:8px}
     padding-top: 0 !important;
   }
   
-  .admin-navbar-center {
-    order: 3 !important;
-    width: 100% !important;
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 8px !important;
-    margin-top: 4px !important;
-  }
-  
-  .admin-navbar-tabs {
-    flex-direction: row !important;
-    gap: 6px !important;
-    width: auto !important;
-  }
-  
-  .admin-navbar-tab {
-    height: 32px !important;
-    padding: 6px 12px !important;
-    font-size: 11px !important;
-    background: rgba(255, 255, 255, 0.03) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    border-radius: 6px !important;
-    width: auto !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 4px !important;
-  }
-  
-  .admin-navbar-tab.active {
-    background: var(--gold-dim) !important;
-    border-color: var(--gold) !important;
-    color: var(--gold) !important;
-  }
-  
-  .admin-salon-switcher {
-    width: auto !important;
-  }
-  
-  .admin-salon-select {
-    width: auto !important;
-    min-width: 130px !important;
-    height: 32px !important;
-    padding: 4px 28px 4px 10px !important;
-    font-size: 11px !important;
-    border-radius: 6px !important;
-  }
-  
-  .admin-salon-label {
-    padding: 6px 12px !important;
-    font-size: 11px !important;
-    border-radius: 6px !important;
-  }
-  
-  .admin-nav-separator {
+  /* Hide switcher, scope tabs, and user info on mobile admin header */
+  .admin-navbar-center,
+  .admin-navbar .pill,
+  .admin-navbar .profile-btn,
+  .admin-navbar .logout-btn {
     display: none !important;
   }
 
-  /* Horizontal scrollable tabs on mobile for both Customer and Admin Dashboards */
+  /* Hide the top tab bar scrollbar on mobile */
   .admin-shell .tab-bar {
-    display: flex !important;
-    flex-direction: row !important;
-    overflow-x: auto !important;
-    flex-wrap: nowrap !important;
-    white-space: nowrap !important;
-    padding: 8px 16px !important;
-    gap: 8px !important;
-    -webkit-overflow-scrolling: touch;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    scrollbar-width: none;
-  }
-  .admin-shell .tab-bar::-webkit-scrollbar {
-    display: none;
-  }
-  .admin-shell .tab-bar .tab-btn {
-    flex: 0 0 auto !important;
-    padding: 8px 14px !important;
-    font-size: 12px !important;
-    border-radius: 8px !important;
-    background: rgba(255, 255, 255, 0.03) !important;
-    border: 1px solid rgba(255, 255, 255, 0.06) !important;
-    color: var(--text-dim) !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 6px !important;
-  }
-  .admin-shell .tab-bar .tab-btn.active {
-    background: var(--gold-dim) !important;
-    border-color: var(--gold) !important;
-    color: var(--gold) !important;
+    display: none !important;
   }
 
   /* Make admin booking cards and stat cards look premium */
@@ -2447,8 +2366,13 @@ select.search-input option{background:#1a1a1a;color:var(--text);padding:8px}
 
   /* Reposition Chatbot FAB specifically for admin view on mobile */
   .admin-shell .chatbot-fab {
-    bottom: 20px !important;
+    bottom: 96px !important;
     right: 20px !important;
+  }
+
+  /* Increase padding to prevent overlap with the bottom nav bar */
+  .admin-shell.app-shell {
+    padding-bottom: 96px !important;
   }
 }
 
