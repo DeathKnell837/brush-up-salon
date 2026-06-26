@@ -23,7 +23,8 @@ body{min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--f
 
 
 /* ═══ AUTH PAGE ═══ */
-.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;gap:60px;padding:40px;position:relative;overflow:hidden;background:#050507}
+.auth-page-wrapper{min-height:100vh;background:#050507;overflow-x:hidden}
+.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;gap:60px;padding:40px;position:relative;overflow:hidden}
 .auth-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
 .auth-gradient{
   position:absolute;
@@ -1565,3 +1566,371 @@ select.search-input option{background:#1a1a1a;color:var(--text);padding:8px}
   50% { opacity: 0.7; }
 }
 
+/* ═══ PUBLIC SALON SHOWCASE ═══ */
+.public-showcase {
+  background: linear-gradient(180deg, #050507 0%, #0a0a0f 5%, #0f0f14 50%, #0a0a0f 95%, #050507 100%);
+  padding: 80px 0 40px;
+  position: relative;
+}
+.public-showcase::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+.public-showcase-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Section Header */
+.public-section-header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+.public-label {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--gold);
+  margin-bottom: 12px;
+  padding: 6px 16px;
+  border: 1px solid var(--gold-dim);
+  border-radius: 20px;
+  background: rgba(201,168,76,0.06);
+}
+.public-title {
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 600;
+  color: var(--text-white);
+  margin-bottom: 16px;
+}
+.public-title em {
+  color: var(--gold);
+  font-style: italic;
+}
+.public-subtitle {
+  font-size: 15px;
+  color: var(--text-dim);
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+/* Salon Grid */
+.public-salon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 28px;
+  margin-bottom: 60px;
+}
+
+/* Salon Card */
+.public-salon-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--rl);
+  overflow: hidden;
+  transition: all var(--t);
+}
+.public-salon-card:hover {
+  border-color: var(--gold-dim);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(201,168,76,0.08);
+}
+
+/* Salon Image */
+.public-salon-image-wrap {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+}
+.public-salon-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+.public-salon-card:hover .public-salon-image {
+  transform: scale(1.05);
+}
+.public-salon-image-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 16px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.8));
+  display: flex;
+  justify-content: flex-end;
+}
+.public-service-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gold-light);
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(8px);
+  padding: 4px 10px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Salon Body */
+.public-salon-body {
+  padding: 20px 22px 24px;
+}
+.public-salon-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-white);
+  margin-bottom: 6px;
+}
+.public-salon-desc {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+/* Meta Items */
+.public-salon-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.public-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+}
+.public-meta-icon {
+  font-size: 14px;
+  width: 20px;
+  text-align: center;
+}
+
+/* Promotions */
+.public-promos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.public-promo-tag {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: rgba(72, 187, 120, 0.1);
+  color: #68d391;
+  border: 1px solid rgba(72, 187, 120, 0.2);
+}
+
+/* Services Section */
+.public-services-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.public-services-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+.public-service-category {
+  margin-bottom: 16px;
+}
+.public-category-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 6px;
+  display: inline-block;
+}
+.public-service-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.public-service-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.public-service-row:last-child {
+  border-bottom: none;
+}
+.public-service-name {
+  font-size: 13px;
+  color: var(--text);
+}
+.public-service-price {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold-light);
+  white-space: nowrap;
+}
+.public-view-all-btn {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  background: rgba(201,168,76,0.08);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--r);
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--t);
+  font-family: var(--font-body);
+}
+.public-view-all-btn:hover {
+  background: rgba(201,168,76,0.15);
+  border-color: var(--gold);
+}
+
+/* Staff Section */
+.public-staff-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.public-staff-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.public-staff-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  transition: border-color var(--t);
+}
+.public-staff-chip:hover {
+  border-color: var(--gold-dim);
+}
+.public-staff-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--gold-dim);
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+.public-staff-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-white);
+  display: block;
+  line-height: 1.2;
+}
+.public-staff-role {
+  font-size: 11px;
+  color: var(--text-dim);
+  display: block;
+}
+
+/* CTA Section */
+.public-cta-section {
+  text-align: center;
+  padding: 48px 24px;
+  background: linear-gradient(135deg, rgba(201,168,76,0.06) 0%, rgba(201,168,76,0.02) 100%);
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--rl);
+  margin-bottom: 40px;
+}
+.public-cta-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-white);
+  margin-bottom: 10px;
+}
+.public-cta-text {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-bottom: 24px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.public-cta-btn {
+  padding: 14px 32px !important;
+  font-size: 15px !important;
+}
+
+/* Footer */
+.public-footer {
+  text-align: center;
+  padding: 32px 0 16px;
+  border-top: 1px solid var(--border);
+}
+.public-footer p {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.public-footer-sub {
+  font-size: 11px !important;
+  color: rgba(232,228,224,0.3) !important;
+}
+
+/* ═══ PUBLIC SHOWCASE RESPONSIVE ═══ */
+@media (max-width: 768px) {
+  .public-showcase {
+    padding: 48px 0 24px;
+  }
+  .public-showcase-inner {
+    padding: 0 16px;
+  }
+  .public-title {
+    font-size: 28px;
+  }
+  .public-subtitle {
+    font-size: 14px;
+  }
+  .public-salon-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .public-salon-image-wrap {
+    height: 160px;
+  }
+  .public-cta-section {
+    padding: 32px 16px;
+  }
+  .public-cta-title {
+    font-size: 22px;
+  }
+}
