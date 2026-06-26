@@ -266,8 +266,9 @@ function App() {
 
   if (!isReady) {
     return (
-      <div className="app-shell" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <p style={{ color: 'white', fontSize: 18, fontWeight: 600 }}>Loading...</p>
+      <div className="app-shell" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', gap: '16px', background: '#050507' }}>
+        <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3px solid rgba(201, 168, 76, 0.1)', borderTopColor: 'var(--gold)', animation: 'spin 1s linear infinite' }} />
+        <p style={{ color: 'var(--text-dim)', fontSize: 13, fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase' }}>Brush Up Salon</p>
       </div>
     );
   }

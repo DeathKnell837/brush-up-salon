@@ -28,20 +28,27 @@ function AuthPage({ salons = [], onSignup, onLogin, onAdminLogin, isLocked = fal
     return null;
   };
 
-  const handleLogin = (e) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
     if (isLocked) { alert(`Too many attempts. Try again in ${lockCountdown}s.`); return; }
     if (!loginUser || !loginPass) { alert('Enter username and password.'); return; }
-    if (isAdmin) { onAdminLogin(loginUser, loginPass); }
-    else { onLogin(loginUser, loginPass); }
+    setIsSubmitting(true);
+    let success = false;
+    if (isAdmin) { success = await onAdminLogin(loginUser, loginPass); }
+    else { success = await onLogin(loginUser, loginPass); }
+    if (!success) { setIsSubmitting(false); }
   };
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
     if (!signupName || !signupUser || !signupPass) { alert('Please complete all fields.'); return; }
     const feedback = getPasswordFeedback(signupPass);
     if (feedback) { alert(feedback); return; }
-    onSignup(signupName, signupUser, signupPass);
+    setIsSubmitting(true);
+    const success = await onSignup(signupName, signupUser, signupPass);
+    if (!success) { setIsSubmitting(false); }
   };
 
   // Group services by category for a salon
@@ -112,8 +119,13 @@ function AuthPage({ salons = [], onSignup, onLogin, onAdminLogin, isLocked = fal
                   <input type="password" placeholder="Enter password"
                     value={loginPass} onChange={(e) => setLoginPass(e.target.value)} />
                 </div>
-                <button type="submit" className="btn" disabled={isLocked}>
-                  <LockIcon size={15} /> {isLocked ? `Locked (${lockCountdown}s)` : 'Sign In'}
+                <button type="submit" className="btn" disabled={isLocked || isSubmitting}>
+                  {isSubmitting ? (
+                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: '2px solid rgba(0,0,0,0.1)', borderTopColor: '#000', animation: 'spin 1s linear infinite' }} />
+                  ) : (
+                    <LockIcon size={15} />
+                  )}
+                  {isLocked ? `Locked (${lockCountdown}s)` : isSubmitting ? 'Signing In...' : 'Sign In'}
                 </button>
                 {isLocked && (
                   <div style={{ color: '#ef4444', fontSize: '13px', marginTop: '8px', textAlign: 'center', fontWeight: '500' }}>
@@ -147,7 +159,14 @@ function AuthPage({ salons = [], onSignup, onLogin, onAdminLogin, isLocked = fal
                     </span>
                   )}
                 </div>
-                <button type="submit" className="btn"><UserIcon size={15} /> Create Account</button>
+                <button type="submit" className="btn" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: '2px solid rgba(0,0,0,0.1)', borderTopColor: '#000', animation: 'spin 1s linear infinite' }} />
+                  ) : (
+                    <UserIcon size={15} />
+                  )}
+                  {isSubmitting ? 'Creating Account...' : 'Create Account'}
+                </button>
                 <p className="muted-link">Already have an account? <span onClick={() => setIsLogin(true)}>Sign in</span></p>
               </form>
             </>
