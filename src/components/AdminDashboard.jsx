@@ -427,7 +427,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       const id = ns.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now();
       const newSalon = { 
         id, name: ns.name, description: ns.desc || 'A premium salon.', 
-        image: ns.img || '/images/elegant.png', services: [{ name: 'Haircut', price: 'PHP 250' }], 
+        image: ns.img || '/images/elegant.webp', services: [{ name: 'Haircut', price: 'PHP 250' }], 
         staff: [], promotions: [], address: '', contact: '', hours: '',
         fixedOverhead: 45000, operatingCapital: 150000 
       };
@@ -1212,7 +1212,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
         </section>
       ) : (
         <section className="hero" style={{ 
-          backgroundImage: `linear-gradient(135deg, rgba(10,10,10,0.95), rgba(15,15,15,0.7)), url(/images/salon-bg.png)`, 
+          backgroundImage: `linear-gradient(135deg, rgba(10,10,10,0.95), rgba(15,15,15,0.7)), url(/images/salon-bg.webp)`, 
           backgroundSize: 'cover', backgroundPosition: 'center' 
         }}>
           <div className="hero-content">

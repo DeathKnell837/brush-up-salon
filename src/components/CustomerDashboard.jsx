@@ -657,7 +657,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
 
       {/* ─── Hero Section ─── */}
       <section className="hero" style={{
-        backgroundImage: 'linear-gradient(to right, rgba(15,15,15,0.92), rgba(15,15,15,0.5)), url(/images/elegant.png)',
+        backgroundImage: 'linear-gradient(to right, rgba(15,15,15,0.92), rgba(15,15,15,0.5)), url(/images/elegant.webp)',
         backgroundSize: 'cover', backgroundPosition: 'center'
       }}>
         <div className="hero-content">
