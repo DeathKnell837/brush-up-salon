@@ -315,6 +315,10 @@ function App() {
             setCurrentUser(newSession);
             setSession(newSession);
           }}
+          onLogout={() => {
+            setShowProfile(false);
+            handleLogout();
+          }}
         />
       )}
       {toast && <Toast message={toast} />}

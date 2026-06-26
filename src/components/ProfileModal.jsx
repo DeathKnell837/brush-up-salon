@@ -3,9 +3,9 @@ import { db, auth } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { getUsers, setUsers, hashPassword } from '../utils/storage';
-import { LockIcon, CloseIcon } from './Icons';
+import { LockIcon, CloseIcon, LogoutIcon } from './Icons';
 
-function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser }) {
+function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser, onLogout }) {
   const [currentPass, setCurrentPass] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirmPass, setConfirmPass] = useState('');
@@ -260,38 +260,75 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser }) {
           <div className="divider" />
 
           {!isChangingPassword && !isEditingProfile && (
-            <button 
-              className="btn outline" 
-              onClick={() => setIsChangingPassword(true)} 
-              style={{ 
-                marginTop: 12,
-                width: '100%',
-                background: 'transparent',
-                border: '1px solid rgba(201, 168, 76, 0.4)',
-                color: 'var(--gold)',
-                padding: '10px 20px',
-                borderRadius: '10px',
-                fontWeight: '600',
-                fontSize: '13px',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-body)',
-                transition: 'all 0.3s ease',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(201, 168, 76, 0.08)';
-                e.currentTarget.style.borderColor = 'var(--gold)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.borderColor = 'rgba(201, 168, 76, 0.4)';
-              }}
-            >
-              <LockIcon size={15} /> Change Password
-            </button>
+            <>
+              <button 
+                className="btn outline" 
+                onClick={() => setIsChangingPassword(true)} 
+                style={{ 
+                  marginTop: 12,
+                  width: '100%',
+                  background: 'transparent',
+                  border: '1px solid rgba(201, 168, 76, 0.4)',
+                  color: 'var(--gold)',
+                  padding: '10px 20px',
+                  borderRadius: '10px',
+                  fontWeight: '600',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-body)',
+                  transition: 'all 0.3s ease',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(201, 168, 76, 0.08)';
+                  e.currentTarget.style.borderColor = 'var(--gold)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.borderColor = 'rgba(201, 168, 76, 0.4)';
+                }}
+              >
+                <LockIcon size={15} /> Change Password
+              </button>
+
+              {onLogout && (
+                <button 
+                  className="btn danger outline" 
+                  onClick={onLogout}
+                  style={{ 
+                    marginTop: 12,
+                    width: '100%',
+                    background: 'transparent',
+                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                    color: '#ef4444',
+                    padding: '10px 20px',
+                    borderRadius: '10px',
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-body)',
+                    transition: 'all 0.3s ease',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
+                    e.currentTarget.style.borderColor = '#ef4444';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                  }}
+                >
+                  <LogoutIcon size={15} /> Logout
+                </button>
+              )}
+            </>
           )}
 
           {isChangingPassword && (
