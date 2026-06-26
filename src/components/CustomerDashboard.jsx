@@ -282,6 +282,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
   const [filterLoc, setFilterLoc] = useState('All');
   const [filterSvc, setFilterSvc] = useState('All');
   const [sortOrder, setSortOrder] = useState('Default');
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [localTick, setLocalTick] = useState(0);
   const [announcements, setAnnouncements] = useState([]);
   const [reviewBooking, setReviewBooking] = useState(null);
@@ -708,25 +709,60 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
       {tab === 'salons' && (
         <div style={{ animation: 'fadeUp .5s ease' }}>
           {/* Search & Filters */}
-          <div className="search-bar" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <div className="search-wrapper" style={{ flex: '1 1 300px' }}>
-              <SearchIcon size={16} className="search-icon" />
-              <input className="search-input" placeholder="Search salons, services..."
-                value={search} onChange={(e) => setSearch(e.target.value)} />
+          <div className="search-bar">
+            <div className="search-row">
+              <div className="search-wrapper">
+                <SearchIcon size={16} className="search-icon" />
+                <input className="search-input" placeholder="Search salons, services..."
+                  value={search} onChange={(e) => setSearch(e.target.value)} />
+              </div>
+              <button 
+                type="button" 
+                className="filter-toggle-btn" 
+                onClick={() => setShowMobileFilters(!showMobileFilters)}
+                style={{
+                  display: 'none',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '45px',
+                  height: '45px',
+                  borderRadius: '10px',
+                  border: showMobileFilters ? '1px solid var(--gold)' : '1px solid var(--border)',
+                  background: showMobileFilters ? 'var(--gold-dim)' : 'rgba(255,255,255,0.03)',
+                  color: showMobileFilters ? 'var(--gold)' : 'var(--text-dim)',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  flexShrink: 0
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="4" y1="21" x2="4" y2="14"></line>
+                  <line x1="4" y1="10" x2="4" y2="3"></line>
+                  <line x1="12" y1="21" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12" y2="3"></line>
+                  <line x1="20" y1="21" x2="20" y2="16"></line>
+                  <line x1="20" y1="12" x2="20" y2="3"></line>
+                  <line x1="1" y1="14" x2="7" y2="14"></line>
+                  <line x1="9" y1="8" x2="15" y2="8"></line>
+                  <line x1="17" y1="12" x2="23" y2="12"></line>
+                </svg>
+              </button>
             </div>
-            <select className="search-input" style={{ flex: '1 1 150px' }} value={filterLoc} onChange={e => setFilterLoc(e.target.value)}>
-              <option value="All">All Locations</option>
-              {uniqueLocations.filter(l => l !== 'Unknown').map(loc => <option key={loc} value={loc}>{loc}</option>)}
-            </select>
-            <select className="search-input" style={{ flex: '1 1 150px' }} value={filterSvc} onChange={e => setFilterSvc(e.target.value)}>
-              <option value="All">All Services</option>
-              {uniqueServices.slice(0, 15).map(svc => <option key={svc} value={svc}>{svc}</option>)}
-            </select>
-            <select className="search-input" style={{ flex: '1 1 150px' }} value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
-              <option value="Default">Sort: Default</option>
-              <option value="Top Rated">Sort: Top Rated</option>
-              <option value="Most Reviewed">Sort: Most Reviewed</option>
-            </select>
+            <div className={`filter-options-container ${showMobileFilters ? 'show' : ''}`}>
+              <select className="search-input" value={filterLoc} onChange={e => setFilterLoc(e.target.value)}>
+                <option value="All">All Locations</option>
+                {uniqueLocations.filter(l => l !== 'Unknown').map(loc => <option key={loc} value={loc}>{loc}</option>)}
+              </select>
+              <select className="search-input" value={filterSvc} onChange={e => setFilterSvc(e.target.value)}>
+                <option value="All">All Services</option>
+                {uniqueServices.slice(0, 15).map(svc => <option key={svc} value={svc}>{svc}</option>)}
+              </select>
+              <select className="search-input" value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
+                <option value="Default">Sort: Default</option>
+                <option value="Top Rated">Sort: Top Rated</option>
+                <option value="Most Reviewed">Sort: Most Reviewed</option>
+              </select>
+            </div>
           </div>
 
           {/* Featured Section */}
