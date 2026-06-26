@@ -971,7 +971,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const panelCard = { background: 'rgba(25,25,25,0.7)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 24 };
 
   return (
-    <div className="app-shell">
+    <div className="app-shell admin-shell">
       {/* Navigation Header */}
       <nav className="navbar admin-navbar" style={{ borderBottom: '1px solid var(--border)', background: 'rgba(10, 10, 10, 0.95)', backdropFilter: 'blur(10px)', zIndex: 1000 }}>
         {/* Left: Brand / Logo */}
