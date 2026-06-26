@@ -300,8 +300,8 @@ body{min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--f
 
 /* ═══ MODAL ═══ */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,0.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  display:flex;align-items:flex-start;justify-content:center;padding:40px 24px;z-index:10;animation:fadeIn .2s ease;overflow-y:auto}
-.modal-content{width:min(880px,94vw);display:grid;grid-template-columns:1fr 1fr;gap:0;
+  display:flex;align-items:flex-start;justify-content:center;padding:40px 24px;z-index:10000;animation:fadeIn .2s ease;overflow-y:auto}
+.modal-content{position:relative;width:min(880px,94vw);display:grid;grid-template-columns:1fr 1fr;gap:0;
   border-radius:var(--rl);overflow:hidden;color:var(--text);background:var(--bg-card);
   box-shadow:var(--shadow-lg);border:1px solid var(--border);animation:scaleUp .25s ease;margin:auto}
 .modal-content.profile-modal{width:min(440px,94vw);grid-template-columns:1fr}
@@ -540,7 +540,7 @@ select.search-input option{background:#1a1a1a;color:var(--text);padding:8px}
 /* ═══ TOAST ═══ */
 .toast{position:fixed;bottom:24px;right:24px;padding:14px 24px;border-radius:var(--r);
   background:var(--bg-card);color:var(--text);font-size:13px;font-weight:500;
-  opacity:0;transform:translateY(10px);transition:all .3s ease;z-index:20;
+  opacity:0;transform:translateY(10px);transition:all .3s ease;z-index:10010;
   border:1px solid var(--border);box-shadow:var(--shadow-lg)}
 .toast.show{opacity:1;transform:translateY(0)}
 
