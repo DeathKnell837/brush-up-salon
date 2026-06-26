@@ -1152,6 +1152,10 @@ select.search-input option{background:#1a1a1a;color:var(--text);padding:8px}
   .search-wrapper {
     max-width: 100% !important;
     width: 100% !important;
+    flex: none !important;
+  }
+  .search-bar .search-input {
+    flex: none !important;
   }
   .tab-bar {
     flex-wrap: nowrap !important;
