@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import QRCode from 'qrcode';
 import { getBookings, setBookings, getAnnouncements, getSalons } from '../utils/storage';
 import BrushUpLogo from './BrushUpLogo';
 import Chatbot from './Chatbot';
@@ -15,10 +16,26 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
   const isPaymentOverdue = booking.approvedAt && approvedMinutesAgo >= 30 && !booking.paymentProof;
   const minutesRemaining = booking.approvedAt && !booking.paymentProof ? Math.max(0, 30 - approvedMinutesAgo) : 0;
 
-  // Stable QR generation using qrserver API
-  const qrCodeUrl = gcashNumber 
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${gcashNumber}` 
-    : '';
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
+
+  useEffect(() => {
+    if (gcashNumber) {
+      QRCode.toDataURL(gcashNumber, {
+        width: 200,
+        margin: 1,
+        color: {
+          dark: '#000000',
+          light: '#ffffff'
+        }
+      })
+      .then(url => {
+        setQrCodeUrl(url);
+      })
+      .catch(err => {
+        console.error('Failed to generate QR Code:', err);
+      });
+    }
+  }, [gcashNumber]);
 
   const [copied, setCopied] = useState(false);
 
