@@ -473,7 +473,11 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
     filtered.sort((a, b) => b.reviewsCount - a.reviewsCount);
   }
 
-  const uniqueLocations = Array.from(new Set(salons.map(s => s.address ? s.address.split(',').pop().trim() : 'Unknown')));
+  const uniqueLocations = Array.from(new Set(salons.map(s => {
+    if (!s.address) return 'Unknown';
+    const parts = s.address.split(',').map(p => p.trim());
+    return parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+  })));
   const uniqueServices = Array.from(new Set(salons.flatMap(s => s.services.map(sv => sv.name))));
 
   let featured = salonsWithStats.slice(0, 3);

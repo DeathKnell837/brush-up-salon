@@ -168,13 +168,57 @@ body{min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--f
 .profile-btn:hover{background:var(--gold-light);transform:scale(1.05)}
 
 /* ═══ TABS ═══ */
-.tab-bar{display:flex;gap:0;padding:0 40px;margin-bottom:24px;border-bottom:1px solid var(--border);animation:fadeUp .4s ease .1s both}
-.tab-btn{padding:14px 24px;border:none;background:transparent;color:var(--text-dim);
-  font-weight:500;font-size:13px;cursor:pointer;font-family:var(--font-body);transition:all var(--t);
-  border-bottom:2px solid transparent;display:inline-flex;align-items:center;gap:8px;letter-spacing:0.3px}
-.tab-btn:hover{color:var(--text)}
-.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:600}
-.tab-btn .tab-count{background:var(--gold-dim);color:var(--gold);padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600}
+.tab-bar {
+  display: flex;
+  gap: 0;
+  padding: 0 40px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+  animation: fadeUp .4s ease .1s both;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+.tab-bar::-webkit-scrollbar {
+  height: 3px;
+}
+.tab-bar::-webkit-scrollbar-thumb {
+  background: rgba(201, 168, 76, 0.2);
+  border-radius: 3px;
+}
+.tab-btn {
+  flex-shrink: 0;
+  padding: 14px 24px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all var(--t);
+  border-bottom: 2px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.3px;
+}
+.tab-btn:hover {
+  color: var(--text);
+}
+.tab-btn.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+  font-weight: 600;
+}
+.tab-btn .tab-count {
+  background: var(--gold-dim);
+  color: var(--gold);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
 
 /* ═══ SEARCH ═══ */
 .search-bar{padding:0 40px;margin-bottom:24px;animation:fadeUp .4s ease .15s both}
@@ -1163,6 +1207,15 @@ select.search-input option{background:#1a1a1a;color:var(--text);padding:8px}
   transition: all 0.2s ease;
   height: 70px;
   padding: 24px 4px;
+  color: var(--text-dim);
+  border-bottom: 2px solid transparent;
+}
+.admin-navbar-tab:hover {
+  color: var(--text-white);
+}
+.admin-navbar-tab.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
 }
 .admin-nav-separator {
   width: 1px;
@@ -1187,10 +1240,10 @@ select.search-input option{background:#1a1a1a;color:var(--text);padding:8px}
   border: 1px solid rgba(201, 168, 76, 0.2);
   border-radius: 8px;
   padding: 8px 16px;
-  fontSize: 13px;
-  fontWeight: 600;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--gold);
-  letterSpacing: 0.5px;
+  letter-spacing: 0.5px;
 }
 
 @media (max-width: 900px) {
