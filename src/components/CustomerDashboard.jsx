@@ -1246,6 +1246,30 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
       )}
 
       <Chatbot onOpenModal={onSelectSalon} currentUser={currentUser} onCancelBooking={handleCancelBooking} contextData={`User Bookings: ${JSON.stringify(bookings)}`} />
+
+      {/* Floating Bottom Navigation for Mobile */}
+      <div className="mobile-bottom-nav">
+        <button className={`mobile-nav-item ${tab === 'salons' ? 'active' : ''}`} onClick={() => setTab('salons')}>
+          <StoreIcon size={20} />
+          <span>Salons</span>
+        </button>
+        <button className={`mobile-nav-item ${tab === 'bookings' ? 'active' : ''}`} onClick={() => setTab('bookings')}>
+          <ClipboardIcon size={20} />
+          <span>Bookings</span>
+          {bookings.length > 0 && <span className="mobile-nav-badge">{bookings.length}</span>}
+        </button>
+        <button className={`mobile-nav-item ${tab === 'payments' ? 'active' : ''}`} onClick={() => setTab('payments')}>
+          <CreditCardIcon size={20} />
+          <span>Payments</span>
+          {pendingPaymentsCount > 0 && <span className="mobile-nav-badge payments">{pendingPaymentsCount}</span>}
+        </button>
+        <button className="mobile-nav-item" onClick={onOpenProfile}>
+          <div className="mobile-nav-avatar">
+            {(currentUser?.name || 'U')[0].toUpperCase()}
+          </div>
+          <span>Profile</span>
+        </button>
+      </div>
     </div>
   );
 }
