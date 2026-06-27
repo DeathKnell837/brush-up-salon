@@ -3128,9 +3128,11 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     }}>
                       <strong style={{ color: 'var(--gold)', display: 'block', marginBottom: '4px' }}>💡 How to get your GCash QR Code:</strong>
                       <ol style={{ margin: 0, paddingLeft: '16px' }}>
-                        <li>Open the <strong>GCash App</strong> on your phone.</li>
-                        <li>Tap <strong>Receive</strong> (or <strong>QR</strong>) on the dashboard.</li>
-                        <li>Tap <strong>Save QR Code</strong> or take a screenshot of your personal QR Ph code.</li>
+                        <li>Open the <strong>GCash App</strong>.</li>
+                        <li>Tap the blue <strong>QR</strong> button in the bottom menu bar.</li>
+                        <li>Tap the <strong>Generate QR</strong> (+ icon) on the screen.</li>
+                        <li>Select <strong>Receive Money via QR Code</strong>.</li>
+                        <li>Tap <strong>Download</strong> to save the QR code to your gallery.</li>
                         <li>Send the image to your computer and upload it below.</li>
                       </ol>
                     </div>
