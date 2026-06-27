@@ -3116,6 +3116,24 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   
                   <div className="input-group" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16, marginTop: 16 }}>
                     <label style={{ color: 'var(--gold)', fontWeight: 600 }}>GCash Integration Settings</label>
+                    <div style={{
+                      background: 'rgba(201, 168, 76, 0.05)',
+                      border: '1px solid rgba(201, 168, 76, 0.15)',
+                      borderRadius: '8px',
+                      padding: '12px 14px',
+                      marginTop: '8px',
+                      fontSize: '11px',
+                      color: 'rgba(255, 255, 255, 0.7)',
+                      lineHeight: '1.5'
+                    }}>
+                      <strong style={{ color: 'var(--gold)', display: 'block', marginBottom: '4px' }}>💡 How to get your GCash QR Code:</strong>
+                      <ol style={{ margin: 0, paddingLeft: '16px' }}>
+                        <li>Open the <strong>GCash App</strong> on your phone.</li>
+                        <li>Tap <strong>Receive</strong> (or <strong>QR</strong>) on the dashboard.</li>
+                        <li>Tap <strong>Save QR Code</strong> or take a screenshot of your personal QR Ph code.</li>
+                        <li>Send the image to your computer and upload it below.</li>
+                      </ol>
+                    </div>
                   </div>
                   <div className="input-group">
                     <label>GCash Number (For receiving payments)</label>
