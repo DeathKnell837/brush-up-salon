@@ -17,6 +17,8 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
   const minutesRemaining = booking.approvedAt && !booking.paymentProof ? Math.max(0, 30 - approvedMinutesAgo) : 0;
 
   const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (gcashNumber) {
@@ -44,6 +46,31 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
       navigator.clipboard.writeText(gcashNumber);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      onUpload(booking.id, file);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      onUpload(booking.id, file);
     }
   };
 
@@ -94,7 +121,7 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
                   <span>Payment overdue! Please upload your GCash proof now.</span>
                 </div>
               ) : (
-                <div className="payment-countdown" style={{ display: 'flex', alignItems: 'center', gap: 6, margin: 0, justifyContent: 'center' }}>
+                <div className={`payment-countdown ${minutesRemaining < 10 ? 'warning' : 'safe'}`} style={{ display: 'flex', alignItems: 'center', gap: 6, margin: 0, justifyContent: 'center' }}>
                   <ClockIcon size={14} />
                   <span>Upload payment proof within {minutesRemaining} min</span>
                 </div>
@@ -170,7 +197,7 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
                 {salon?.name || 'Brush Up Salon'}
               </div>
 
-              {/* QR Image */}
+               {/* QR Image */}
               <div style={{ 
                 width: 176, 
                 height: 176, 
@@ -179,7 +206,13 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
                 justifyContent: 'center', 
                 background: '#fff' 
               }}>
-                {qrCodeUrl ? (
+                {salon?.gcashQrImage ? (
+                  <img 
+                    src={salon.gcashQrImage} 
+                    alt="GCash QR" 
+                    style={{ width: 168, height: 168, objectFit: 'contain' }}
+                  />
+                ) : qrCodeUrl ? (
                   <img 
                     src={qrCodeUrl} 
                     alt="GCash QR" 
@@ -266,24 +299,28 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
                 </button>
               </div>
             ) : (
-              <button 
-                className="btn" 
-                onClick={() => onUpload(booking.id)}
-                style={{
-                  width: '100%',
-                  background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)',
-                  color: '#0e1118',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  border: 'none',
-                  boxShadow: '0 4px 12px rgba(201, 168, 76, 0.2)'
-                }}
+              <div 
+                className={`gcash-upload-zone ${isDragging ? 'dragging' : ''}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
               >
-                Upload Payment Receipt
-              </button>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  style={{ display: 'none' }} 
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--gold)', marginBottom: 8, display: 'inline-block' }}>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <div style={{ color: 'var(--text-white)', fontSize: 13, fontWeight: 600 }}>Drag & Drop Receipt</div>
+                <div style={{ color: 'var(--text-dim)', fontSize: 11, marginTop: 4 }}>or click to browse from device (Max 5MB)</div>
+              </div>
             )}
           </div>
         </div>
@@ -436,12 +473,8 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
   };
 
   // ─── Payment Proof Upload ───
-  const handlePaymentProofUpload = (bookingId) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-      const file = e.target.files[0];
+  const handlePaymentProofUpload = (bookingId, droppedFile = null) => {
+    const processFile = (file) => {
       if (!file) return;
       if (file.size > 5 * 1024 * 1024) { showToast('File too large. Max 5MB.'); return; }
       const reader = new FileReader();
@@ -458,7 +491,18 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
       };
       reader.readAsDataURL(file);
     };
-    input.click();
+
+    if (droppedFile) {
+      processFile(droppedFile);
+    } else {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = (e) => {
+        processFile(e.target.files[0]);
+      };
+      input.click();
+    }
   };
 
   // ─── Timer tick for payment reminders (refresh every 30s) ───

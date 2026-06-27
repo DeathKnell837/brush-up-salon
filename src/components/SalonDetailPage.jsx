@@ -15,6 +15,7 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
   const [bookStaff, setBookStaff] = useState('');
   const [bookPaymentMethod, setBookPaymentMethod] = useState('Cash');
   const [reviewSort, setReviewSort] = useState('recent');
+  const [phoneTouched, setPhoneTouched] = useState(false);
 
   const allBookings = getBookings();
   const reviews = allBookings.filter(b => b.salonId === salon.id && b.review);
@@ -24,7 +25,7 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
 
   const sortedReviews = [...reviews].sort((a, b) => {
     if (reviewSort === 'highest') return b.review - a.review;
-    if (reviewSort === 'lowest') return a.review - b.review;
+    if (reviewSort === 'lowest') return b.review - a.review;
     return (b.id || 0) - (a.id || 0);
   });
 
@@ -46,6 +47,45 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
 
   const handleSelectService = (service) => {
     setSelectedService(service);
+    if (window.innerWidth <= 768) {
+      setTimeout(() => {
+        const bookingCard = document.querySelector('.sdp-booking-card');
+        if (bookingCard) {
+          bookingCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 120);
+    }
+  };
+
+  const isPhoneValid = (phone) => {
+    const clean = phone.replace(/[^0-9+]/g, '');
+    return (clean.startsWith('09') && clean.length === 11) || (clean.startsWith('+639') && clean.length === 13);
+  };
+
+  const getStaffConflictMessage = () => {
+    if (!bookDate || !bookTime || !selectedService) return null;
+    const staffNames = (salon.staff || []).map(member => typeof member === 'string' ? member : member.name);
+    if (staffNames.length === 0) return null;
+
+    const activeBookings = allBookings.filter(b => 
+      b.salonId === salon.id && 
+      b.date === bookDate && 
+      b.time === bookTime && 
+      (b.status === 'Pending' || b.status === 'Approved')
+    );
+
+    const chosenStaff = bookStaff || 'Any';
+    if (chosenStaff !== 'Any') {
+      const isStaffBusy = activeBookings.some(b => b.staff === chosenStaff);
+      if (isStaffBusy) {
+        return `${chosenStaff} is already booked for this slot.`;
+      }
+    } else {
+      if (activeBookings.length >= staffNames.length) {
+        return 'All staff members are fully booked for this slot.';
+      }
+    }
+    return null;
   };
 
   const handleSubmitBooking = (e) => {
@@ -54,40 +94,18 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
       showToast('Please complete all fields.');
       return;
     }
-    const phoneRegex = /^[0-9+\-\s()]{7,15}$/;
-    if (!phoneRegex.test(bookContact)) {
-      showToast('Please enter a valid contact number.');
+    if (!isPhoneValid(bookContact)) {
+      showToast('Please enter a valid Philippine mobile number (e.g. 0917 123 4567).');
       return;
     }
-    const bookings = getBookings();
     
-    // Booking conflict check
-    const staffNames = (salon.staff || []).map(member => typeof member === 'string' ? member : member.name);
-    const activeBookings = bookings.filter(b => 
-      b.salonId === salon.id && 
-      b.date === bookDate && 
-      b.time === bookTime && 
-      (b.status === 'Pending' || b.status === 'Approved')
-    );
-    
-    if (staffNames.length > 0) {
-      const chosenStaff = bookStaff || 'Any';
-      if (chosenStaff !== 'Any') {
-        const isStaffBusy = activeBookings.some(b => b.staff === chosenStaff);
-        if (isStaffBusy) {
-          showToast(`This time slot is already booked for ${chosenStaff}. Please choose another time.`);
-          return;
-        }
-      }
-      if (activeBookings.length >= staffNames.length) {
-        showToast(chosenStaff === 'Any' 
-          ? 'All staff members are fully booked for this time slot.' 
-          : `This time slot is already booked for ${chosenStaff}. Please choose another time.`
-        );
-        return;
-      }
+    // Check conflicts
+    if (getStaffConflictMessage()) {
+      showToast(getStaffConflictMessage());
+      return;
     }
 
+    const bookings = getBookings();
     const servicePriceLabel = selectedService.price || 'PHP 0';
     let servicePrice = 0;
     if (selectedService.pricingTable) {
@@ -119,6 +137,7 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
     setBookDate('');
     setBookTime('');
     setBookStaff('');
+    setPhoneTouched(false);
   };
 
   const today = new Date().toISOString().split('T')[0];
@@ -305,8 +324,23 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
                   <button className="sdp-clear-svc" onClick={() => setSelectedService(null)}><CloseIcon size={10} /></button>
                 </div>
               ) : (
-                <div className="sdp-select-prompt">
-                  <p>↑ Select a service from the menu to begin</p>
+                <div className="sdp-select-prompt" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <p style={{ margin: 0 }}>↑ Select a service from the menu to begin</p>
+                  <button 
+                    type="button" 
+                    className="btn secondary" 
+                    style={{ width: '100%', opacity: 0.8 }}
+                    onClick={() => {
+                      const tabs = document.querySelector('.sdp-category-tabs');
+                      if (tabs) {
+                        tabs.classList.add('shake-warning');
+                        setTimeout(() => tabs.classList.remove('shake-warning'), 500);
+                      }
+                      showToast('Please select a service from the list first.');
+                    }}
+                  >
+                    Select a Service to Book
+                  </button>
                 </div>
               )}
 
@@ -318,7 +352,19 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
                   </div>
                   <div className="input-group">
                     <label>Contact Number</label>
-                    <input type="tel" placeholder="e.g. 0917-123-4567" value={bookContact} onChange={e => setBookContact(e.target.value)} required />
+                    <input 
+                      type="tel" 
+                      placeholder="e.g. 0917-123-4567" 
+                      value={bookContact} 
+                      onChange={e => setBookContact(e.target.value)} 
+                      onBlur={() => setPhoneTouched(true)}
+                      required 
+                    />
+                    {phoneTouched && bookContact && !isPhoneValid(bookContact) && (
+                      <span style={{ color: '#f87171', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                        Must be a valid Philippine mobile number (e.g. 0917 123 4567).
+                      </span>
+                    )}
                   </div>
                   {salon.staff && salon.staff.length > 0 && (
                     <div className="input-group">
@@ -348,11 +394,18 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
                       <button type="button" className={`pmt-btn ${bookPaymentMethod === 'Cash' ? 'active' : ''}`} onClick={() => setBookPaymentMethod('Cash')}>
                         <CashIcon size={14} style={{ marginRight: 6 }} /> Cash
                       </button>
-                      <button type="button" className={`pmt-btn ${bookPaymentMethod === 'GCash' ? 'active' : ''}`} onClick={() => setBookPaymentMethod('GCash')}>
-                        <GcashIcon size={14} style={{ marginRight: 6 }} /> GCash
-                      </button>
+                      {salon.gcashNumber && (
+                        <button type="button" className={`pmt-btn ${bookPaymentMethod === 'GCash' ? 'active' : ''}`} onClick={() => setBookPaymentMethod('GCash')}>
+                          <GcashIcon size={14} style={{ marginRight: 6 }} /> GCash
+                        </button>
+                      )}
                     </div>
                   </div>
+                  {getStaffConflictMessage() && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 8, fontSize: 11, color: '#fca5a5', marginBottom: 16 }}>
+                      <span>⚠️ {getStaffConflictMessage()}</span>
+                    </div>
+                  )}
                   <button type="submit" className="btn sdp-book-btn">
                     <CalendarIcon size={14} /> Book
                   </button>

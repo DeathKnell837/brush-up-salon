@@ -2429,4 +2429,164 @@ select.search-input option{background:#1a1a1a;color:var(--text);padding:8px}
   }
 }
 
+/* ──────────────────────────────────────────────────────── */
+/* ✨ UX/UI PREMIUM TRANSITIONS & COMPONENT ENHANCEMENTS ✨ */
+/* ──────────────────────────────────────────────────────── */
+
+/* Custom modern thin scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(201, 168, 76, 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 168, 76, 0.5);
+}
+
+/* Tab buttons and nav items micro-interactions */
+.tab-btn, .mobile-nav-item, .mobile-bottom-nav button {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.tab-btn:hover {
+  transform: translateY(-1px);
+  color: var(--text-white) !important;
+}
+.tab-btn:active, .mobile-nav-item:active {
+  transform: scale(0.95);
+}
+
+/* Hero Stats Hover Glow Animation */
+.hero-stat {
+  transition: transform 0.3s ease, border-color 0.3s ease !important;
+  cursor: default;
+}
+.hero-stat:hover {
+  transform: translateY(-2px);
+}
+.hero-stat strong {
+  transition: text-shadow 0.3s ease, color 0.3s ease !important;
+}
+.hero-stat:hover strong {
+  color: var(--gold) !important;
+  text-shadow: 0 0 14px rgba(201, 168, 76, 0.6);
+}
+
+/* Mobile Advanced Filters Drawer */
+@media (max-width: 768px) {
+  .filter-toggle-btn {
+    display: flex !important;
+  }
+  .filter-options-container {
+    display: flex !important;
+    flex-direction: column !important;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), padding 0.35s ease, opacity 0.35s ease !important;
+    opacity: 0;
+    gap: 12px;
+    background: rgba(14, 17, 24, 0.6) !important;
+    border-radius: 12px;
+    backdrop-filter: blur(12px);
+    width: 100% !important;
+    padding: 0 !important;
+    border: 1px solid transparent;
+  }
+  .filter-options-container.show {
+    max-height: 250px;
+    padding: 16px !important;
+    opacity: 1;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    margin-top: 12px;
+  }
+}
+
+/* Enhanced Empty State Card styling */
+.empty-state {
+  background: rgba(255, 255, 255, 0.015) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 16px !important;
+  padding: 48px 32px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.empty-state:hover {
+  border-color: rgba(201, 168, 76, 0.2) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(201, 168, 76, 0.03) !important;
+}
+
+/* Pulsing selection on service cards */
+.sdp-service-card {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border 0.25s ease, box-shadow 0.25s ease !important;
+}
+.sdp-service-card.selected {
+  border-left: 4px solid var(--gold) !important;
+  box-shadow: 0 0 20px rgba(201, 168, 76, 0.12) !important;
+  transform: translateX(4px) scale(1.01);
+}
+
+/* GCash Drag & Drop Upload Zone */
+.gcash-upload-zone {
+  border: 2px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.01);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+  box-sizing: border-box;
+}
+.gcash-upload-zone.dragging {
+  border-color: var(--gold);
+  background: rgba(201, 168, 76, 0.05);
+  box-shadow: 0 0 12px rgba(201, 168, 76, 0.1);
+  transform: scale(1.01);
+}
+.gcash-upload-zone:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Pulsing Timer Countdown animation */
+.payment-countdown {
+  animation: pulseTimer 2s infinite ease-in-out;
+}
+.payment-countdown.warning {
+  color: #f87171 !important;
+}
+.payment-countdown.safe {
+  color: #fcd34d !important;
+}
+@keyframes pulseTimer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+
+/* Responsive Table Wrapper for Admin list views */
+.responsive-table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(15, 17, 24, 0.3);
+}
+
+/* Micro-interaction Shake Animation for missing selection */
+@keyframes shakeElement {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+.shake-warning {
+  animation: shakeElement 0.4s ease-in-out;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}
+
+
 

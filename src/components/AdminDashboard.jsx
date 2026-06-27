@@ -96,6 +96,8 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const [salonHours, setSalonHours] = useState('');
   const [salonOverhead, setSalonOverhead] = useState(45000);
   const [salonCapital, setSalonCapital] = useState(150000);
+  const [salonGcashNumber, setSalonGcashNumber] = useState('');
+  const [salonGcashQrImage, setSalonGcashQrImage] = useState('');
   
   // Staff & Promotions
   const [staff, setStaff] = useState([]);
@@ -179,6 +181,8 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
     setPromotions(s.promotions || []);
     setSalonOverhead(s.fixedOverhead || 45000);
     setSalonCapital(s.operatingCapital || 150000);
+    setSalonGcashNumber(s.gcashNumber || '');
+    setSalonGcashQrImage(s.gcashQrImage || '');
   }, [loadBookings, getCurrentSalon, syncTick, currentSalonId]);
 
 
@@ -336,11 +340,19 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       all[idx].promotions = promotions;
       all[idx].fixedOverhead = parseFloat(salonOverhead) || 0;
       all[idx].operatingCapital = parseFloat(salonCapital) || 0;
+      all[idx].gcashNumber = salonGcashNumber;
+      all[idx].gcashQrImage = salonGcashQrImage;
       setSalons(all);
       onRefreshSalons();
     }
     logAuditAction(currentUser.user, 'SAVE_SETTINGS', `Updated settings for salon ${salonName}`);
     showToast('Settings saved!');
+  };
+
+  const handleGcashQrImage = async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const b64 = await fileToBase64(file);
+    setSalonGcashQrImage(b64);
   };
 
   const handleSettingsImage = async (e) => {
@@ -2450,7 +2462,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     </button>
                   ))}
                 </div>
-                <div style={{ overflowX: 'auto' }}>
+                <div className="responsive-table-container">
                   <table className="ci-table">
                     <thead>
                       <tr>
@@ -3102,7 +3114,25 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   <div className="input-group"><label>Contact Number</label><input type="text" placeholder="Contact" value={salonContact} onChange={e => setSalonContact(e.target.value)} /></div>
                   <div className="input-group"><label>Operating Hours</label><input type="text" placeholder="Hours" value={salonHours} onChange={e => setSalonHours(e.target.value)} /></div>
                   
-                  <button type="button" className="btn" onClick={handleSaveSettings}>Save Changes</button>
+                  <div className="input-group" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16, marginTop: 16 }}>
+                    <label style={{ color: 'var(--gold)', fontWeight: 600 }}>GCash Integration Settings</label>
+                  </div>
+                  <div className="input-group">
+                    <label>GCash Number (For receiving payments)</label>
+                    <input type="text" placeholder="e.g. 09123456789" value={salonGcashNumber} onChange={e => setSalonGcashNumber(e.target.value)} />
+                  </div>
+                  <div className="input-group">
+                    <label>GCash QR Code Image</label>
+                    <input type="file" accept="image/*" onChange={handleGcashQrImage} className="file-input" style={{ marginBottom: 6 }} />
+                    {salonGcashQrImage && (
+                      <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <img src={salonGcashQrImage} alt="QR Preview" style={{ width: 80, height: 80, objectFit: 'contain', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, background: '#fff', padding: 2 }} />
+                        <button type="button" className="btn small outline danger" style={{ width: 'auto', padding: '6px 12px', fontSize: 11 }} onClick={() => setSalonGcashQrImage('')}>Remove QR</button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <button type="button" className="btn" style={{ marginTop: 12 }} onClick={handleSaveSettings}>Save Changes</button>
                 </div>
 
                 <div className="settings-panel">
