@@ -1398,16 +1398,16 @@ select.search-input option{background:#1a1a1a;color:var(--text);padding:8px}
   }
 }
 
-/* Analytics Metrics Grid */
+/* Analytics Metrics Grid - 2x2 compact on mobile */
 .analytics-metrics-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 16px;
 }
 @media (max-width: 600px) {
   .analytics-metrics-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
   }
 }
 
@@ -2697,4 +2697,26 @@ html, body {
   .customer-dashboard, .admin-layout {
     padding-bottom: 90px !important;
   }
+
+  /* Executive Analytics Mobile Refinements */
+  .analytics-core-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    margin-bottom: 24px !important;
+  }
+  .analytics-metrics-grid > div {
+    padding: 16px 12px !important;
+    border-radius: 14px !important;
+  }
+  .analytics-metrics-grid h3, .analytics-metrics-grid div[style*="fontSize: 32"] {
+    font-size: 20px !important;
+  }
+  .analytics-metrics-grid div[style*="fontSize: 11"] {
+    font-size: 9px !important;
+    letter-spacing: 0.8px !important;
+  }
+  .analytics-metrics-grid p {
+    font-size: 11px !important;
+  }
 }
+
