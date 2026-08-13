@@ -8,7 +8,7 @@ import { doc, deleteDoc, setDoc } from 'firebase/firestore';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import BrushUpLogo from './BrushUpLogo';
-import Chatbot from './Chatbot';
+// import Chatbot from './Chatbot'; // Chatbot removed from Admin Dashboard
 import ReactMarkdown from 'react-markdown';
 import {
   HourglassIcon, CheckCircleIcon, XCircleIcon, CalendarIcon, ClockIcon, 
@@ -3905,8 +3905,8 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
         </div>
       </footer>
 
-      {/* Floating Strategy & Operations Chatbot */}
-      <Chatbot currentUser={currentUser} contextData={adminContextData} />
+      {/* Floating Strategy & Operations Chatbot - disabled */}
+      {/* <Chatbot currentUser={currentUser} contextData={adminContextData} /> */}
 
       {/* Walk-in Add Modal */}
       {showWalkInModal && (

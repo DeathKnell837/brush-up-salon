@@ -11,7 +11,8 @@ import ForbiddenPage from './components/ForbiddenPage';
 import { getBookings, setBookings, getSalons, setSalons, seedAdminAccounts, getSession, setSession, clearSession, logAuditAction } from './utils/storage';
 import { SALON_DATA } from './constants/salonData';
 import { auth, db } from './firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { googleProvider, facebookProvider } from './firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 import { initFirebaseSync } from './utils/firebaseSync';
@@ -27,6 +28,7 @@ function App() {
   const [isReady, setIsReady] = useState(false);
   const [salons, setSalonsState] = useState([]);
   const [syncTick, setSyncTick] = useState(0);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const [isLocked, setIsLocked] = useState(false);
   const [lockCountdown, setLockCountdown] = useState(0);
@@ -189,7 +191,40 @@ function App() {
     setCurrentUser(null); setCurrentPage('auth');
     clearSession();
     setShowModal(false); setShowProfile(false);
+    setShowLogoutConfirm(false);
     refreshSalons();
+  };
+
+  const handleSocialLogin = async (providerName) => {
+    try {
+      const provider = providerName === 'google' ? googleProvider : facebookProvider;
+      const result = await signInWithPopup(auth, provider);
+      const firebaseUser = result.user;
+      const username = (firebaseUser.displayName || firebaseUser.email.split('@')[0]).toLowerCase().replace(/\s+/g, '_');
+      const userData = {
+        uid: firebaseUser.uid,
+        name: firebaseUser.displayName || username,
+        user: username,
+        role: 'customer',
+        email: firebaseUser.email,
+        avatar: firebaseUser.photoURL || '',
+      };
+      const { getUsers, setUsers } = await import('./utils/storage');
+      const users = getUsers();
+      const existingIdx = users.findIndex(u => u.uid === firebaseUser.uid || u.user === username);
+      if (existingIdx === -1) users.push(userData);
+      else users[existingIdx] = { ...users[existingIdx], ...userData };
+      setUsers(users);
+      setSession(userData);
+      setCurrentUser(userData);
+      setCurrentPage('customer');
+      showToast(`Welcome, ${userData.name}!`);
+      logAuditAction(username, 'LOGIN', 'Social login');
+    } catch (err) {
+      if (err.code !== 'auth/popup-closed-by-user') {
+        showToast('Social login failed: ' + (err.message || 'Unknown error'));
+      }
+    }
   };
 
   const handleOpenSalonPage = (salonId) => {
@@ -276,10 +311,10 @@ function App() {
   return (
     <div className="app-shell">
       {currentPage === 'auth' && (
-        <AuthPage salons={salons} onSignup={handleSignup} onLogin={handleLogin} onAdminLogin={handleAdminLogin} isLocked={isLocked} lockCountdown={lockCountdown} />
+        <AuthPage salons={salons} onSignup={handleSignup} onLogin={handleLogin} onAdminLogin={handleAdminLogin} isLocked={isLocked} lockCountdown={lockCountdown} onSocialLogin={handleSocialLogin} />
       )}
       {currentPage === 'customer' && (
-        <CustomerDashboard currentUser={currentUser} salons={salons} onLogout={handleLogout}
+        <CustomerDashboard currentUser={currentUser} salons={salons} onLogout={() => setShowLogoutConfirm(true)}
           onSelectSalon={handleOpenSalonPage} onOpenProfile={() => setShowProfile(true)} syncTick={syncTick} showToast={showToast} />
       )}
       {currentPage === 'salon-detail' && selectedSalon && (
@@ -287,7 +322,7 @@ function App() {
           salon={selectedSalon}
           currentUser={currentUser}
           onBack={() => setCurrentPage('customer')}
-          onLogout={handleLogout}
+          onLogout={() => setShowLogoutConfirm(true)}
           onOpenProfile={() => setShowProfile(true)}
           showToast={showToast}
         />
@@ -295,7 +330,7 @@ function App() {
       {currentPage === 'admin' && (
         (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'superadmin')) 
           ? <ForbiddenPage onBack={() => setCurrentPage('auth')} />
-          : <AdminDashboard currentUser={currentUser} salons={salons} onLogout={handleLogout}
+          : <AdminDashboard currentUser={currentUser} salons={salons} onLogout={() => setShowLogoutConfirm(true)}
               onRefreshSalons={refreshSalons} showToast={showToast} syncTick={syncTick} onOpenProfile={() => setShowProfile(true)} />
       )}
       {/* SuperAdminDashboard is merged into AdminDashboard, removing separate route */}
@@ -317,11 +352,51 @@ function App() {
           }}
           onLogout={() => {
             setShowProfile(false);
-            handleLogout();
+            setShowLogoutConfirm(true);
           }}
         />
       )}
       {toast && <Toast message={toast} />}
+
+      {/* ── Logout Confirmation Modal ── */}
+      {showLogoutConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(5,5,7,0.85)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #18181c 0%, #111114 100%)',
+            border: '1px solid rgba(201,168,76,0.2)',
+            borderRadius: '16px', padding: '32px 28px', width: '100%', maxWidth: '360px',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.6)', textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '36px', marginBottom: '12px' }}>👋</div>
+            <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>Log Out?</h3>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '24px' }}>
+              Are you sure you want to log out of Brush Up Salon?
+            </p>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                style={{
+                  flex: 1, padding: '11px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'transparent', color: 'rgba(255,255,255,0.7)', fontSize: '14px',
+                  fontWeight: 600, cursor: 'pointer'
+                }}
+              >Cancel</button>
+              <button
+                onClick={handleLogout}
+                style={{
+                  flex: 1, padding: '11px', borderRadius: '8px', border: 'none',
+                  background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                  color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer'
+                }}
+              >Log Out</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
