@@ -2589,4 +2589,112 @@ select.search-input option{background:#1a1a1a;color:var(--text);padding:8px}
 }
 
 
+/* ═══ COMPREHENSIVE MOBILE RESPONSIVENESS OVERHAUL (320px - 768px) ═══ */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+}
 
+@media (max-width: 768px) {
+  /* Prevent horizontal page overflow */
+  .app-shell, .auth-page-wrapper, .admin-layout, .customer-shell {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Admin Header & Section Headers */
+  .section-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+  .section-header button, .section-header .btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Admin Tabs & Filter Buttons */
+  .admin-tabs {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    padding-bottom: 8px !important;
+    -webkit-overflow-scrolling: touch;
+    width: 100% !important;
+    gap: 6px !important;
+  }
+  .admin-tab {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    font-size: 12px !important;
+    padding: 8px 14px !important;
+  }
+
+  /* Content Sections & Padding */
+  .content-section {
+    padding: 16px 12px 90px !important;
+  }
+
+  /* Settings Stats Counter Cards */
+  .settings-stats {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .settings-stats > div {
+    padding: 12px !important;
+  }
+
+  /* Booking Cards & List Items */
+  .booking-card {
+    padding: 14px 12px !important;
+  }
+  .booking-card > div {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+  .booking-card > div > div:last-child {
+    text-align: left !important;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+
+  /* Admin Form Rows & Inputs */
+  .admin-form-row {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  .admin-form-row .input-group, .admin-form-row input, .admin-form-row button {
+    width: 100% !important;
+  }
+
+  /* Modals - Universal Mobile Fit */
+  .modal-content, .booking-modal-content, .profile-modal-content, .admin-audit-modal-content {
+    width: 94vw !important;
+    max-width: 94vw !important;
+    margin: 10px auto !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    padding: 18px 14px !important;
+  }
+
+  /* Admin Audit & Turnaround Report Modal */
+  .admin-audit-modal-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .admin-audit-modal-left {
+    border-right: none !important;
+    border-bottom: 1px solid rgba(201, 168, 76, 0.18) !important;
+    padding-right: 0 !important;
+    padding-bottom: 16px !important;
+  }
+
+  /* Customer Dashboard Bottom Clearance for Mobile Nav Bar */
+  .customer-dashboard, .admin-layout {
+    padding-bottom: 90px !important;
+  }
+}
