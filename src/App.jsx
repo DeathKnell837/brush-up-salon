@@ -186,17 +186,27 @@ function App() {
     return false;
   };
 
-  const handleLogout = () => {
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [socialLoading, setSocialLoading] = useState(null); // 'google' | 'facebook' | null
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
     logAuditAction(currentUser?.user, 'LOGOUT', 'User logged out');
-    setCurrentUser(null); setCurrentPage('auth');
+    // Brief smooth transition delay for feedback
+    await new Promise(r => setTimeout(r, 450));
+    setCurrentUser(null);
+    setCurrentPage('auth');
     clearSession();
-    setShowModal(false); setShowProfile(false);
+    setShowModal(false);
+    setShowProfile(false);
     setShowLogoutConfirm(false);
+    setIsLoggingOut(false);
     refreshSalons();
   };
 
   const handleSocialLogin = async (providerName) => {
     try {
+      setSocialLoading(providerName);
       const provider = providerName === 'google' ? googleProvider : facebookProvider;
       const result = await signInWithPopup(auth, provider);
       const firebaseUser = result.user;
@@ -224,6 +234,8 @@ function App() {
       if (err.code !== 'auth/popup-closed-by-user') {
         showToast('Social login failed: ' + (err.message || 'Unknown error'));
       }
+    } finally {
+      setSocialLoading(null);
     }
   };
 
@@ -311,7 +323,7 @@ function App() {
   return (
     <div className="app-shell">
       {currentPage === 'auth' && (
-        <AuthPage salons={salons} onSignup={handleSignup} onLogin={handleLogin} onAdminLogin={handleAdminLogin} isLocked={isLocked} lockCountdown={lockCountdown} onSocialLogin={handleSocialLogin} />
+        <AuthPage salons={salons} onSignup={handleSignup} onLogin={handleLogin} onAdminLogin={handleAdminLogin} isLocked={isLocked} lockCountdown={lockCountdown} onSocialLogin={handleSocialLogin} socialLoading={socialLoading} />
       )}
       {currentPage === 'customer' && (
         <CustomerDashboard currentUser={currentUser} salons={salons} onLogout={() => setShowLogoutConfirm(true)}
@@ -389,21 +401,34 @@ function App() {
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button
+                disabled={isLoggingOut}
                 onClick={() => setShowLogoutConfirm(false)}
                 style={{
                   flex: 1, padding: '11px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)',
-                  background: 'transparent', color: 'rgba(255,255,255,0.7)', fontSize: '14px',
-                  fontWeight: 600, cursor: 'pointer'
+                  background: 'transparent', color: isLoggingOut ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.7)', fontSize: '14px',
+                  fontWeight: 600, cursor: isLoggingOut ? 'not-allowed' : 'pointer'
                 }}
               >Cancel</button>
               <button
+                disabled={isLoggingOut}
                 onClick={handleLogout}
                 style={{
                   flex: 1, padding: '11px', borderRadius: '8px', border: 'none',
                   background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-                  color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer'
+                  color: '#fff', fontSize: '14px', fontWeight: 700, cursor: isLoggingOut ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  opacity: isLoggingOut ? 0.8 : 1
                 }}
-              >Log Out</button>
+              >
+                {isLoggingOut ? (
+                  <>
+                    <div style={{ width: '14px', height: '14px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />
+                    <span>Logging out...</span>
+                  </>
+                ) : (
+                  'Log Out'
+                )}
+              </button>
             </div>
           </div>
         </div>
