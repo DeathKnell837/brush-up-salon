@@ -108,9 +108,9 @@ const DEFAULT_ADMINS = [
   { name: 'Cut & Curl Admin', user: 'cutcurladmin', pass: null, rawPass: 'admin123', role: 'admin', salonId: 'cut-curl' }
 ];
 
-// ─── Seed admin accounts + salons into localStorage on first load ───
+// ─── Seed admin accounts + rich demo data on first load or version update ───
 export const seedAdminAccounts = async () => {
-  const version = 'v15_remove_superadmin_update'; // Bump for GCash numbers + payment features and removing superadmin
+  const version = 'v17_rich_seed_data_reviews_and_bookings';
   const seededVersion = storage.get('luxurySeedVersion', '');
   
   if (seededVersion === version) return;
@@ -153,8 +153,19 @@ export const seedAdminAccounts = async () => {
       });
     }
   }
+
+  // Seed rich demo customers if not already present
+  const { INITIAL_CUSTOMERS, INITIAL_ANNOUNCEMENTS, generateInitialBookings } = require('../constants/initialDemoData');
+  
+  INITIAL_CUSTOMERS.forEach(cust => {
+    const exists = users.some(u => u.user.toLowerCase() === cust.user.toLowerCase());
+    if (!exists) {
+      users.push(cust);
+    }
+  });
   setUsers(users);
 
+  // Seed enriched salon data
   const { SALON_DATA } = require('../constants/salonData');
   const enrichedSalons = SALON_DATA.map(s => ({
     ...s,
@@ -163,12 +174,30 @@ export const seedAdminAccounts = async () => {
   }));
   setSalons(enrichedSalons);
   
-  // Also migrate existing bookings and announcements to Firestore
-  const bookings = getBookings();
-  if (bookings.length > 0) setBookings(bookings);
+  // Seed rich structured bookings and reviews
+  const currentBookings = getBookings();
+  const demoBookings = generateInitialBookings();
   
-  const announcements = getAnnouncements();
-  if (announcements.length > 0) setAnnouncements(announcements);
+  // If no bookings or legacy dataset, seed full demo bookings
+  if (!currentBookings || currentBookings.length < 10) {
+    setBookings(demoBookings);
+  } else {
+    // Merge any missing salon demo reviews
+    const merged = [...currentBookings];
+    demoBookings.forEach(dbItem => {
+      const alreadyExists = merged.some(b => b.id === dbItem.id || (b.salonId === dbItem.salonId && b.review && b.customer === dbItem.customer));
+      if (!alreadyExists) {
+        merged.push(dbItem);
+      }
+    });
+    setBookings(merged);
+  }
+  
+  // Seed announcements
+  const currentAnnouncements = getAnnouncements();
+  if (!currentAnnouncements || currentAnnouncements.length === 0) {
+    setAnnouncements(INITIAL_ANNOUNCEMENTS);
+  }
 
   storage.set('luxurySeedVersion', version);
 };

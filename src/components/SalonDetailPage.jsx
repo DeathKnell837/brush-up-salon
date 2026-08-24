@@ -25,7 +25,7 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
 
   const sortedReviews = [...reviews].sort((a, b) => {
     if (reviewSort === 'highest') return b.review - a.review;
-    if (reviewSort === 'lowest') return b.review - a.review;
+    if (reviewSort === 'lowest') return a.review - b.review;
     return (b.id || 0) - (a.id || 0);
   });
 

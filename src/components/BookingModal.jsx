@@ -16,7 +16,9 @@ function BookingModal({ salon, initialDetails, onClose, onSubmit, currentUser })
   const [bookTime, setBookTime] = useState(initialDetails?.time || '');
 
   const allBookings = getBookings();
-  const reviews = allBookings.filter(b => b.salonId === salon.id && b.review);
+  const reviews = allBookings
+    .filter(b => b.salonId === salon.id && b.review)
+    .sort((a, b) => (b.id || 0) - (a.id || 0));
 
   const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 

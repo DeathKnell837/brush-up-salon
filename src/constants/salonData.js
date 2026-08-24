@@ -8,11 +8,11 @@ export const SALON_DATA = [
     contact: '09512042379',
     gcashNumber: '09512042379',
     hours: '9:00 AM - 8:00 PM',
-    promotions: [],
+    promotions: ['✨ 15% OFF Loreal X-Tenso Rebonding with Cellophane Package', '💆 Free Hair Scalp Treatment with every Keratin Blowout'],
     staff: [
-      { id: 1779114386506, name: 'Maria', role: 'Stylist', services: [] },
-      { id: 1779114387348, name: 'Joy', role: 'Stylist', services: [] },
-      { id: 1779114386946, name: 'Anna', role: 'Stylist', services: [] }
+      { id: 1779114386506, name: 'Maria', role: 'Master Hair Stylist & Loreal Specialist', services: [] },
+      { id: 1779114387348, name: 'Joy', role: 'Creative Colorist & Balayage Artist', services: [] },
+      { id: 1779114386946, name: 'Anna', role: 'Nail & Aesthetic Spa Specialist', services: [] }
     ],
     services: [
       // Hair Rebonding
@@ -58,11 +58,11 @@ export const SALON_DATA = [
     contact: '09630649558',
     gcashNumber: '09630649558',
     hours: '8:00 AM - 8:00 PM',
-    promotions: [],
+    promotions: ['💅 Free Handspa with any Full Leg Waxing & Pedicure combo', '🌟 10% Discount on Organic Footspa treatments every Tuesday & Thursday'],
     staff: [
-      { id: 1779114387217, name: 'Karen', role: 'Stylist', services: [] },
-      { id: 1779114386973, name: 'Liza', role: 'Stylist', services: [] },
-      { id: 1779114386718, name: 'Beth', role: 'Stylist', services: [] }
+      { id: 1779114387217, name: 'Karen', role: 'Salon Director & Master Stylist', services: [] },
+      { id: 1779114386973, name: 'Liza', role: 'Senior Spa & Body Care Therapist', services: [] },
+      { id: 1779114386718, name: 'Beth', role: 'Nails & Eyelash Extension Artist', services: [] }
     ],
     services: [
       // Regular Salon Services
@@ -137,11 +137,11 @@ export const SALON_DATA = [
     contact: '09632185329',
     gcashNumber: '09632185329',
     hours: '9:00 AM - 9:00 PM',
-    promotions: ['Free Haircut with all rebond services!'],
+    promotions: ['🎉 Free Haircut with all rebond services!', '✨ 20% OFF Brazilian Botox Treatment this month'],
     staff: [
-      { id: 1779114386643, name: 'Pretty', role: 'Stylist', services: [] },
-      { id: 1779114387195, name: 'Arlene', role: 'Stylist', services: [] },
-      { id: 1779114387352, name: 'Mae', role: 'Stylist', services: [] }
+      { id: 1779114386643, name: 'Pretty', role: 'Chief Stylist & Rebonding Specialist', services: [] },
+      { id: 1779114387195, name: 'Arlene', role: 'Hair Botox & Keratin Expert', services: [] },
+      { id: 1779114387352, name: 'Mae', role: 'Color & Balayage Specialist', services: [] }
     ],
     services: [
       // Hair Rebond
@@ -176,11 +176,11 @@ export const SALON_DATA = [
     contact: '09917332491',
     gcashNumber: '09917332491',
     hours: '8:00 AM - 10:00 PM',
-    promotions: [],
+    promotions: ['💈 Gentleman\'s VIP Combo: Hot Towel Shave + Haircut at PHP 450', '⚡ 15% OFF Hair Color on Wednesdays'],
     staff: [
-      { id: 1779114386473, name: 'James', role: 'Stylist', services: [] },
-      { id: 1779114386750, name: 'Mark', role: 'Stylist', services: [] },
-      { id: 1779114386728, name: 'Rico', role: 'Stylist', services: [] }
+      { id: 1779114386473, name: 'James', role: 'Master Barber & Lead Stylist', services: [] },
+      { id: 1779114386750, name: 'Mark', role: 'Beard Grooming Specialist', services: [] },
+      { id: 1779114386728, name: 'Rico', role: 'Hair Color & Scalp Specialist', services: [] }
     ],
     services: [
       { name: 'Men\'s Haircut', price: 'PHP 200', category: 'Haircut' },
@@ -198,11 +198,11 @@ export const SALON_DATA = [
     contact: '09099036659',
     gcashNumber: '09099036659',
     hours: '8:00 AM - 7:00 PM',
-    promotions: [],
+    promotions: ['🌸 Rebond with Brazilian Blowout at promo price PHP 1,199', '💅 Free Nail Art with Foot Spa & Pedicure'],
     staff: [
-      { id: 1779114387056, name: 'Palma', role: 'Stylist', services: [] },
-      { id: 1779114386456, name: 'Grace', role: 'Stylist', services: [] },
-      { id: 1779114387295, name: 'Lyn', role: 'Stylist', services: [] }
+      { id: 1779114387056, name: 'Palma', role: 'Lead Stylist & Rebond Specialist', services: [] },
+      { id: 1779114386456, name: 'Grace', role: 'Nail & Foot Spa Specialist', services: [] },
+      { id: 1779114387295, name: 'Lyn', role: 'Beauty & Hair Treatment Artist', services: [] }
     ],
     services: [
       // Rebonding
@@ -242,11 +242,11 @@ export const SALON_DATA = [
     contact: '09756872664',
     gcashNumber: '09756872664',
     hours: '9:00 AM - 9:00 PM',
-    promotions: [],
+    promotions: ['🌿 Total Relaxation Package: Footspa + Mani + Pedi + Massage at PHP 550', '✨ Loreal Botox Treatment 10% OFF'],
     staff: [
-      { id: 1779114386778, name: 'Babie', role: 'Stylist', services: [] },
-      { id: 1779114387044, name: 'Jen', role: 'Stylist', services: [] },
-      { id: 1779114386571, name: 'Rose', role: 'Stylist', services: [] }
+      { id: 1779114386778, name: 'Babie', role: 'Master Aesthetician & Spa Director', services: [] },
+      { id: 1779114387044, name: 'Jen', role: 'Senior Nail Artist', services: [] },
+      { id: 1779114386571, name: 'Rose', role: 'Hair Therapy & Rebond Stylist', services: [] }
     ],
     services: [
       // Nail Services
@@ -278,11 +278,11 @@ export const SALON_DATA = [
     address: 'Midsayap, Cotabato',
     contact: '+63 978 901 2345',
     hours: '8:00 AM - 8:00 PM',
-    promotions: [],
+    promotions: ['🌀 Digital Perm & Rebond Bundle: Free Brazilian Treatment', '💇 10% OFF Balayage & Highlights for first-time visitors'],
     staff: [
-      { id: 1779114387210, name: 'Curl', role: 'Stylist', services: [] },
-      { id: 1779114386795, name: 'Diane', role: 'Stylist', services: [] },
-      { id: 1779114387239, name: 'Tina', role: 'Stylist', services: [] }
+      { id: 1779114387210, name: 'Curl', role: 'Creative Director & Perm Specialist', services: [] },
+      { id: 1779114386795, name: 'Diane', role: 'Senior Colorist & Balayage Expert', services: [] },
+      { id: 1779114387239, name: 'Tina', role: 'Blowout & Styling Artist', services: [] }
     ],
     services: [
       { name: 'Haircut (Women)', price: 'PHP 250', category: 'Haircut' },
