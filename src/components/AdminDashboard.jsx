@@ -2122,13 +2122,13 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         </thead>
                         <tbody>
                           {paginatedBookings.map(b => {
-                            const isExpanded = expandedBookingRows.includes(b.id);
+                            const isExpanded = !!expandedBookingRows[b.id];
                             const isWalkIn = b.userId === 'walk-in' || b.isWalkIn;
                             return (
                               <React.Fragment key={b.id}>
                                 <tr 
                                   className={`compact-booking-row ${isExpanded ? 'is-expanded' : ''}`}
-                                  onClick={() => toggleRowExpand(b.id)}
+                                  onClick={() => setExpandedBookingRows(p => ({ ...p, [b.id]: !p[b.id] }))}
                                 >
                                   {/* 1. Customer */}
                                   <td>
@@ -2247,7 +2247,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                       <button 
                                         className="btn small outline" 
                                         style={{ padding: '4px 6px', fontSize: 11, color: 'var(--text-dim)' }}
-                                        onClick={() => toggleRowExpand(b.id)}
+                                        onClick={() => setExpandedBookingRows(p => ({ ...p, [b.id]: !p[b.id] }))}
                                         title={isExpanded ? "Collapse details" : "Expand details"}
                                       >
                                         {isExpanded ? '▲' : '▼'}
