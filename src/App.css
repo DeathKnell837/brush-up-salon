@@ -2919,11 +2919,13 @@ html, body {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 10px 14px 10px 38px;
+  padding: 8px 14px 8px 42px !important;
   color: var(--text-white);
   font-size: 13px;
   font-family: var(--font-body);
   transition: all 0.2s ease;
+  box-sizing: border-box !important;
+  height: 38px;
 }
 .bookings-search-input:focus {
   outline: none;
@@ -2933,11 +2935,12 @@ html, body {
 }
 .bookings-search-icon {
   position: absolute;
-  left: 12px;
+  left: 14px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-dim);
   pointer-events: none;
+  z-index: 2;
 }
 .bookings-view-toggle {
   display: inline-flex;

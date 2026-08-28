@@ -127,7 +127,6 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const [showWalkInModal, setShowWalkInModal] = useState(false);
   const [walkInName, setWalkInName] = useState('');
   const [walkInService, setWalkInService] = useState('');
-  const [walkInCustomerLink, setWalkInCustomerLink] = useState('');
   const [walkInStaff, setWalkInStaff] = useState('');
   const [walkInDate, setWalkInDate] = useState('');
   const [walkInTime, setWalkInTime] = useState('');
@@ -291,7 +290,6 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
     else setWalkInService('');
     
     setWalkInStaff('');
-    setWalkInCustomerLink('');
     setWalkInName('');
     setShowWalkInModal(true);
   };
@@ -345,12 +343,12 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       }
     }
 
-    // Fix 6: Ensure walk-in bookings without linked customers use userId: 'walk-in'
     const newBooking = {
       id: Date.now(),
       salonId: currentSalonId,
-      userId: walkInCustomerLink || 'walk-in',
-      customer: walkInCustomerLink ? walkInName.trim() : `${walkInName.trim()} (Walk-in)`,
+      userId: 'walk-in',
+      isWalkIn: true,
+      customer: `${walkInName.trim()} (Walk-in)`,
       contact: 'N/A',
       service: walkInService,
       servicePrice: servicePrice,
@@ -358,6 +356,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       staff: walkInStaff || 'Any',
       date: walkInDate,
       time: walkInTime,
+      paymentMethod: 'Cash',
       status: 'Approved'
     };
 
@@ -1997,13 +1996,14 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   <div className="bookings-toolbar">
                     {/* 1. Real-time Search Box */}
                     <div className="bookings-search-box">
-                      <SearchIcon size={14} className="bookings-search-icon" />
+                      <SearchIcon size={15} className="bookings-search-icon" />
                       <input
                         type="text"
                         className="bookings-search-input"
                         placeholder="Search customer, phone, service, ref #..."
                         value={bookingSearch}
                         onChange={e => setBookingSearch(e.target.value)}
+                        style={{ paddingLeft: 42, paddingRight: 34, height: 38, boxSizing: 'border-box' }}
                       />
                       {bookingSearch && (
                         <button 
@@ -2015,7 +2015,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       )}
                     </div>
 
-                    {/* 2. Status Filter Single Dropdown */}
+                    {/* 2. Status Filter Single Dropdown (Pending first & default, All last) */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <label style={{ fontSize: '12px', color: 'var(--text-dim)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.8px', display: 'flex', alignItems: 'center', gap: 5 }}>
                         <FilterIcon size={13} /> Filter Status:
@@ -2026,11 +2026,11 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         className="search-input"
                         style={{ minWidth: 150, padding: '7px 12px', borderRadius: 8, fontSize: 12, background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--border)', cursor: 'pointer' }}
                       >
-                        <option value="all" style={{ background: '#111', color: '#fff' }}>All ({total})</option>
                         <option value="pending" style={{ background: '#111', color: '#fff' }}>Pending ({pending})</option>
                         <option value="approved" style={{ background: '#111', color: '#fff' }}>Approved ({approved})</option>
                         <option value="completed" style={{ background: '#111', color: '#fff' }}>Completed ({completed})</option>
                         <option value="rejected" style={{ background: '#111', color: '#fff' }}>Rejected ({rejected})</option>
+                        <option value="all" style={{ background: '#111', color: '#fff' }}>All ({total})</option>
                       </select>
                     </div>
 
@@ -4472,15 +4472,6 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 <select value={walkInStaff} onChange={e => setWalkInStaff(e.target.value)}>
                   <option value="">Any Available</option>
                   {staff.map(member => <option key={member.id} value={member.name}>{member.name}</option>)}
-                </select>
-              </div>
-              <div className="input-group">
-                <label>Link to Customer (Optional)</label>
-                <select value={walkInCustomerLink} onChange={e => setWalkInCustomerLink(e.target.value)}>
-                  <option value="">-- Don't Link --</option>
-                  {allCustomers.map(u => (
-                    <option key={u.user} value={u.user}>{u.name} (@{u.user})</option>
-                  ))}
                 </select>
               </div>
               <div className="sdp-form-row" style={{ display: 'flex', gap: 12 }}>
