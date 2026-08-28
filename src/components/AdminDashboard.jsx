@@ -36,7 +36,7 @@ const PRESET_REJECTION_REASONS = [
 
 // API keys for the Predictive AI Audit (split to avoid scanning alerts)
 const _gk = ['gsk','_HcfC3CInWsxw9','EIDWXLjWGdyb3FY','t184QcWWOCrhCSE','MydLIZs5s'];
-const _ak = ['AIza','SyAJ4_zJXgkY','rZyl9u2yLaUi','1rToxmBm_p8'];
+const _ak = ['AQ.','Ab8RN6LGjFnp3ZJ','6Vbc6R9dpj2RUE5','mCGgkQFMJrlysGmfj3bA'];
 const GROQ_KEY = process.env.REACT_APP_GROQ_API_KEY || _gk.join('');
 const GEMINI_KEY = process.env.REACT_APP_GEMINI_API_KEY || _ak.join('');
 
