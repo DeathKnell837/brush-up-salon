@@ -650,43 +650,6 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
     return days;
   }, [bookingsByDate, today]);
 
-  const handleExportFinancialReport = () => {
-    const lines = [
-      `BRUSH UP SALON - OPERATIONS PERFORMANCE REPORT`,
-      `Branch: ${salonName || salon?.name || 'Salon'}`,
-      `Export Date: ${new Date().toLocaleString()}`,
-      `--------------------------------------------------`,
-      `1. MONTHLY OVERHEAD & RESERVES`,
-      `   - Fixed Operational Overhead: PHP ${monthlyOverheadVal.toLocaleString()}`,
-      `   - Initial Operating Reserves: PHP ${operatingCapitalVal.toLocaleString()}`,
-      ``,
-      `2. PERFORMANCE & REVENUE METRICS`,
-      `   - Current Month Revenue: PHP ${monthlyRevenue.toLocaleString()}`,
-      `   - Net Surplus / Deficit: PHP ${netIncome.toLocaleString()} (${netIncome >= 0 ? 'Surplus' : 'Deficit'})`,
-      `   - Operational Cash Runway: ${netIncome >= 0 ? 'Indefinite (Surplus)' : `${runwayMonths.toFixed(1)} months remaining`}`,
-      `   - Monthly Break-Even Target: PHP ${breakEvenRevenue.toLocaleString()}`,
-      `   - Staff Utilization Rate: ${staffUtilization}%`,
-      `   - Bankruptcy Risk Index: ${riskPercentage}% (${riskLabel})`,
-      ``,
-      `3. BOOKING VOLUME SUMMARY`,
-      `   - Completed Visits: ${completed}`,
-      `   - Approved Appointments: ${approved}`,
-      `   - Pending Confirmation: ${pending}`,
-      `   - Rejected Bookings: ${rejected}`,
-      `   - Total Tracked: ${total}`,
-      `--------------------------------------------------`,
-      `Brush Up Salon - Management & Operations System`
-    ];
-    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `financial_report_${salon?.id || 'branch'}_${today}.txt`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-    showToast('Operations Performance report downloaded!');
-  };
-
   /* eslint-disable react-hooks/exhaustive-deps */
   const allCustomers = React.useMemo(() => {
     const raw = getUsers().filter(u => u.role === 'customer');
@@ -1038,6 +1001,46 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
     else if (riskPercentage >= 40) { riskLabel = 'CAUTION (Operational Distress)'; riskColor = '#f59e0b'; }
     else { riskLabel = 'Stable (Low Risk)'; riskColor = '#a78bfa'; }
   }
+
+  const staffUtilization = staff.length > 0 ? Math.round((completed / (staff.length * 20)) * 100) : 0;
+  const breakEvenRevenue = monthlyOverheadVal;
+
+  const handleExportFinancialReport = () => {
+    const lines = [
+      `BRUSH UP SALON - OPERATIONS PERFORMANCE REPORT`,
+      `Branch: ${salonName || salon?.name || 'Salon'}`,
+      `Export Date: ${new Date().toLocaleString()}`,
+      `--------------------------------------------------`,
+      `1. MONTHLY OVERHEAD & RESERVES`,
+      `   - Fixed Operational Overhead: PHP ${monthlyOverheadVal.toLocaleString()}`,
+      `   - Initial Operating Reserves: PHP ${operatingCapitalVal.toLocaleString()}`,
+      ``,
+      `2. PERFORMANCE & REVENUE METRICS`,
+      `   - Current Month Revenue: PHP ${monthlyRevenue.toLocaleString()}`,
+      `   - Net Surplus / Deficit: PHP ${netIncome.toLocaleString()} (${netIncome >= 0 ? 'Surplus' : 'Deficit'})`,
+      `   - Operational Cash Runway: ${netIncome >= 0 ? 'Indefinite (Surplus)' : `${runwayMonths.toFixed(1)} months remaining`}`,
+      `   - Monthly Break-Even Target: PHP ${breakEvenRevenue.toLocaleString()}`,
+      `   - Staff Utilization Rate: ${staffUtilization}%`,
+      `   - Bankruptcy Risk Index: ${riskPercentage}% (${riskLabel})`,
+      ``,
+      `3. BOOKING VOLUME SUMMARY`,
+      `   - Completed Visits: ${completed}`,
+      `   - Approved Appointments: ${approved}`,
+      `   - Pending Confirmation: ${pending}`,
+      `   - Rejected Bookings: ${rejected}`,
+      `   - Total Tracked: ${total}`,
+      `--------------------------------------------------`,
+      `Brush Up Salon - Management & Operations System`
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `financial_report_${salon?.id || 'branch'}_${today}.txt`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    showToast('Operations Performance report downloaded!');
+  };
 
   // Active AI Forecast trigger (Fix 9: Strip all emojis from audit)
   const runAIFinancialAudit = async () => {
