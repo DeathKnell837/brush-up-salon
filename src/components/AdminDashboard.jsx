@@ -14,7 +14,8 @@ import {
   HourglassIcon, CheckCircleIcon, XCircleIcon, CalendarIcon, ClockIcon, 
   PhoneIcon, ScissorsIcon, UserIcon, ListIcon, SettingsIcon, AlertCircleIcon, 
   ChartIcon, CloseIcon, StoreIcon, ShieldIcon, ClipboardIcon, SparklesIcon, BellIcon, SearchIcon,
-  CashIcon, GcashIcon
+  CashIcon, GcashIcon, MailIcon, AlertTriangleIcon, ChevronDownIcon, ChevronUpIcon, 
+  DownloadIcon, FileTextIcon, FilterIcon, GlobeIcon
 } from './Icons';
 
 // Helper: convert file to base64 data URL
@@ -23,6 +24,15 @@ const fileToBase64 = (file) => new Promise((resolve) => {
   reader.onloadend = () => resolve(reader.result);
   reader.readAsDataURL(file);
 });
+
+// Preset Rejection Reasons for Salon Bookings
+const PRESET_REJECTION_REASONS = [
+  'Time slot unavailable / Fully booked',
+  'Assigned stylist unavailable',
+  'Outside regular operating hours',
+  'Invalid contact details or payment proof',
+  'Duplicate booking request'
+];
 
 // API keys for the Predictive AI Audit (split to avoid scanning alerts)
 const _gk = ['gsk','_HcfC3CInWsxw9','EIDWXLjWGdyb3FY','t184QcWWOCrhCSE','MydLIZs5s'];
@@ -131,11 +141,32 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const [auditReport, setAuditReport] = useState(null);
   const [showAuditModal, setShowAuditModal] = useState(false);
 
-  // Performance Comparison Sorting States
-  const [compSortBy, setCompSortBy] = useState('rank');
-  const [compSortOrder, setCompSortOrder] = useState('asc');
-  const [reportTimeframe, setReportTimeframe] = useState('monthly'); // 'weekly' | 'monthly' | 'yearly'
-  const [showNotifications, setShowNotifications] = useState(false);
+  // Dual Notifications States (Messages vs Red Alerts)
+  const [showMessagesPopover, setShowMessagesPopover] = useState(false);
+  const [showAlertsPopover, setShowAlertsPopover] = useState(false);
+
+  // Manage Bookings Sub-View & Calendar States
+  const [bookingsSubView, setBookingsSubView] = useState('list'); // 'list' | 'customers'
+  const [showCalendarView, setShowCalendarView] = useState(false);
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
+
+  // Rejection Reason Modal States
+  const [rejectionModalBooking, setRejectionModalBooking] = useState(null);
+  const [selectedPresetReason, setSelectedPresetReason] = useState(PRESET_REJECTION_REASONS[0]);
+  const [manualRejectionReason, setManualRejectionReason] = useState('');
+
+  // Financial Analytics Collapsible Metric Cards
+  const [expandedMetricCards, setExpandedMetricCards] = useState({
+    runway: false,
+    netIncome: false,
+    breakEven: false,
+    staffUtil: false,
+    riskIndex: false
+  });
+
+  // Manage Settings Category Sub-Tabs
+  const [settingsCategory, setSettingsCategory] = useState('admin'); // 'admin' | 'services'
+
   const [customerSearch, setCustomerSearch] = useState('');
   const [customerSort, setCustomerSort] = useState('revenue');
   const [expandedCustomer, setExpandedCustomer] = useState(null);
@@ -195,7 +226,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
     if (idx !== -1) { all[idx].services = list; setSalons(all); onRefreshSalons(); }
   };
 
-  const updateStatus = (id, status) => {
+  const updateStatus = (id, status, reason = '') => {
     const all = getBookings(); const i = all.findIndex(b => b.id === id);
     if (i !== -1) { 
       all[i].status = status; 
@@ -205,16 +236,31 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       if (status === 'Completed') {
         all[i].paidAmount = all[i].servicePrice !== undefined ? all[i].servicePrice : 0;
       }
+      if (status === 'Rejected') {
+        all[i].rejectionReason = reason;
+        all[i].rejectedAt = new Date().toISOString();
+        logAuditAction(currentUser.user || 'admin', 'REJECT_BOOKING', `Rejected booking ID ${id} (${all[i].customer} - ${all[i].service}): ${reason}`);
+      } else {
+        logAuditAction(currentUser.user || 'admin', 'UPDATE_BOOKING', `Marked booking ID ${id} as ${status}`);
+      }
       setBookings(all); 
       setBookingsState(loadBookings()); 
-      logAuditAction(currentUser.user, 'UPDATE_BOOKING', `Marked booking ID ${id} as ${status}`);
     }
     showToast(`Booking ${status.toLowerCase()}.`);
   };
 
+  const handleConfirmRejection = () => {
+    if (!rejectionModalBooking) return;
+    const finalReason = manualRejectionReason.trim() || selectedPresetReason || 'Time slot unavailable / Fully booked';
+    updateStatus(rejectionModalBooking.id, 'Rejected', finalReason);
+    setRejectionModalBooking(null);
+    setManualRejectionReason('');
+    setSelectedPresetReason(PRESET_REJECTION_REASONS[0]);
+  };
+
   const deleteBooking = (id) => {
     setBookings(getBookings().filter(b => b.id !== id)); setBookingsState(loadBookings());
-    logAuditAction(currentUser.user, 'DELETE_BOOKING', `Removed booking ID ${id}`);
+    logAuditAction(currentUser.user || 'admin', 'DELETE_BOOKING', `Removed booking ID ${id}`);
     showToast('Booking removed.');
   };
 
@@ -524,7 +570,118 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const pending = bookingsState.filter(b => b.status === 'Pending').length;
   const approved = bookingsState.filter(b => b.status === 'Approved').length;
   const completed = bookingsState.filter(b => b.status === 'Completed').length;
-  const filtered = statusFilter === 'all' ? bookingsState : bookingsState.filter(b => b.status.toLowerCase() === statusFilter);
+  const rejected = bookingsState.filter(b => b.status === 'Rejected').length;
+  
+  // Status + Calendar Date filtering
+  const filtered = bookingsState.filter(b => {
+    const matchStatus = statusFilter === 'all' || b.status.toLowerCase() === statusFilter.toLowerCase();
+    const matchDate = !selectedCalendarDate || b.date === selectedCalendarDate;
+    return matchStatus && matchDate;
+  });
+
+  // Rejection Alerts Log for Red Alert Notifications
+  const rejectionAlerts = React.useMemo(() => {
+    return bookingsState
+      .filter(b => b.status === 'Rejected')
+      .map(b => ({
+        id: b.id,
+        customer: b.customer,
+        service: b.service,
+        date: b.date,
+        time: b.time,
+        reason: b.rejectionReason || 'Time slot unavailable / Rejected by salon',
+        rejectedAt: b.rejectedAt || b.date
+      }))
+      .reverse();
+  }, [bookingsState]);
+
+  // Unverified GCash bookings
+  const unverifiedGcashBookings = React.useMemo(() => {
+    return bookingsState.filter(b => b.status === 'Approved' && b.paymentMethod === 'GCash' && !b.paymentProof);
+  }, [bookingsState]);
+
+  // Bookings grouped by date for Calendar availability
+  const bookingsByDate = React.useMemo(() => {
+    const map = {};
+    bookingsState.forEach(b => {
+      if (b.date) {
+        map[b.date] = (map[b.date] || 0) + 1;
+      }
+    });
+    return map;
+  }, [bookingsState]);
+
+  // Fix 3: Redefine Schedule tab counters
+  const getLocalDateString = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const today = getLocalDateString();
+
+  // Calendar monthly grid data
+  const calendarDays = React.useMemo(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = d.getMonth();
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    const days = [];
+    for (let i = 0; i < firstDayIndex; i++) {
+      days.push({ empty: true, key: `pad-${i}` });
+    }
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const count = bookingsByDate[dateStr] || 0;
+      days.push({
+        empty: false,
+        day,
+        dateStr,
+        count,
+        isFullyBooked: count >= 5,
+        isToday: dateStr === today
+      });
+    }
+    return days;
+  }, [bookingsByDate, today]);
+
+  const handleExportFinancialReport = () => {
+    const lines = [
+      `BRUSH UP SALON - OPERATIONS PERFORMANCE REPORT`,
+      `Branch: ${salonName || salon?.name || 'Salon'}`,
+      `Export Date: ${new Date().toLocaleString()}`,
+      `--------------------------------------------------`,
+      `1. MONTHLY OVERHEAD & RESERVES`,
+      `   - Fixed Operational Overhead: PHP ${monthlyOverheadVal.toLocaleString()}`,
+      `   - Initial Operating Reserves: PHP ${operatingCapitalVal.toLocaleString()}`,
+      ``,
+      `2. PERFORMANCE & REVENUE METRICS`,
+      `   - Current Month Revenue: PHP ${monthlyRevenue.toLocaleString()}`,
+      `   - Net Surplus / Deficit: PHP ${netIncome.toLocaleString()} (${netIncome >= 0 ? 'Surplus' : 'Deficit'})`,
+      `   - Operational Cash Runway: ${netIncome >= 0 ? 'Indefinite (Surplus)' : `${runwayMonths.toFixed(1)} months remaining`}`,
+      `   - Monthly Break-Even Target: PHP ${breakEvenRevenue.toLocaleString()}`,
+      `   - Staff Utilization Rate: ${staffUtilization}%`,
+      `   - Bankruptcy Risk Index: ${riskPercentage}% (${riskLabel})`,
+      ``,
+      `3. BOOKING VOLUME SUMMARY`,
+      `   - Completed Visits: ${completed}`,
+      `   - Approved Appointments: ${approved}`,
+      `   - Pending Confirmation: ${pending}`,
+      `   - Rejected Bookings: ${rejected}`,
+      `   - Total Tracked: ${total}`,
+      `--------------------------------------------------`,
+      `Brush Up Salon - Management & Operations System`
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `financial_report_${salon?.id || 'branch'}_${today}.txt`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    showToast('Operations Performance report downloaded!');
+  };
+
   /* eslint-disable react-hooks/exhaustive-deps */
   const allCustomers = React.useMemo(() => {
     const raw = getUsers().filter(u => u.role === 'customer');
@@ -546,13 +703,6 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const customers = React.useMemo(() => {
     return allCustomers.filter(c => bookingsState.some(b => b.userId === c.user));
   }, [allCustomers, bookingsState]);
-
-  // Fix 3: Redefine Schedule tab counters
-  const getLocalDateString = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  };
-  const today = getLocalDateString();
 
   const todaySchedule = bookingsState.filter(b => b.status === 'Approved' && b.date === today).sort((a, b) => new Date(a.date) - new Date(b.date));
   const upcomingSchedule = bookingsState.filter(b => b.status === 'Approved' && b.date > today).sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -1035,14 +1185,16 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           )}
         </div>
 
-        {/* Right: Welcome user + Profile icon + Logout */}
+        {/* Right: Dual Notifications (Messages & Alerts) + Welcome Admin + Profile icon + Logout */}
         <div className="navbar-right" style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
-          {/* Notification Bell */}
+          
+          {/* 1. Messages / Broadcasts Icon */}
           <div style={{ position: 'relative' }}>
             <button 
-              onClick={() => setShowNotifications(!showNotifications)}
+              onClick={() => { setShowMessagesPopover(!showMessagesPopover); setShowAlertsPopover(false); }}
+              title="Broadcasts & Network Notices"
               style={{
-                background: showNotifications ? 'rgba(255,255,255,0.08)' : 'transparent',
+                background: showMessagesPopover ? 'rgba(255,255,255,0.08)' : 'transparent',
                 border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: '50%',
                 width: '38px',
@@ -1051,19 +1203,19 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                color: showNotifications ? 'var(--gold)' : 'var(--text-dim)',
+                color: showMessagesPopover ? 'var(--gold)' : 'var(--text-dim)',
                 transition: 'all 0.2s ease',
                 position: 'relative'
               }}
               onMouseEnter={e => { e.currentTarget.style.color = 'var(--gold)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
               onMouseLeave={e => { 
-                if (!showNotifications) {
+                if (!showMessagesPopover) {
                   e.currentTarget.style.color = 'var(--text-dim)'; 
                   e.currentTarget.style.background = 'transparent'; 
                 }
               }}
             >
-              <BellIcon size={18} />
+              <MailIcon size={18} />
               {unreadAnnouncements.length > 0 && (
                 <span style={{
                   position: 'absolute',
@@ -1086,8 +1238,8 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               )}
             </button>
 
-            {/* Notification Popover Dropdown */}
-            {showNotifications && (
+            {/* Messages Popover Dropdown */}
+            {showMessagesPopover && (
               <div className="glass-panel" style={{
                 position: 'absolute',
                 top: '50px',
@@ -1107,7 +1259,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 overflowY: 'auto'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '8px' }}>
-                  <h3 style={{ margin: 0, fontSize: '14px', color: 'var(--gold)', fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.5px' }}>Broadcasts & Notices</h3>
+                  <h3 style={{ margin: 0, fontSize: '14px', color: 'var(--gold)', fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <MailIcon size={16} /> Broadcasts & Notices
+                  </h3>
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                     {unreadAnnouncements.length > 0 && (
                       <button 
@@ -1120,7 +1274,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       </button>
                     )}
                     <button 
-                      onClick={() => setShowNotifications(false)} 
+                      onClick={() => setShowMessagesPopover(false)} 
                       style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}
                       onMouseEnter={e => e.currentTarget.style.color = '#fff'}
                       onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim)'}
@@ -1168,16 +1322,6 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                             >
                               Dismiss
                             </button>
-                            {viewScope === 'network' && (
-                              <button 
-                                onClick={() => handleRemoveAnnouncement(a.id)}
-                                style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '9px', padding: 0 }}
-                                onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
-                                onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
-                              >
-                                Delete
-                              </button>
-                            )}
                           </div>
                         </div>
                         <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.4', whiteSpace: 'normal', wordBreak: 'break-word' }}>{a.message}</p>
@@ -1192,15 +1336,188 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             )}
           </div>
 
-          <span className="pill">Welcome, {currentUser?.name || 'Guest'}</span>
+          {/* 2. Red Warning Alert Icon (Pending Bookings & Rejection Log Alerts) */}
+          <div style={{ position: 'relative' }}>
+            <button 
+              onClick={() => { setShowAlertsPopover(!showAlertsPopover); setShowMessagesPopover(false); }}
+              title="Alerts & Booking Notifications"
+              style={{
+                background: showAlertsPopover ? 'rgba(239, 68, 68, 0.15)' : 'transparent',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                borderRadius: '50%',
+                width: '38px',
+                height: '38px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#ef4444',
+                transition: 'all 0.2s ease',
+                position: 'relative'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'; }}
+              onMouseLeave={e => { 
+                if (!showAlertsPopover) {
+                  e.currentTarget.style.background = 'transparent'; 
+                }
+              }}
+            >
+              <AlertTriangleIcon size={18} />
+              {pending > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: '-2px',
+                  right: '-2px',
+                  background: '#ef4444',
+                  color: '#fff',
+                  borderRadius: '50%',
+                  fontSize: '9px',
+                  fontWeight: '800',
+                  width: '16px',
+                  height: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 0 10px rgba(239, 68, 68, 0.6)'
+                }}>
+                  {pending}
+                </span>
+              )}
+            </button>
+
+            {/* Red Alerts Popover Dropdown */}
+            {showAlertsPopover && (
+              <div className="glass-panel" style={{
+                position: 'absolute',
+                top: '50px',
+                right: '0',
+                width: '370px',
+                maxHeight: '460px',
+                background: 'linear-gradient(135deg, rgba(25, 20, 20, 0.98), rgba(15, 12, 12, 0.99))',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '12px',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.7), 0 0 30px rgba(239, 68, 68, 0.1)',
+                padding: '16px',
+                zIndex: 9999,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                overflowY: 'auto'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '8px' }}>
+                  <h3 style={{ margin: 0, fontSize: '14px', color: '#f87171', fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <AlertTriangleIcon size={16} /> Alerts & Notifications
+                  </h3>
+                  <button 
+                    onClick={() => setShowAlertsPopover(false)} 
+                    style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim)'}
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {/* Pending Bookings Alert */}
+                  {pending > 0 && (
+                    <div style={{
+                      background: 'rgba(239, 68, 68, 0.08)',
+                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                      borderLeft: '4px solid #ef4444',
+                      borderRadius: '8px',
+                      padding: '10px 12px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div>
+                        <div style={{ fontSize: '12px', fontWeight: '700', color: '#f87171' }}>
+                          {pending} Pending Booking{pending > 1 ? 's' : ''}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
+                          Awaiting your confirmation or rejection.
+                        </div>
+                      </div>
+                      <button
+                        className="btn small"
+                        style={{ padding: '4px 10px', fontSize: '11px' }}
+                        onClick={() => {
+                          setActiveTab('bookings');
+                          setStatusFilter('pending');
+                          setShowAlertsPopover(false);
+                        }}
+                      >
+                        Review
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Logged Rejections Section */}
+                  {rejectionAlerts.length > 0 && (
+                    <div style={{ marginTop: 4 }}>
+                      <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>
+                        Recent Rejections Log ({rejectionAlerts.length})
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {rejectionAlerts.slice(0, 5).map((rej, idx) => (
+                          <div key={idx} style={{
+                            background: 'rgba(255,255,255,0.02)',
+                            border: '1px solid rgba(255, 255, 255, 0.05)',
+                            borderRadius: 6,
+                            padding: '8px 10px',
+                            fontSize: 11
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fff', fontWeight: 600 }}>
+                              <span>{rej.customer}</span>
+                              <span style={{ color: 'var(--text-dim)', fontSize: 10 }}>{rej.date}</span>
+                            </div>
+                            <div style={{ color: 'var(--gold)', fontSize: 10, marginTop: 2 }}>{rej.service}</div>
+                            <div style={{ color: '#f87171', fontStyle: 'italic', marginTop: 4, background: 'rgba(239, 68, 68, 0.06)', padding: '3px 6px', borderRadius: 4 }}>
+                              Reason: {rej.reason}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* GCash Verification alerts */}
+                  {unverifiedGcashBookings.length > 0 && (
+                    <div style={{
+                      background: 'rgba(201, 168, 76, 0.08)',
+                      border: '1px solid rgba(201, 168, 76, 0.25)',
+                      borderLeft: '4px solid var(--gold)',
+                      borderRadius: '8px',
+                      padding: '10px 12px'
+                    }}>
+                      <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--gold)' }}>
+                        {unverifiedGcashBookings.length} GCash Payment{unverifiedGcashBookings.length > 1 ? 's' : ''} Pending
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
+                        Approved bookings awaiting customer GCash receipt upload.
+                      </div>
+                    </div>
+                  )}
+
+                  {pending === 0 && rejectionAlerts.length === 0 && unverifiedGcashBookings.length === 0 && (
+                    <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-dim)', fontSize: '13px' }}>
+                      No active alerts or action items.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <span className="pill">Welcome Admin</span>
           <button className="profile-btn" onClick={onOpenProfile}>
             {(currentUser?.name || 'A')[0].toUpperCase()}
           </button>
           <button className="logout-btn" onClick={onLogout}>Logout</button>
         </div>
       </nav>
-
-
 
       {/* Section Hero Banner */}
       {viewScope === 'branch' ? (
@@ -1209,9 +1526,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           backgroundSize: 'cover', backgroundPosition: 'center'
         }}>
           <div className="hero-content">
-            <p className="hero-label">PEER OPERATIONS</p>
-            <h1 className="hero-title">{salonName || salon?.name}</h1>
-            <p className="hero-desc">{salonDesc || salon?.description}</p>
+            <h1 className="hero-title" style={{ fontSize: '36px', marginBottom: 12 }}>{salonName || salon?.name}</h1>
             <div className="hero-stats">
               {[{ v: pending, l: 'Pending' }, { v: approved, l: 'Approved' }, { v: completed, l: 'Completed' }, { v: total, l: 'Total' }].map((s, i) => (
                 <React.Fragment key={i}>
@@ -1244,18 +1559,14 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
         </section>
       )}
 
-      {/* Tabs list (Conditional by Scope) */}
+      {/* Tabs list (Branch Streamlined Tabs vs HQ Tabs) */}
       <div className="tab-bar">
         {viewScope === 'branch' ? (
           [
             { id: 'bookings', icon: <ListIcon size={15} />, label: 'Bookings', count: pending > 0 ? pending : null },
-            { id: 'schedule', icon: <CalendarIcon size={15} />, label: 'Schedule', count: todaySchedule.length > 0 ? todaySchedule.length : null },
-            { id: 'analytics', icon: <ChartIcon size={15} />, label: 'Predictive Analytics' },
-            { id: 'customers', icon: <UserIcon size={15} />, label: 'Customers', count: customers.length },
-            { id: 'services', icon: <ScissorsIcon size={15} />, label: 'Services', count: services.length },
-            { id: 'staff', icon: <UserIcon size={15} />, label: 'Staff', count: staff.length },
-            { id: 'reports', icon: <ChartIcon size={15} />, label: 'Reports' },
-            { id: 'settings', icon: <SettingsIcon size={15} />, label: 'Settings' }
+            { id: 'analytics', icon: <ChartIcon size={15} />, label: 'Financial Analytics' },
+            { id: 'reports', icon: <FileTextIcon size={15} />, label: 'Reports' },
+            { id: 'settings', icon: <SettingsIcon size={15} />, label: 'Manage Settings' }
           ].map(t => (
             <button key={t.id} className={`tab-btn ${activeTab === t.id ? 'active' : ''}`} onClick={() => setActiveTab(t.id)}>
               {t.icon} {t.label} {t.count > 0 && <span className="tab-count">{t.count}</span>}
@@ -1450,344 +1761,490 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           {/* ══════ BOOKINGS ══════ */}
           {activeTab === 'bookings' && (
             <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
-              <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div><p className="section-label">MANAGE</p><h2 className="section-heading">Incoming Bookings</h2></div>
-                <button className="btn small outline" onClick={handleExportCSV}><ListIcon size={14} style={{ marginRight: 6 }} /> Export Report</button>
-              </div>
-              <div className="admin-tabs" style={{ marginBottom: 20 }}>
-                {['pending', 'approved', 'completed', 'rejected', 'all'].map(f => (
-                  <button key={f} className={`admin-tab ${statusFilter === f ? 'active' : ''}`}
-                    onClick={() => setStatusFilter(f)} style={{ textTransform: 'capitalize' }}>
-                    {f} ({f === 'all' ? total : bookingsState.filter(b => b.status.toLowerCase() === f).length})
-                  </button>
-                ))}
-              </div>
-
-              {fraudAlerts.length > 0 && (
-                <div className="fraud-alert-banner">
-                  <div className="fraud-alert-header" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <AlertCircleIcon size={16} style={{ color: '#f87171' }} />
-                    <strong>Fraud Detection: {fraudAlerts.length} alert{fraudAlerts.length > 1 ? 's' : ''} found</strong>
-                  </div>
-                  <div className="fraud-alert-list">
-                    {fraudAlerts.map((alert, idx) => (
-                      <div key={idx} className={`fraud-alert-item fraud-alert-${alert.severity}`}>
-                        <span className="fraud-alert-item-icon" style={{ display: 'inline-flex', alignItems: 'center' }}>
-                          {alert.icon === 'smartphone' ? <GcashIcon size={16} /> : <CashIcon size={16} />}
-                        </span>
-                        <div>
-                          <div className="fraud-alert-item-title">{alert.title}</div>
-                          <div className="fraud-alert-item-detail">{alert.detail}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                  <p className="section-label">MANAGE</p>
+                  <h2 className="section-heading">Manage Bookings</h2>
                 </div>
-              )}
 
-              {filtered.length === 0 ? (
-                <div className="empty-state"><div className="empty-icon"><ListIcon size={48} /></div><h3 className="empty-title">No Bookings</h3><p>No {statusFilter === 'all' ? '' : statusFilter} bookings.</p></div>
-              ) : (
-                <div className="booking-list">
-                  {filtered.map(b => (
-                    <div key={b.id} className="booking-card">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                          <div className="booking-customer" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            {b.customer}
-                            <TrustBadge userId={b.userId} allBookings={networkBookings} />
-                          </div>
-                          <div className="booking-meta" style={{ marginTop: 4 }}>
-                            <ScissorsIcon size={12} /> {b.service}
-                            <span style={{ color: 'var(--gold)', marginLeft: 8, fontWeight: 600 }}>
-                              {b.servicePriceLabel || (services.find(s => s.name === b.service)?.price || 'PHP 0')}
+                {/* Sub-view switcher + Action Buttons */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  {/* Appointments vs Customer Directory Toggle */}
+                  <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: 8, padding: 2 }}>
+                    <button 
+                      className={`btn small ${bookingsSubView === 'list' ? 'primary' : 'outline'}`}
+                      style={{ border: 'none', padding: '6px 12px', fontSize: 12, borderRadius: 6 }}
+                      onClick={() => setBookingsSubView('list')}
+                    >
+                      <ListIcon size={13} style={{ marginRight: 5 }} /> Appointments ({filtered.length})
+                    </button>
+                    <button 
+                      className={`btn small ${bookingsSubView === 'customers' ? 'primary' : 'outline'}`}
+                      style={{ border: 'none', padding: '6px 12px', fontSize: 12, borderRadius: 6 }}
+                      onClick={() => setBookingsSubView('customers')}
+                    >
+                      <UserIcon size={13} style={{ marginRight: 5 }} /> Customer List ({customers.length})
+                    </button>
+                  </div>
+
+                  {/* Calendar Availability Toggle Button */}
+                  <button 
+                    className={`btn small ${showCalendarView ? 'primary' : 'outline'}`} 
+                    onClick={() => setShowCalendarView(!showCalendarView)}
+                    title="Toggle Calendar Availability View"
+                  >
+                    <CalendarIcon size={14} style={{ marginRight: 6 }} /> {showCalendarView ? 'Hide Calendar' : 'Calendar View'}
+                  </button>
+
+                  {/* Add Walk-In */}
+                  <button className="btn small outline" onClick={handleWalkIn}>
+                    <UserIcon size={14} style={{ marginRight: 6 }} /> Add Walk-in
+                  </button>
+
+                  {/* Export CSV */}
+                  <button className="btn small outline" onClick={handleExportCSV}>
+                    <DownloadIcon size={14} style={{ marginRight: 6 }} /> Export
+                  </button>
+                </div>
+              </div>
+
+              {/* Calendar Availability Grid (When Opened) */}
+              {showCalendarView && (
+                <div className="calendar-grid-container">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 12, flexWrap: 'wrap', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <CalendarIcon size={18} style={{ color: 'var(--gold)' }} />
+                      <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-white)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+                        Monthly Booking Density & Availability
+                      </h3>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 11 }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#f87171' }}>
+                        <span style={{ width: 10, height: 10, borderRadius: 2, background: 'rgba(239,68,68,0.3)', border: '1px solid #ef4444' }} />
+                        Fully Booked (5+ Appts)
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--gold)' }}>
+                        <span style={{ width: 10, height: 10, borderRadius: 2, background: 'rgba(201,168,76,0.2)', border: '1px solid var(--gold)' }} />
+                        Partially Booked (1-4)
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--text-dim)' }}>
+                        <span style={{ width: 10, height: 10, borderRadius: 2, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                        Available
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="calendar-days-grid">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                      <div key={d} className="calendar-day-header">{d}</div>
+                    ))}
+                    {calendarDays.map((item, idx) => {
+                      if (item.empty) {
+                        return <div key={item.key} style={{ minHeight: 72, opacity: 0.2 }} />;
+                      }
+                      const isSelected = selectedCalendarDate === item.dateStr;
+                      return (
+                        <div 
+                          key={item.dateStr} 
+                          className={`calendar-day-cell ${item.isFullyBooked ? 'is-fully-booked' : ''} ${isSelected ? 'is-selected' : ''}`}
+                          onClick={() => setSelectedCalendarDate(isSelected ? null : item.dateStr)}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span className="calendar-day-number" style={{ color: item.isToday ? 'var(--gold)' : 'var(--text-white)' }}>
+                              {item.day} {item.isToday && <span style={{ fontSize: 9, color: 'var(--gold)' }}>(Today)</span>}
                             </span>
                           </div>
-                        </div>
-                        <span className={`status ${b.status.toLowerCase()}`}>
-                          {b.status === 'Pending' && <HourglassIcon size={10} />}{(b.status === 'Approved' || b.status === 'Completed') && <CheckCircleIcon size={10} />}{b.status === 'Rejected' && <XCircleIcon size={10} />} {b.status}
-                        </span>
-                      </div>
-                      <div className="booking-meta"><CalendarIcon size={12} /> {b.date} <ClockIcon size={12} /> {b.time}{b.contact && <><PhoneIcon size={12} /> {b.contact}</>}</div>
-                      {/* Payment method + fraud flag */}
-                      <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span className={`pmt-badge pmt-badge-${(b.paymentMethod || 'Cash').toLowerCase()}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                          {b.paymentMethod === 'GCash' ? <><GcashIcon size={10} /> GCash</> : <><CashIcon size={10} /> Cash</>}
-                        </span>
-                        {fraudFlaggedBookingIds.has(b.id) && (
-                          <span className="fraud-flag-badge" title="This booking has been flagged by fraud detection" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                            <AlertCircleIcon size={10} /> Flagged
-                          </span>
-                        )}
-                      </div>
-                      {/* Payment proof indicator */}
-                      {b.status === 'Approved' && b.paymentMethod === 'GCash' && (
-                        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                          {b.paymentProof ? (
-                            <div className="payment-proof-admin">
-                              <CheckCircleIcon size={12} />
-                              <span style={{ color: '#4ade80', fontSize: 11, fontWeight: 600 }}>Payment Proof Uploaded</span>
-                              <img src={b.paymentProof} alt="Payment proof" className="payment-proof-thumb" onClick={() => window.open(b.paymentProof, '_blank')} />
-                            </div>
+                          {item.isFullyBooked ? (
+                            <span className="calendar-day-badge fully-booked">Fully Booked ({item.count})</span>
+                          ) : item.count > 0 ? (
+                            <span className="calendar-day-badge partially-booked">{item.count} Booked</span>
                           ) : (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <HourglassIcon size={12} />
-                              <span style={{ color: '#f59e0b', fontSize: 11, fontWeight: 600 }}>Awaiting GCash Payment</span>
-                            </div>
+                            <span className="calendar-day-badge available">Available</span>
                           )}
-                        </div>
-                      )}
-                      {b.status === 'Approved' && (!b.paymentMethod || b.paymentMethod === 'Cash') && (
-                        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <CheckCircleIcon size={12} />
-                          <span style={{ color: '#4ade80', fontSize: 11, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                            <CashIcon size={12} /> Cash — Collect at salon
-                          </span>
-                        </div>
-                      )}
-                      {b.review && (
-                        <div style={{ marginTop: 8 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 1 }}>Customer Rating:</span>
-                            <span style={{ color: 'var(--gold)', fontSize: 14, letterSpacing: 2 }}>{'★'.repeat(b.review)}{'☆'.repeat(5-b.review)}</span>
-                          </div>
-                          {b.reviewComment && (
-                            <div style={{ marginTop: 4, fontSize: 12, color: 'var(--text-white)', fontStyle: 'italic', paddingLeft: 8, borderLeft: '2px solid rgba(201,168,76,0.5)' }}>
-                              "{b.reviewComment}"
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      <div className="booking-actions">
-                        {b.status === 'Pending' && (<><button className="btn small" onClick={() => updateStatus(b.id, 'Approved')}><CheckCircleIcon size={13} /> Approve</button><button className="btn small secondary" onClick={() => updateStatus(b.id, 'Rejected')}><XCircleIcon size={13} /> Reject</button></>)}
-                        {b.status === 'Rejected' && <button className="btn small danger" onClick={() => deleteBooking(b.id)}>Remove</button>}
-                        {b.status === 'Approved' && (<><button className="btn small" onClick={() => updateStatus(b.id, 'Completed')}><CheckCircleIcon size={13} /> Mark Done</button><button className="btn small outline" onClick={() => updateStatus(b.id, 'Pending')}>Revert</button></>)}
-                        {b.status === 'Completed' && <button className="btn small outline" onClick={() => updateStatus(b.id, 'Approved')}>Revert</button>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* ══════ SCHEDULE ══════ */}
-          {activeTab === 'schedule' && (
-            <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
-              <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div><p className="section-label">APPOINTMENTS</p><h2 className="section-heading">Schedule Overview</h2></div>
-                <button className="btn small" onClick={handleWalkIn}><UserIcon size={14} style={{ marginRight: 6 }} /> Add Walk-in</button>
-              </div>
-
-              {/* Fix 3: Display accurate schedule tab metrics counters */}
-              <div className="settings-stats" style={{ marginBottom: 24 }}>
-                <div><strong>{todayApptsCount}</strong><span>Today</span></div>
-                <div><strong>{upcomingApptsCount}</strong><span>Upcoming</span></div>
-                <div><strong>{completedApptsCount}</strong><span>Completed</span></div>
-                <div><strong>{pendingApptsCount}</strong><span>Pending</span></div>
-              </div>
-
-              {todaySchedule.length > 0 && (
-                <div style={{ marginBottom: 24 }}>
-                  <div className="schedule-section-label"><AlertCircleIcon size={14} /> TODAY — {today}</div>
-                  <div className="booking-list">
-                    {todaySchedule.map(b => (
-                      <div key={b.id} className="booking-card schedule-today">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <strong style={{ color: 'var(--text-white)', fontSize: 14 }}>{b.customer}</strong>
-                              <TrustBadge userId={b.userId} allBookings={networkBookings} />
-                            </div>
-                            <div className="booking-meta" style={{ marginTop: 4 }}>
-                              <ScissorsIcon size={12} /> {b.service}
-                              <span style={{ color: 'var(--gold)', marginLeft: 8, fontWeight: 600 }}>
-                                {b.servicePriceLabel || (services.find(s => s.name === b.service)?.price || 'PHP 0')}
-                              </span>
-                            </div>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div className="schedule-time"><ClockIcon size={14} /> {b.time}</div>
-                            <button className="btn small outline" style={{ marginTop: 8 }} onClick={() => updateStatus(b.id, 'Completed')}><CheckCircleIcon size={12} /> Mark Done</button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {upcomingSchedule.length > 0 && (
-                <div style={{ marginBottom: 24 }}>
-                  <div className="schedule-section-label"><CalendarIcon size={14} /> UPCOMING</div>
-                  <div className="booking-list">
-                    {upcomingSchedule.map(b => {
-                      const daysUntil = Math.ceil((new Date(b.date) - new Date(today)) / 86400000);
-                      return (
-                        <div key={b.id} className="booking-card">
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <strong style={{ color: 'var(--text-white)', fontSize: 14 }}>{b.customer}</strong>
-                                <TrustBadge userId={b.userId} allBookings={networkBookings} />
-                              </div>
-                              <div className="booking-meta" style={{ marginTop: 4 }}>
-                                <ScissorsIcon size={12} /> {b.service}
-                                <span style={{ color: 'var(--gold)', marginLeft: 8, fontWeight: 600 }}>
-                                  {b.servicePriceLabel || (services.find(s => s.name === b.service)?.price || 'PHP 0')}
-                                </span>
-                              </div>
-                            </div>
-                            <div style={{ textAlign: 'right', fontSize: 12 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end', color: 'var(--text-dim)' }}><CalendarIcon size={12} /> {b.date}</div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end', marginTop: 2, color: 'var(--text-dim)' }}><ClockIcon size={12} /> {b.time}</div>
-                              <div className="schedule-countdown" style={{ marginBottom: 8 }}>{daysUntil === 1 ? 'Tomorrow' : `In ${daysUntil} days`}</div>
-                              <button className="btn small outline" onClick={() => updateStatus(b.id, 'Completed')}><CheckCircleIcon size={12} /> Mark Done</button>
-                            </div>
-                          </div>
                         </div>
                       );
                     })}
                   </div>
                 </div>
               )}
+
+              {/* Status Filter Single Dropdown & Active Date Filter Notice */}
+              {bookingsSubView === 'list' && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <label style={{ fontSize: '12px', color: 'var(--text-dim)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.8px', display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <FilterIcon size={14} /> Filter Status:
+                    </label>
+                    <select
+                      value={statusFilter}
+                      onChange={e => setStatusFilter(e.target.value)}
+                      className="search-input"
+                      style={{ minWidth: 170, padding: '8px 14px', borderRadius: 8, fontSize: 13, background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--border)', cursor: 'pointer' }}
+                    >
+                      <option value="pending" style={{ background: '#111', color: '#fff' }}>Pending ({bookingsState.filter(b => b.status === 'Pending').length})</option>
+                      <option value="approved" style={{ background: '#111', color: '#fff' }}>Approved ({bookingsState.filter(b => b.status === 'Approved').length})</option>
+                      <option value="completed" style={{ background: '#111', color: '#fff' }}>Completed ({bookingsState.filter(b => b.status === 'Completed').length})</option>
+                      <option value="rejected" style={{ background: '#111', color: '#fff' }}>Rejected ({bookingsState.filter(b => b.status === 'Rejected').length})</option>
+                      <option value="all" style={{ background: '#111', color: '#fff' }}>All ({total})</option>
+                    </select>
+                  </div>
+
+                  {selectedCalendarDate && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 12, color: 'var(--gold)', background: 'rgba(201,168,76,0.1)', padding: '6px 12px', borderRadius: 20, border: '1px solid rgba(201,168,76,0.25)', fontWeight: 600 }}>
+                        Filtered Date: {selectedCalendarDate}
+                      </span>
+                      <button className="btn small outline" style={{ padding: '6px 12px', fontSize: 11 }} onClick={() => setSelectedCalendarDate(null)}>
+                        Clear Date Filter
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* LIST SUBVIEW */}
+              {bookingsSubView === 'list' && (
+                filtered.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-icon"><ListIcon size={48} /></div>
+                    <h3 className="empty-title">No Bookings Found</h3>
+                    <p>No {statusFilter === 'all' ? '' : statusFilter} bookings match your filter{selectedCalendarDate ? ` for ${selectedCalendarDate}` : ''}.</p>
+                  </div>
+                ) : (
+                  <div className="booking-list">
+                    {filtered.map(b => {
+                      const isWalkIn = b.userId === 'walk-in' || b.isWalkIn;
+                      return (
+                        <div key={b.id} className="booking-card">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                              <div className="booking-customer" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                {b.customer}
+                                {/* Simple 2-option tag: Walk-in or Online */}
+                                <span className="trust-badge" style={{
+                                  background: isWalkIn ? 'rgba(56,189,248,0.12)' : 'rgba(74,222,128,0.12)',
+                                  color: isWalkIn ? '#38bdf8' : '#4ade80',
+                                  border: `1px solid ${isWalkIn ? 'rgba(56,189,248,0.3)' : 'rgba(74,222,128,0.3)'}`,
+                                  fontSize: '10px',
+                                  fontWeight: '700',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.8px',
+                                  padding: '2px 8px',
+                                  borderRadius: '12px'
+                                }}>
+                                  {isWalkIn ? 'Walk-in' : 'Online'}
+                                </span>
+                              </div>
+                              <div className="booking-meta" style={{ marginTop: 6 }}>
+                                <ScissorsIcon size={12} /> {b.service}
+                              </div>
+                            </div>
+                            <span className={`status ${b.status.toLowerCase()}`}>
+                              {b.status === 'Pending' && <HourglassIcon size={10} />}
+                              {(b.status === 'Approved' || b.status === 'Completed') && <CheckCircleIcon size={10} />}
+                              {b.status === 'Rejected' && <XCircleIcon size={10} />} {b.status}
+                            </span>
+                          </div>
+
+                          <div className="booking-meta">
+                            <CalendarIcon size={12} /> {b.date} <ClockIcon size={12} /> {b.time}
+                            {b.contact && <><PhoneIcon size={12} /> {b.contact}</>}
+                          </div>
+
+                          {/* Clear payment wording: Paying through Cash vs Paying through Gcash */}
+                          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <span className={`pmt-badge pmt-badge-${(b.paymentMethod || 'Cash').toLowerCase()}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600 }}>
+                              {b.paymentMethod === 'GCash' ? <><GcashIcon size={12} /> Paying through Gcash</> : <><CashIcon size={12} /> Paying through Cash</>}
+                            </span>
+                            {b.paymentReference && (
+                              <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+                                Ref: <strong style={{ color: 'var(--gold)' }}>{b.paymentReference}</strong>
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Payment proof indicator */}
+                          {b.status === 'Approved' && b.paymentMethod === 'GCash' && (
+                            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                              {b.paymentProof ? (
+                                <div className="payment-proof-admin">
+                                  <CheckCircleIcon size={12} />
+                                  <span style={{ color: '#4ade80', fontSize: 11, fontWeight: 600 }}>Payment Proof Uploaded</span>
+                                  <img src={b.paymentProof} alt="Payment proof" className="payment-proof-thumb" onClick={() => window.open(b.paymentProof, '_blank')} />
+                                </div>
+                              ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <HourglassIcon size={12} />
+                                  <span style={{ color: '#f59e0b', fontSize: 11, fontWeight: 600 }}>Awaiting GCash Payment Proof</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {b.status === 'Approved' && (!b.paymentMethod || b.paymentMethod === 'Cash') && (
+                            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <CheckCircleIcon size={12} />
+                              <span style={{ color: '#4ade80', fontSize: 11, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <CashIcon size={12} /> Cash — Collect at salon on arrival
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Rejection Reason Display */}
+                          {b.status === 'Rejected' && (
+                            <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 8, background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', color: '#f87171', fontSize: 12 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, marginBottom: 2 }}>
+                                <AlertTriangleIcon size={13} /> Rejection Reason:
+                              </div>
+                              <div style={{ color: 'rgba(255, 255, 255, 0.85)', fontStyle: 'italic', paddingLeft: 19 }}>
+                                "{b.rejectionReason || 'Time slot unavailable / Rejected by salon'}"
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Customer Review */}
+                          {b.review && (
+                            <div style={{ marginTop: 8 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 1 }}>Customer Rating:</span>
+                                <span style={{ color: 'var(--gold)', fontSize: 14, letterSpacing: 2 }}>{'★'.repeat(b.review)}{'☆'.repeat(5-b.review)}</span>
+                              </div>
+                              {b.reviewComment && (
+                                <div style={{ marginTop: 4, fontSize: 12, color: 'var(--text-white)', fontStyle: 'italic', paddingLeft: 8, borderLeft: '2px solid rgba(201,168,76,0.5)' }}>
+                                  "{b.reviewComment}"
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Price Display Repositioned Directly Above Action Buttons */}
+                          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
+                              <span style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>
+                                Service Amount:
+                              </span>
+                              <strong style={{ fontSize: 18, color: 'var(--gold)', fontFamily: 'var(--font-display)', fontWeight: 800 }}>
+                                {b.servicePriceLabel || (services.find(s => s.name === b.service)?.price || 'PHP 0')}
+                              </strong>
+                            </div>
+
+                            <div className="booking-actions" style={{ justifyContent: 'flex-end', marginTop: 0 }}>
+                              {b.status === 'Pending' && (
+                                <>
+                                  <button className="btn small" onClick={() => updateStatus(b.id, 'Approved')}>
+                                    <CheckCircleIcon size={13} /> Approve
+                                  </button>
+                                  <button 
+                                    className="btn small secondary" 
+                                    onClick={() => {
+                                      setRejectionModalBooking(b);
+                                      setManualRejectionReason('');
+                                      setSelectedPresetReason(PRESET_REJECTION_REASONS[0]);
+                                    }}
+                                  >
+                                    <XCircleIcon size={13} /> Reject
+                                  </button>
+                                </>
+                              )}
+                              {b.status === 'Rejected' && (
+                                <button className="btn small danger" onClick={() => deleteBooking(b.id)}>
+                                  Remove
+                                </button>
+                              )}
+                              {b.status === 'Approved' && (
+                                <>
+                                  <button className="btn small" onClick={() => updateStatus(b.id, 'Completed')}>
+                                    <CheckCircleIcon size={13} /> Mark Done
+                                  </button>
+                                  <button className="btn small outline" onClick={() => updateStatus(b.id, 'Pending')}>
+                                    Revert
+                                  </button>
+                                </>
+                              )}
+                              {b.status === 'Completed' && (
+                                <button className="btn small outline" onClick={() => updateStatus(b.id, 'Approved')}>
+                                  Revert
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              )}
+
+              {/* CUSTOMER DIRECTORY SUBVIEW */}
+              {bookingsSubView === 'customers' && (() => {
+                const custData = customers.map(c => {
+                  const cb = bookingsState.filter(b => b.userId === c.user);
+                  const completedB = cb.filter(b => b.status === 'Completed');
+                  const rev = completedB.reduce((s, b) => {
+                    if (b.paidAmount != null) return s + b.paidAmount;
+                    if (b.servicePrice != null) return s + b.servicePrice;
+                    const svc = services.find(sv => sv.name === b.service);
+                    return s + parseFloat(svc?.price?.replace(/[^0-9.]/g, '') || 0);
+                  }, 0);
+                  const dates = cb.map(b => b.date).filter(Boolean).sort();
+                  const lastVisit = dates.length ? dates[dates.length - 1] : null;
+                  return { ...c, bookings: cb.length, completed: completedB.length, revenue: rev, lastVisit, bookingsList: cb };
+                });
+
+                const filteredCusts = custData.filter(c => {
+                  if (!customerSearch) return true;
+                  const q = customerSearch.toLowerCase();
+                  return c.name?.toLowerCase().includes(q) || c.user?.toLowerCase().includes(q);
+                });
+
+                const sortedCusts = [...filteredCusts].sort((a, b) => {
+                  if (customerSort === 'revenue') return b.revenue - a.revenue;
+                  if (customerSort === 'bookings') return b.bookings - a.bookings;
+                  if (customerSort === 'recent') return (b.lastVisit || '').localeCompare(a.lastVisit || '');
+                  if (customerSort === 'name') return (a.name || '').localeCompare(b.name || '');
+                  return 0;
+                });
+
+                return (
+                  <div className="ci-chart-card" style={{ marginBottom: 0, background: 'rgba(25,25,25,0.7)', border: '1px solid var(--border)', borderRadius: 16, padding: 24 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+                      <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-white)', fontFamily: 'var(--font-display)' }}>
+                        Registered Customer Directory ({sortedCusts.length})
+                      </h3>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <input
+                          className="search-input"
+                          placeholder="Search customers..."
+                          value={customerSearch}
+                          onChange={e => setCustomerSearch(e.target.value)}
+                          style={{ maxWidth: 220, padding: '6px 12px', fontSize: 12 }}
+                        />
+                        {['revenue', 'bookings', 'recent', 'name'].map(s => (
+                          <button 
+                            key={s} 
+                            className={`btn small ${customerSort === s ? 'primary' : 'outline'}`} 
+                            style={{ padding: '6px 10px', fontSize: 11 }}
+                            onClick={() => setCustomerSort(s)}
+                          >
+                            {s === 'revenue' ? '₱ Spend' : s === 'bookings' ? '# Visits' : s === 'recent' ? 'Recent' : 'A-Z'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="responsive-table-container">
+                      <table className="ci-table">
+                        <thead>
+                          <tr>
+                            <th>Customer</th>
+                            <th>Total Visits</th>
+                            <th>Completed</th>
+                            <th>Lifetime Spend</th>
+                            <th>Last Visit</th>
+                            <th>Contact</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sortedCusts.map((c, i) => {
+                            const isExpanded = expandedCustomer === c.user;
+                            return (
+                              <React.Fragment key={i}>
+                                <tr onClick={() => setExpandedCustomer(isExpanded ? null : c.user)} style={{ cursor: 'pointer' }}>
+                                  <td>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                      <span className="ci-table-avatar">{(c.name || '?')[0].toUpperCase()}</span>
+                                      <div>
+                                        <div className="ci-table-name" style={{ fontWeight: 600, color: '#fff' }}>{c.name}</div>
+                                        <div className="ci-table-user" style={{ fontSize: 11, color: 'var(--text-dim)' }}>@{c.user}</div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td style={{ fontWeight: 600 }}>{c.bookings}</td>
+                                  <td>{c.completed}</td>
+                                  <td style={{ fontWeight: 700, color: 'var(--gold)' }}>₱{c.revenue.toLocaleString()}</td>
+                                  <td>{c.lastVisit || '—'}</td>
+                                  <td style={{ fontSize: 12, color: 'var(--text-dim)' }}>{c.phone || c.contact || 'N/A'}</td>
+                                </tr>
+                                {isExpanded && (
+                                  <tr className="ci-expand">
+                                    <td colSpan="6" style={{ background: 'rgba(0,0,0,0.3)', padding: 16 }}>
+                                      <div style={{ marginBottom: 8, fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Recent Booking History</div>
+                                      <div className="ci-expand-grid">
+                                        {c.bookingsList.slice(-6).reverse().map((b, bi) => (
+                                          <div key={bi} className="ci-expand-item" style={{ background: 'rgba(255,255,255,0.03)', padding: '8px 12px', borderRadius: 8, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+                                            <span>{b.date} · {b.service}</span>
+                                            <span style={{ color: b.status === 'Completed' ? '#4ade80' : b.status === 'Pending' ? '#c9a84c' : b.status === 'Approved' ? '#60a5fa' : '#f87171', fontWeight: 600 }}>
+                                              {b.status} {b.paidAmount ? `· ₱${b.paidAmount.toLocaleString()}` : ''}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })()}
             </section>
           )}
 
-          {/* ══════ AI PREDICTIVE ANALYTICS TAB ══════ */}
+          {/* ══════ FINANCIAL ANALYTICS ("OPERATIONS PERFORMANCE") ══════ */}
           {activeTab === 'analytics' && (
-            <section className="content-section" style={{ animation: 'fadeUp .4s ease', position: 'relative', overflow: 'hidden', padding: '24px', borderRadius: 16 }}>
-              {/* CSS Keyframes injected locally */}
-              <style>{`
-                @keyframes goldPulse {
-                  0% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.6); }
-                  70% { box-shadow: 0 0 0 15px rgba(201, 168, 76, 0); }
-                  100% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0); }
-                }
-                @keyframes riskCritPulse {
-                  0% { box-shadow: inset 0 0 20px rgba(248, 113, 113, 0.2), 0 0 20px rgba(248, 113, 113, 0.2); transform: scale(1); }
-                  50% { box-shadow: inset 0 0 35px rgba(248, 113, 113, 0.5), 0 0 35px rgba(248, 113, 113, 0.4); transform: scale(1.03); }
-                  100% { box-shadow: inset 0 0 20px rgba(248, 113, 113, 0.2), 0 0 20px rgba(248, 113, 113, 0.2); transform: scale(1); }
-                }
-                @keyframes floatOrb {
-                  0% { transform: translate(0, 0) scale(1); }
-                  50% { transform: translate(25px, -25px) scale(1.15); }
-                  100% { transform: translate(0, 0) scale(1); }
-                }
-              `}</style>
-
-              {/* Floating Animated Radial Orb behind the tab content */}
-              <div style={{
-                position: 'absolute',
-                top: '15%',
-                right: '15%',
-                width: '320px',
-                height: '320px',
-                borderRadius: '50%',
-                background: `radial-gradient(circle, ${riskColor}08 0%, transparent 70%)`,
-                filter: 'blur(50px)',
-                pointerEvents: 'none',
-                zIndex: 0,
-                animation: 'floatOrb 8s ease-in-out infinite'
-              }} />
-
-              {/* Header Title */}
-              <div className="section-header" style={{ position: 'relative', zIndex: 1, marginBottom: 12 }}>
-                <p className="section-label">AI PREDICTIVE SUITE</p>
-                <h2 className="section-heading" style={{ margin: 0 }}>Financial Health & Bankruptcy Risk</h2>
-              </div>
-
-              {/* Sleek Centered AI Audit Button with Gold Pulse Animation */}
-              <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0 36px 0', position: 'relative', zIndex: 2 }}>
-                <button 
-                  className="btn primary" 
-                  onClick={runAIFinancialAudit} 
-                  style={{ 
-                    boxShadow: '0 0 25px rgba(201, 168, 76, 0.4)', 
-                    background: 'linear-gradient(135deg, var(--gold), #b3924e)',
-                    color: '#000',
-                    fontWeight: '700',
-                    fontSize: '13px',
-                    letterSpacing: '1.5px',
-                    textTransform: 'uppercase',
-                    padding: '14px 38px',
-                    borderRadius: '30px',
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 10, 
-                    justifyContent: 'center',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    animation: 'goldPulse 2s infinite',
-                    width: 'auto'
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.transform = 'scale(1.05)';
-                    e.currentTarget.style.boxShadow = '0 0 35px rgba(201, 168, 76, 0.6)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.transform = 'scale(1)';
-                    e.currentTarget.style.boxShadow = '0 0 25px rgba(201, 168, 76, 0.4)';
-                  }}
-                >
-                  <SparklesIcon size={16} style={{ color: '#000' }} /> Run AI Predictive Audit
-                </button>
+            <section className="content-section" style={{ animation: 'fadeUp .4s ease', position: 'relative' }}>
+              
+              {/* Dynamic Salon Name Label & Heading */}
+              <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
+                <div>
+                  <p className="section-label" style={{ color: 'var(--gold)', letterSpacing: 2, fontWeight: 700 }}>
+                    {salonName || salon?.name || 'SALON ANALYTICS'}
+                  </p>
+                  <h2 className="section-heading" style={{ margin: 0 }}>Operations Performance</h2>
+                </div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button className="btn small outline" onClick={handleExportFinancialReport}>
+                    <DownloadIcon size={14} style={{ marginRight: 6 }} /> Export Financial Report
+                  </button>
+                  <button 
+                    className="btn small primary" 
+                    onClick={runAIFinancialAudit}
+                    style={{ background: 'linear-gradient(135deg, var(--gold), #b3924e)', color: '#000', fontWeight: 700 }}
+                  >
+                    <SparklesIcon size={14} style={{ color: '#000', marginRight: 6 }} /> AI Forecast Audit
+                  </button>
+                </div>
               </div>
 
               {/* Health Ring Meter and Core Metrics */}
               <div className="analytics-core-grid">
-                {/* Glowing Risk Circle (Enlarged & Pulsing if Critical) */}
+                {/* Glowing Risk Circle Gauge */}
                 <div style={{ 
                   background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.55), rgba(15, 15, 15, 0.75))',
                   backdropFilter: 'blur(24px)',
                   border: '1px solid rgba(255, 255, 255, 0.08)',
                   borderRadius: 20,
-                  padding: '48px 32px',
+                  padding: '36px 28px',
                   textAlign: 'center',
                   display: 'flex', 
                   flexDirection: 'column', 
                   alignItems: 'center', 
                   justifyContent: 'center',
-                  boxShadow: `0 20px 50px rgba(0,0,0,0.4), 0 0 40px ${riskColor}15`,
-                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.transform = 'translateY(-5px)';
-                  e.currentTarget.style.boxShadow = `0 24px 60px rgba(0,0,0,0.5), 0 0 50px ${riskColor}25`;
-                  e.currentTarget.style.borderColor = `rgba(${riskColor === '#4ade80' ? '74, 222, 128' : riskColor === '#f59e0b' ? '245, 158, 11' : '248, 113, 113'}, 0.35)`;
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = `0 20px 50px rgba(0,0,0,0.4), 0 0 40px ${riskColor}15`;
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                }}
-                >
-                  <div style={{ position: 'relative', width: 200, height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
-                    <svg width="200" height="200" viewBox="0 0 200 200" style={{ transform: 'rotate(-90deg)', overflow: 'visible' }}>
+                  boxShadow: `0 20px 50px rgba(0,0,0,0.4), 0 0 40px ${riskColor}15`
+                }}>
+                  <div style={{ position: 'relative', width: 180, height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                    <svg width="180" height="180" viewBox="0 0 200 200" style={{ transform: 'rotate(-90deg)', overflow: 'visible' }}>
                       <defs>
                         <linearGradient id="riskIndicatorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                           <stop offset="0%" stopColor={riskColor} />
                           <stop offset="100%" stopColor={riskColor === '#4ade80' ? '#10b981' : riskColor === '#f59e0b' ? '#d97706' : '#ef4444'} />
                         </linearGradient>
-                        <filter id="gaugeGlow" x="-20%" y="-20%" width="140%" height="140%">
-                          <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
-                          <feMerge>
-                            <feMergeNode in="coloredBlur"/>
-                            <feMergeNode in="SourceGraphic"/>
-                          </feMerge>
-                        </filter>
                       </defs>
-                      {/* Track Circle */}
-                      <circle
-                        cx="100"
-                        cy="100"
-                        r="85"
-                        fill="none"
-                        stroke="rgba(255, 255, 255, 0.03)"
-                        strokeWidth="10"
-                      />
-                      {/* Active Colored Progress Path */}
+                      <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(255, 255, 255, 0.03)" strokeWidth="10" />
                       <circle
                         cx="100"
                         cy="100"
@@ -1798,16 +2255,11 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         strokeDasharray="534"
                         strokeDashoffset={534 - (riskPercentage / 100) * 534}
                         strokeLinecap="round"
-                        filter="url(#gaugeGlow)"
-                        style={{ 
-                          transition: 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)',
-                          animation: (riskPercentage >= 75) ? 'riskCritPulse 2s infinite' : 'none'
-                        }}
+                        style={{ transition: 'stroke-dashoffset 1.5s ease' }}
                       />
                     </svg>
-                    {/* Inner Value Display */}
                     <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <span style={{ fontSize: '42px', fontWeight: '900', color: '#fff', fontFamily: 'var(--font-display)', letterSpacing: '-1px', textShadow: `0 0 15px ${riskColor}60` }}>
+                      <span style={{ fontSize: '38px', fontWeight: '900', color: '#fff', fontFamily: 'var(--font-display)', letterSpacing: '-1px' }}>
                         {riskPercentage}%
                       </span>
                       <span style={{ fontSize: '9px', color: 'var(--text-dim)', letterSpacing: '2px', fontWeight: '800', textTransform: 'uppercase', marginTop: -4 }}>
@@ -1816,7 +2268,6 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     </div>
                   </div>
 
-                  {/* Risk Badge Pill */}
                   <span style={{
                     background: `${riskColor}15`,
                     border: `1px solid ${riskColor}30`,
@@ -1825,21 +2276,40 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     fontWeight: '800',
                     letterSpacing: '1.5px',
                     textTransform: 'uppercase',
-                    padding: '6px 16px',
+                    padding: '5px 14px',
                     borderRadius: '20px',
-                    marginBottom: 16,
-                    boxShadow: `0 0 15px ${riskColor}10`,
-                    display: 'inline-block'
+                    marginBottom: 10
                   }}>
                     {riskLabel}
                   </span>
 
-                  <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: 8, lineHeight: 1.6, textAlign: 'center', maxWidth: '240px', margin: 0 }}>
-                    Based on monthly completed booking revenue (PHP {monthlyRevenue.toLocaleString()}) vs fixed operational expenses.
+                  <p style={{ fontSize: '12px', color: 'var(--text-dim)', lineHeight: 1.5, textAlign: 'center', margin: 0 }}>
+                    Monthly Revenue (PHP {monthlyRevenue.toLocaleString()}) vs Fixed Expenses (PHP {monthlyOverheadVal.toLocaleString()})
                   </p>
+
+                  {/* Collapsible Explanation for Risk Index */}
+                  <button 
+                    className="collapsible-card-toggle"
+                    onClick={() => setExpandedMetricCards(p => ({ ...p, riskIndex: !p.riskIndex }))}
+                  >
+                    <span>{expandedMetricCards.riskIndex ? 'Hide Formula & Tips' : 'Why this result? & Action Tips'}</span>
+                    {expandedMetricCards.riskIndex ? <ChevronUpIcon size={14} /> : <ChevronDownIcon size={14} />}
+                  </button>
+
+                  {expandedMetricCards.riskIndex && (
+                    <div className="collapsible-card-body">
+                      <strong style={{ color: 'var(--gold)', display: 'block', marginBottom: 4 }}>Risk Index Model:</strong>
+                      Composite score calculating operating deficit ratio against cash reserve protection.
+                      <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                        <strong style={{ color: '#4ade80', display: 'block', marginBottom: 2 }}>Actionable Advice:</strong>
+                        • Maintain at least 3-6 months liquid operational reserves.<br />
+                        • Swiftly approve pending appointments to avoid client drop-off.
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Grid metrics details */}
+                {/* 4 Collapsible Performance Metric Cards */}
                 <div className="analytics-metrics-grid">
                   
                   {/* Card 1: Operational Cash Runway */}
@@ -1849,31 +2319,39 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     border: '1px solid rgba(255, 255, 255, 0.08)',
                     borderLeft: `5px solid ${netIncome >= 0 ? '#4ade80' : '#f87171'}`,
                     borderRadius: 20,
-                    padding: '32px 28px',
-                    boxShadow: '0 16px 36px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.borderColor = netIncome >= 0 ? '#4ade80' : '#f87171';
-                    e.currentTarget.style.boxShadow = `0 20px 45px rgba(0,0,0,0.45), 0 0 25px ${netIncome >= 0 ? '#4ade80' : '#f87171'}15`;
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                    e.currentTarget.style.boxShadow = '0 16px 36px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1)';
-                  }}
-                  >
+                    padding: '24px 22px',
+                    boxShadow: '0 16px 36px rgba(0, 0, 0, 0.3)'
+                  }}>
                     <p style={{ fontSize: '11px', color: 'var(--text-dim)', letterSpacing: '1.5px', margin: 0, fontWeight: '700', textTransform: 'uppercase' }}>OPERATIONAL CASH RUNWAY</p>
-                    <h3 style={{ fontSize: '34px', color: netIncome >= 0 ? '#4ade80' : '#f87171', margin: '14px 0 8px 0', fontFamily: 'var(--font-display)', fontWeight: '800', letterSpacing: '-0.5px' }}>
+                    <h3 style={{ fontSize: '32px', color: netIncome >= 0 ? '#4ade80' : '#f87171', margin: '10px 0 6px 0', fontFamily: 'var(--font-display)', fontWeight: '800', letterSpacing: '-0.5px' }}>
                       {netIncome >= 0 ? 'Indefinite' : `${runwayMonths.toFixed(1)} months`}
                     </h3>
                     <p style={{ fontSize: '12px', color: 'var(--text-dim)', margin: 0, lineHeight: 1.5 }}>
                       {netIncome >= 0 
-                        ? 'Stable: Salon is operating at a net surplus' 
+                        ? 'Stable: Salon is operating at a net monthly surplus' 
                         : `Deficit: Cash reserves will exhaust in ~${Math.round(runwayMonths * 30)} days`
                       }
                     </p>
+
+                    <button 
+                      className="collapsible-card-toggle"
+                      onClick={() => setExpandedMetricCards(p => ({ ...p, runway: !p.runway }))}
+                    >
+                      <span>{expandedMetricCards.runway ? 'Hide Breakdown' : 'Why this result? & Action Tips'}</span>
+                      {expandedMetricCards.runway ? <ChevronUpIcon size={14} /> : <ChevronDownIcon size={14} />}
+                    </button>
+
+                    {expandedMetricCards.runway && (
+                      <div className="collapsible-card-body">
+                        <strong style={{ color: 'var(--gold)', display: 'block', marginBottom: 4 }}>Calculation Formula:</strong>
+                        Current Operating Reserves (₱{operatingCapitalVal.toLocaleString()}) ÷ Monthly Net Burn (₱{Math.max(1, Math.abs(netIncome)).toLocaleString()}).
+                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                          <strong style={{ color: '#4ade80', display: 'block', marginBottom: 2 }}>Actionable Recommendations:</strong>
+                          • Target 15% increase in weekend package bookings.<br />
+                          • Renegotiate fixed supplier overheads to extend cash runway.
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Card 2: Monthly Net Surplus/Deficit */}
@@ -1883,26 +2361,14 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     border: '1px solid rgba(255, 255, 255, 0.08)',
                     borderLeft: `5px solid ${netIncome >= 0 ? '#4ade80' : '#f87171'}`,
                     borderRadius: 20,
-                    padding: '32px 28px',
-                    boxShadow: '0 16px 36px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.borderColor = netIncome >= 0 ? '#4ade80' : '#f87171';
-                    e.currentTarget.style.boxShadow = `0 20px 45px rgba(0,0,0,0.45), 0 0 25px ${netIncome >= 0 ? '#4ade80' : '#f87171'}15`;
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                    e.currentTarget.style.boxShadow = '0 16px 36px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1)';
-                  }}
-                  >
+                    padding: '24px 22px',
+                    boxShadow: '0 16px 36px rgba(0, 0, 0, 0.3)'
+                  }}>
                     <p style={{ fontSize: '11px', color: 'var(--text-dim)', letterSpacing: '1.5px', margin: 0, fontWeight: '700', textTransform: 'uppercase' }}>MONTHLY NET SURPLUS/DEFICIT</p>
                     <h3 style={{ 
-                      fontSize: '34px', 
+                      fontSize: '32px', 
                       color: netIncome >= 0 ? '#4ade80' : '#f87171', 
-                      margin: '14px 0 8px 0', 
+                      margin: '10px 0 6px 0', 
                       fontFamily: 'var(--font-display)',
                       fontWeight: '800',
                       letterSpacing: '-0.5px'
@@ -1910,8 +2376,28 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       {netIncome >= 0 ? '+' : ''}₱{netIncome.toLocaleString()}
                     </h3>
                     <p style={{ fontSize: '12px', color: 'var(--text-dim)', margin: 0, lineHeight: 1.5 }}>
-                      Expenses: ₱{monthlyOverheadVal.toLocaleString()} · Income: ₱{monthlyRevenue.toLocaleString()}
+                      Monthly Expenses: ₱{monthlyOverheadVal.toLocaleString()} · Total Income: ₱{monthlyRevenue.toLocaleString()}
                     </p>
+
+                    <button 
+                      className="collapsible-card-toggle"
+                      onClick={() => setExpandedMetricCards(p => ({ ...p, netIncome: !p.netIncome }))}
+                    >
+                      <span>{expandedMetricCards.netIncome ? 'Hide Breakdown' : 'Why this result? & Action Tips'}</span>
+                      {expandedMetricCards.netIncome ? <ChevronUpIcon size={14} /> : <ChevronDownIcon size={14} />}
+                    </button>
+
+                    {expandedMetricCards.netIncome && (
+                      <div className="collapsible-card-body">
+                        <strong style={{ color: 'var(--gold)', display: 'block', marginBottom: 4 }}>Financial Breakdown:</strong>
+                        Calculated by subtracting fixed monthly expenses from total paid appointments completed this month.
+                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                          <strong style={{ color: '#4ade80', display: 'block', marginBottom: 2 }}>Actionable Recommendations:</strong>
+                          • Upsell high-ticket treatments (Balayage, Loreal Rebonding).<br />
+                          • Introduce combo hair & nail spa bundles to boost average ticket size.
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Card 3: Break-Even Target */}
@@ -1921,28 +2407,36 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     border: '1px solid rgba(255, 255, 255, 0.08)',
                     borderLeft: '5px solid var(--gold)',
                     borderRadius: 20,
-                    padding: '32px 28px',
-                    boxShadow: '0 16px 36px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.borderColor = 'var(--gold)';
-                    e.currentTarget.style.boxShadow = '0 20px 45px rgba(0,0,0,0.45), 0 0 25px rgba(201, 168, 76, 0.25)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                    e.currentTarget.style.boxShadow = '0 16px 36px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1)';
-                  }}
-                  >
+                    padding: '24px 22px',
+                    boxShadow: '0 16px 36px rgba(0, 0, 0, 0.3)'
+                  }}>
                     <p style={{ fontSize: '11px', color: 'var(--text-dim)', letterSpacing: '1.5px', margin: 0, fontWeight: '700', textTransform: 'uppercase' }}>BREAK-EVEN TARGET</p>
-                    <h3 style={{ fontSize: '34px', color: '#ffffff', margin: '14px 0 8px 0', fontFamily: 'var(--font-display)', fontWeight: '800', letterSpacing: '-0.5px' }}>
+                    <h3 style={{ fontSize: '32px', color: '#ffffff', margin: '10px 0 6px 0', fontFamily: 'var(--font-display)', fontWeight: '800', letterSpacing: '-0.5px' }}>
                       ₱{monthlyOverheadVal.toLocaleString()}
                     </h3>
                     <p style={{ fontSize: '12px', color: 'var(--text-dim)', margin: 0, lineHeight: 1.5 }}>
-                      Target cash flow needed monthly to avoid operating cash deficits
+                      Required monthly booking revenue to fully cover all operating baseline expenses
                     </p>
+
+                    <button 
+                      className="collapsible-card-toggle"
+                      onClick={() => setExpandedMetricCards(p => ({ ...p, breakEven: !p.breakEven }))}
+                    >
+                      <span>{expandedMetricCards.breakEven ? 'Hide Breakdown' : 'Why this result? & Action Tips'}</span>
+                      {expandedMetricCards.breakEven ? <ChevronUpIcon size={14} /> : <ChevronDownIcon size={14} />}
+                    </button>
+
+                    {expandedMetricCards.breakEven && (
+                      <div className="collapsible-card-body">
+                        <strong style={{ color: 'var(--gold)', display: 'block', marginBottom: 4 }}>Target Benchmark:</strong>
+                        To break even with ₱{monthlyOverheadVal.toLocaleString()} overheads, you need ~{Math.ceil(monthlyOverheadVal / 1200)} appointments at average order value ₱1,200.
+                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                          <strong style={{ color: '#4ade80', display: 'block', marginBottom: 2 }}>Actionable Recommendations:</strong>
+                          • Launch promotional flash discounts for weekday mornings.<br />
+                          • Target corporate packages to lock in guaranteed monthly bookings.
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Card 4: Staff Utilization Rate */}
@@ -1952,718 +2446,73 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     border: '1px solid rgba(255, 255, 255, 0.08)',
                     borderLeft: '5px solid var(--gold)',
                     borderRadius: 20,
-                    padding: '32px 28px',
-                    boxShadow: '0 16px 36px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.borderColor = 'var(--gold)';
-                    e.currentTarget.style.boxShadow = '0 20px 45px rgba(0,0,0,0.45), 0 0 25px rgba(201, 168, 76, 0.25)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                    e.currentTarget.style.boxShadow = '0 16px 36px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1)';
-                  }}
-                  >
+                    padding: '24px 22px',
+                    boxShadow: '0 16px 36px rgba(0, 0, 0, 0.3)'
+                  }}>
                     <p style={{ fontSize: '11px', color: 'var(--text-dim)', letterSpacing: '1.5px', margin: 0, fontWeight: '700', textTransform: 'uppercase' }}>STAFF UTILIZATION RATE</p>
-                    <h3 style={{ fontSize: '34px', color: '#ffffff', margin: '14px 0 8px 0', fontFamily: 'var(--font-display)', fontWeight: '800', letterSpacing: '-0.5px' }}>
+                    <h3 style={{ fontSize: '32px', color: '#ffffff', margin: '10px 0 6px 0', fontFamily: 'var(--font-display)', fontWeight: '800', letterSpacing: '-0.5px' }}>
                       {staff.length > 0 
                         ? `${Math.round((completed / (staff.length * 20)) * 100)}%` 
                         : '0%'
                       }
                     </h3>
                     <p style={{ fontSize: '12px', color: 'var(--text-dim)', margin: 0, lineHeight: 1.5 }}>
-                      Based on dynamic ratios of completed visits relative to roster scale
+                      Completed customer appointments relative to roster capacity ({staff.length} staff)
                     </p>
+
+                    <button 
+                      className="collapsible-card-toggle"
+                      onClick={() => setExpandedMetricCards(p => ({ ...p, staffUtil: !p.staffUtil }))}
+                    >
+                      <span>{expandedMetricCards.staffUtil ? 'Hide Breakdown' : 'Why this result? & Action Tips'}</span>
+                      {expandedMetricCards.staffUtil ? <ChevronUpIcon size={14} /> : <ChevronDownIcon size={14} />}
+                    </button>
+
+                    {expandedMetricCards.staffUtil && (
+                      <div className="collapsible-card-body">
+                        <strong style={{ color: 'var(--gold)', display: 'block', marginBottom: 4 }}>Capacity Formula:</strong>
+                        Calculated from completed appointments divided by estimated monthly appointment capacity ({staff.length * 20} slots).
+                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                          <strong style={{ color: '#4ade80', display: 'block', marginBottom: 2 }}>Actionable Recommendations:</strong>
+                          • Evenly assign walk-in clients among all stylists.<br />
+                          • Adjust shift schedules during slow hours to minimize idle labor costs.
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                 </div>
               </div>
 
-                  {/* 📈 PREDICTIVE FINANCIAL TREND CHART */}
-              {(() => {
-                const getMonthRevenue = (yearMonth) => {
-                  return bookingsState
-                    .filter(b => b.date?.startsWith(yearMonth) && b.status === 'Completed')
-                    .reduce((sum, b) => {
-                      if (b.paidAmount !== undefined && b.paidAmount !== null) return sum + b.paidAmount;
-                      if (b.servicePrice !== undefined && b.servicePrice !== null) return sum + b.servicePrice;
-                      const svc = services.find(s => s.name === b.service);
-                      if (svc) return sum + parseFloat(svc.price.replace(/[^0-9.]/g, '') || 0);
-                      return sum;
-                    }, 0);
-                };
-
-                const febRev = getMonthRevenue('2026-02') || (monthlyRevenue > 0 ? Math.round(monthlyOverheadVal * 0.9) : 38000);
-                const marRev = getMonthRevenue('2026-03') || (monthlyRevenue > 0 ? Math.round(monthlyOverheadVal * 1.1) : 48000);
-                const aprRev = getMonthRevenue('2026-04') || (monthlyRevenue > 0 ? Math.round(monthlyOverheadVal * 0.85) : 41000);
-                const mayRev = monthlyRevenue;
-                const junRev = netIncome >= 0 ? Math.round(mayRev * 1.12) : Math.round(mayRev * 0.85);
-
-                const maxChartVal = Math.max(febRev, marRev, aprRev, mayRev, junRev, monthlyOverheadVal, 10000) * 1.25;
-                const getChartY = (val) => 220 - (val / maxChartVal) * 165;
-
-                const yFeb = getChartY(febRev);
-                const yMar = getChartY(marRev);
-                const yApr = getChartY(aprRev);
-                const yMay = getChartY(mayRev);
-                const yJun = getChartY(junRev);
-                const yOverhead = getChartY(monthlyOverheadVal);
-
-                const chartColor = netIncome >= 0 ? '#4ade80' : '#f59e0b';
-
-                return (
-                  <div style={{
-                    background: 'linear-gradient(135deg, rgba(25, 25, 25, 0.6), rgba(15, 15, 15, 0.8))',
-                    backdropFilter: 'blur(12px)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    borderRadius: 16,
-                    padding: '32px',
-                    marginBottom: 28,
-                    position: 'relative',
-                    zIndex: 1,
-                    boxShadow: '0 12px 48px rgba(0, 0, 0, 0.4)'
-                  }}>
-                    <h3 style={{ 
-                      fontSize: 15, 
-                      color: 'var(--text-white)', 
-                      margin: '0 0 24px 0', 
-                      fontFamily: 'var(--font-display)', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: 8, 
-                      letterSpacing: '0.5px' 
-                    }}>
-                      <ChartIcon size={16} style={{ color: 'var(--gold)' }} /> Monthly Financial Trajectory & Prediction Forecast
-                    </h3>
-
-                    <div style={{ position: 'relative', width: '100%', overflowX: 'auto' }}>
-                      <svg width="100%" height="280" viewBox="0 0 800 280" style={{ display: 'block', overflow: 'visible', minWidth: '760px' }}>
-                        <defs>
-                          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor={chartColor} stopOpacity="0.25" />
-                            <stop offset="100%" stopColor={chartColor} stopOpacity="0.00" />
-                          </linearGradient>
-                          <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
-                            <feGaussianBlur stdDeviation="5" result="blur" />
-                            <feComponentTransfer in="blur" result="glow">
-                              <feFuncA type="linear" slope="0.5" />
-                            </feComponentTransfer>
-                            <feMerge>
-                              <feMergeNode in="glow" />
-                              <feMergeNode in="SourceGraphic" />
-                            </feMerge>
-                          </filter>
-                        </defs>
-
-                        {/* Horizontal Grid Lines */}
-                        <line x1="80" y1="55" x2="720" y2="55" stroke="rgba(255, 255, 255, 0.03)" strokeWidth="1" />
-                        <line x1="80" y1="137" x2="720" y2="137" stroke="rgba(255, 255, 255, 0.03)" strokeWidth="1" />
-                        <line x1="80" y1="220" x2="720" y2="220" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1.5" />
-
-                        {/* Left Y-Axis labels */}
-                        <text x="65" y="60" textAnchor="end" fontSize="9.5px" fill="var(--text-dim)" fontWeight="600">₱{(maxChartVal * 0.8).toLocaleString([], {maximumFractionDigits:0})}</text>
-                        <text x="65" y="142" textAnchor="end" fontSize="9.5px" fill="var(--text-dim)" fontWeight="600">₱{(maxChartVal * 0.4).toLocaleString([], {maximumFractionDigits:0})}</text>
-                        <text x="65" y="225" textAnchor="end" fontSize="9.5px" fill="var(--text-dim)" fontWeight="600">₱0</text>
-
-                        {/* 🟥 BREAK-EVEN TARGET DASHED LINE */}
-                        <line 
-                          x1="80" 
-                          y1={yOverhead} 
-                          x2="720" 
-                          y2={yOverhead} 
-                          stroke="rgba(248, 113, 113, 0.6)" 
-                          strokeWidth="2" 
-                          strokeDasharray="6,4" 
-                        />
-                        <text 
-                          x="710" 
-                          y={yOverhead - 8} 
-                          textAnchor="end" 
-                          fontSize="9.5px" 
-                          fill="#f87171" 
-                          fontWeight="800"
-                          letterSpacing="0.8px"
-                        >
-                          BREAK-EVEN TARGET (₱{monthlyOverheadVal.toLocaleString()})
-                        </text>
-
-                        {/* Shaded Area Under Line */}
-                        <path 
-                          d={`M 80,${yFeb} L 240,${yMar} L 400,${yApr} L 560,${yMay} L 560,220 L 80,220 Z`} 
-                          fill="url(#chartGrad)" 
-                        />
-
-                        {/* Solid Historical Trend Line (with Neon Glow) */}
-                        <path 
-                          d={`M 80,${yFeb} L 240,${yMar} L 400,${yApr} L 560,${yMay}`} 
-                          fill="none" 
-                          stroke={chartColor} 
-                          strokeWidth="4" 
-                          strokeLinecap="round"
-                          filter="url(#neonGlow)"
-                        />
-
-                        {/* Dashed Predictive Line (June Forecast) */}
-                        <line 
-                          x1="560" 
-                          y1={yMay} 
-                          x2="720" 
-                          y2={yJun} 
-                          stroke={junRev >= monthlyOverheadVal ? '#4ade80' : '#f59e0b'} 
-                          strokeWidth="4" 
-                          strokeDasharray="6,6"
-                          strokeLinecap="round"
-                          filter="url(#neonGlow)"
-                        />
-
-                        {/* Data Nodes */}
-                        {[
-                          { x: 80, y: yFeb, val: febRev, lbl: 'Feb (Actual)', color: febRev >= monthlyOverheadVal ? '#4ade80' : '#f87171' },
-                          { x: 240, y: yMar, val: marRev, lbl: 'Mar (Actual)', color: marRev >= monthlyOverheadVal ? '#4ade80' : '#f87171' },
-                          { x: 400, y: yApr, val: aprRev, lbl: 'Apr (Actual)', color: aprRev >= monthlyOverheadVal ? '#4ade80' : '#f87171' },
-                          { x: 560, y: yMay, val: mayRev, lbl: 'May (Current)', color: mayRev >= monthlyOverheadVal ? '#4ade80' : '#f87171', pulse: true },
-                          { x: 720, y: yJun, val: junRev, lbl: 'Jun (Forecast)', color: junRev >= monthlyOverheadVal ? '#4ade80' : '#f59e0b', dash: true }
-                        ].map((pt, i) => (
-                          <g key={i}>
-                            {pt.pulse && (
-                              <circle 
-                                cx={pt.x} 
-                                cy={pt.y} 
-                                r="12" 
-                                fill={pt.color} 
-                                opacity="0.25"
-                                style={{ animation: 'goldPulse 1.5s infinite' }}
-                              />
-                            )}
-                            <circle 
-                              cx={pt.x} 
-                              cy={pt.y} 
-                              r="6" 
-                              fill={pt.color} 
-                              stroke="#0e1118" 
-                              strokeWidth="2.5" 
-                            />
-                            
-                            {/* Values label rounded shield card */}
-                            <rect 
-                              x={pt.x - 36} 
-                              y={pt.y - 25} 
-                              width="72" 
-                              height="16" 
-                              rx="4" 
-                              fill="rgba(10, 11, 18, 0.85)" 
-                              stroke="rgba(255,255,255,0.06)" 
-                              strokeWidth="0.5" 
-                            />
-                            
-                            {/* Values text label above node */}
-                            <text 
-                              x={pt.x} 
-                              y={pt.y - 13} 
-                              textAnchor="middle" 
-                              fontSize="9.5px" 
-                              fontWeight="800" 
-                              fill="var(--text-white)"
-                              fontFamily="var(--font-display)"
-                            >
-                              ₱{pt.val.toLocaleString()}
-                            </text>
-                            
-                            {/* Month Label below node */}
-                            <text 
-                              x={pt.x} 
-                              y="242" 
-                              textAnchor="middle" 
-                              fontSize="10.5px" 
-                              fontWeight="600" 
-                              fill={pt.dash ? 'var(--gold)' : 'var(--text-dim)'}
-                            >
-                              {pt.lbl}
-                            </text>
-                          </g>
-                        ))}
-                      </svg>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Cost Inputs Reference styled as a proper glassmorphism card */}
+              {/* Active Operational Parameters (Without handle display) */}
               <div style={{
-                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.005))',
+                background: 'linear-gradient(135deg, rgba(25, 25, 25, 0.6), rgba(15, 15, 15, 0.8))',
                 backdropFilter: 'blur(12px)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
                 borderRadius: 16,
-                padding: '28px 30px',
-                position: 'relative',
-                zIndex: 1,
+                padding: '24px 28px',
+                marginTop: 24,
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)'
               }}>
                 <h3 style={{ fontSize: 14, color: 'var(--text-white)', margin: 0, fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.5px' }}>
-                  <SettingsIcon size={16} style={{ color: 'var(--gold)' }} /> Active Operational Model Parameters
+                  <SettingsIcon size={16} style={{ color: 'var(--gold)' }} /> Active Operational Baseline Parameters
                 </h3>
-                <div style={{ height: '1px', background: 'linear-gradient(90deg, rgba(201, 168, 76, 0.5), transparent)', margin: '14px 0 16px 0' }} />
-                <p style={{ fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.6, marginBottom: 20 }}>
-                  These parameters represent the monthly baseline expenses and reserves of the branch. You can update these values inside the <strong>Settings</strong> tab.
-                </p>
+                <div style={{ height: '1px', background: 'linear-gradient(90deg, rgba(201, 168, 76, 0.5), transparent)', margin: '12px 0 16px 0' }} />
                 <div className="analytics-params-grid">
-                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px 20px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.03)' }}>
-                    <span style={{ fontSize: 9, color: 'var(--text-dim)', letterSpacing: 0.8, display: 'block', textTransform: 'uppercase', fontWeight: '600' }}>MONTHLY FIXED EXPENSES</span>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '14px 18px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.03)' }}>
+                    <span style={{ fontSize: 9, color: 'var(--text-dim)', letterSpacing: 0.8, display: 'block', textTransform: 'uppercase', fontWeight: '600' }}>MONTHLY FIXED OVERHEAD</span>
                     <strong style={{ display: 'block', fontSize: 18, color: 'var(--gold)', marginTop: 6, fontFamily: 'var(--font-display)' }}>
                       ₱{monthlyOverheadVal.toLocaleString()}
                     </strong>
                   </div>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px 20px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.03)' }}>
-                    <span style={{ fontSize: 9, color: 'var(--text-dim)', letterSpacing: 0.8, display: 'block', textTransform: 'uppercase', fontWeight: '600' }}>INITIAL OPERATING CASH</span>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '14px 18px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.03)' }}>
+                    <span style={{ fontSize: 9, color: 'var(--text-dim)', letterSpacing: 0.8, display: 'block', textTransform: 'uppercase', fontWeight: '600' }}>INITIAL OPERATING RESERVES</span>
                     <strong style={{ display: 'block', fontSize: 18, color: 'var(--gold)', marginTop: 6, fontFamily: 'var(--font-display)' }}>
                       ₱{operatingCapitalVal.toLocaleString()}
                     </strong>
                   </div>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px 20px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.03)' }}>
-                    <span style={{ fontSize: 9, color: 'var(--text-dim)', letterSpacing: 0.8, display: 'block', textTransform: 'uppercase', fontWeight: '600' }}>SALON MANAGER</span>
-                    <strong style={{ display: 'block', fontSize: 18, color: 'var(--text-white)', marginTop: 6, fontFamily: 'var(--font-display)' }}>
-                      @{currentUser.user}
-                    </strong>
-                  </div>
                 </div>
               </div>
-            </section>
-          )}
-
-          {/* ══════ CUSTOMERS ══════ */}
-          {activeTab === 'customers' && (() => {
-            // ─── Computed Customer Analytics ───
-            const custData = customers.map(c => {
-              const cb = bookingsState.filter(b => b.userId === c.user);
-              const completedB = cb.filter(b => b.status === 'Completed');
-              const rev = completedB.reduce((s, b) => {
-                if (b.paidAmount != null) return s + b.paidAmount;
-                if (b.servicePrice != null) return s + b.servicePrice;
-                const svc = services.find(sv => sv.name === b.service);
-                return s + parseFloat(svc?.price?.replace(/[^0-9.]/g, '') || 0);
-              }, 0);
-              const dates = cb.map(b => b.date).filter(Boolean).sort();
-              const lastVisit = dates.length ? dates[dates.length - 1] : null;
-              const firstVisit = dates.length ? dates[0] : null;
-              return { ...c, bookings: cb.length, completed: completedB.length, revenue: rev, lastVisit, firstVisit, bookingsList: cb };
-            });
-            const totalCust = custData.length;
-            const totalCustRevenue = custData.reduce((s, c) => s + c.revenue, 0);
-            const avgSpend = totalCust > 0 ? Math.round(totalCustRevenue / totalCust) : 0;
-            const topSpender = custData.reduce((top, c) => c.revenue > (top?.revenue || 0) ? c : top, null);
-            const repeatCustomers = custData.filter(c => c.bookings > 1).length;
-            const repeatRate = totalCust > 0 ? Math.round((repeatCustomers / totalCust) * 100) : 0;
-
-            // Revenue bar chart - top 8
-            const revenueRanked = [...custData].sort((a, b) => b.revenue - a.revenue).slice(0, 8);
-            const maxRevBar = revenueRanked.length > 0 ? Math.max(...revenueRanked.map(c => c.revenue), 1) : 1;
-
-            // Booking status donut
-            const allCustBookings = bookingsState.filter(b => customers.some(c => c.user === b.userId));
-            const statusCounts = { Completed: 0, Approved: 0, Pending: 0, Cancelled: 0 };
-            allCustBookings.forEach(b => { if (statusCounts[b.status] !== undefined) statusCounts[b.status]++; });
-            const totalStatB = Object.values(statusCounts).reduce((a, b) => a + b, 0);
-            const statusColors = { Completed: '#4ade80', Approved: '#60a5fa', Pending: '#c9a84c', Cancelled: '#f87171' };
-
-            // Monthly acquisition trend (6 months)
-            const monthLabels = [];
-            const monthCounts = [];
-            for (let i = 5; i >= 0; i--) {
-              const d = new Date(); d.setMonth(d.getMonth() - i);
-              const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-              monthLabels.push(d.toLocaleString('default', { month: 'short' }));
-              monthCounts.push(custData.filter(c => c.firstVisit && c.firstVisit.startsWith(ym)).length);
-            }
-            const maxMonthCount = Math.max(...monthCounts, 1);
-
-            // Service popularity
-            const svcMap = {};
-            allCustBookings.forEach(b => { svcMap[b.service] = (svcMap[b.service] || 0) + 1; });
-            const svcRanked = Object.entries(svcMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
-            const maxSvcCount = svcRanked.length > 0 ? Math.max(...svcRanked.map(s => s[1]), 1) : 1;
-
-            // Filtered/sorted customer list
-            const filtered = custData.filter(c => {
-              if (!customerSearch) return true;
-              const q = customerSearch.toLowerCase();
-              return c.name?.toLowerCase().includes(q) || c.user?.toLowerCase().includes(q);
-            });
-            const sorted = [...filtered].sort((a, b) => {
-              if (customerSort === 'revenue') return b.revenue - a.revenue;
-              if (customerSort === 'bookings') return b.bookings - a.bookings;
-              if (customerSort === 'recent') return (b.lastVisit || '').localeCompare(a.lastVisit || '');
-              if (customerSort === 'name') return (a.name || '').localeCompare(b.name || '');
-              return 0;
-            });
-
-            return (
-            <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
-              <div className="section-header"><p className="section-label">INTELLIGENCE CENTER</p><h2 className="section-heading">Customer Analytics</h2></div>
-
-              {customers.length === 0 ? (
-                <div className="empty-state"><div className="empty-icon"><UserIcon size={48} /></div><h3 className="empty-title">No Customers</h3><p>No customers registered yet.</p></div>
-              ) : (<>
-
-              {/* ── KPI Cards ── */}
-              <div className="ci-kpi-row">
-                <div className="ci-kpi-card">
-                  <div className="ci-kpi-icon"><UserIcon size={18} /></div>
-                  <div className="ci-kpi-label">Total Customers</div>
-                  <div className="ci-kpi-value">{totalCust}</div>
-                  <div className="ci-kpi-sub">{repeatCustomers} returning clients</div>
-                </div>
-                <div className="ci-kpi-card">
-                  <div className="ci-kpi-icon"><ChartIcon size={18} /></div>
-                  <div className="ci-kpi-label">Avg. Spend / Customer</div>
-                  <div className="ci-kpi-value">₱{avgSpend.toLocaleString()}</div>
-                  <div className="ci-kpi-sub">Across {totalCust} customers</div>
-                </div>
-                <div className="ci-kpi-card">
-                  <div className="ci-kpi-icon"><SparklesIcon size={18} /></div>
-                  <div className="ci-kpi-label">Top Spender</div>
-                  <div className="ci-kpi-value" style={{ fontSize: 20 }}>{topSpender?.name?.split(' ')[0] || '—'}</div>
-                  <div className="ci-kpi-sub">₱{(topSpender?.revenue || 0).toLocaleString()} total</div>
-                </div>
-                <div className="ci-kpi-card">
-                  <div className="ci-kpi-icon"><CheckCircleIcon size={18} /></div>
-                  <div className="ci-kpi-label">Repeat Rate</div>
-                  <div className="ci-kpi-value">{repeatRate}%</div>
-                  <div className="ci-kpi-sub">{repeatCustomers} of {totalCust} customers</div>
-                </div>
-              </div>
-
-              {/* ── Charts Row 1: Revenue Bar + Status Donut ── */}
-              <div className="ci-charts-row">
-                <div className="ci-chart-card">
-                  <div className="ci-chart-title">Top Customer Revenue</div>
-                  {revenueRanked.map((c, i) => (
-                    <div key={i} className="ci-bar">
-                      <div className="ci-bar-label" title={c.name}>{c.name?.split(' ')[0]}</div>
-                      <div className="ci-bar-track">
-                        <div className="ci-bar-fill" style={{ width: `${(c.revenue / maxRevBar) * 100}%` }} />
-                      </div>
-                      <div className="ci-bar-val">₱{c.revenue.toLocaleString()}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="ci-chart-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div className="ci-chart-title" style={{ alignSelf: 'flex-start', width: '100%' }}>Booking Status Breakdown</div>
-                  <div style={{ position: 'relative', width: 180, height: 180, margin: '10px 0 16px' }}>
-                    <svg width="180" height="180" viewBox="0 0 180 180">
-                      {(() => {
-                        let cumAngle = -90;
-                        return Object.entries(statusCounts).filter(([, v]) => v > 0).map(([status, count], idx) => {
-                          const pct = totalStatB > 0 ? count / totalStatB : 0;
-                          const angle = pct * 360;
-                          const startAngle = cumAngle;
-                          cumAngle += angle;
-                          const endAngle = cumAngle;
-                          const largeArc = angle > 180 ? 1 : 0;
-                          const r = 70;
-                          const cx = 90, cy = 90;
-                          const x1 = cx + r * Math.cos((startAngle * Math.PI) / 180);
-                          const y1 = cy + r * Math.sin((startAngle * Math.PI) / 180);
-                          const x2 = cx + r * Math.cos((endAngle * Math.PI) / 180);
-                          const y2 = cy + r * Math.sin((endAngle * Math.PI) / 180);
-                          return (
-                            <path key={idx} d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`}
-                              fill={statusColors[status]} opacity="0.85" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5" />
-                          );
-                        });
-                      })()}
-                      <circle cx="90" cy="90" r="42" fill="rgba(15,15,15,0.95)" />
-                      <text x="90" y="85" textAnchor="middle" fill="#fff" fontSize="22" fontWeight="800" fontFamily="var(--font-display)">{totalStatB}</text>
-                      <text x="90" y="102" textAnchor="middle" fill="var(--text-dim)" fontSize="9" fontWeight="700" letterSpacing="1" textTransform="uppercase">BOOKINGS</text>
-                    </svg>
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px', justifyContent: 'center' }}>
-                    {Object.entries(statusCounts).map(([status, count]) => (
-                      <div key={status} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: statusColors[status], display: 'inline-block' }} />
-                        <span style={{ color: 'var(--text-dim)' }}>{status}</span>
-                        <span style={{ color: 'var(--text-white)', fontWeight: 600 }}>{count}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* ── Charts Row 2: Acquisition Trend + Service Popularity ── */}
-              <div className="ci-charts-row-2">
-                <div className="ci-chart-card">
-                  <div className="ci-chart-title">Monthly New Customers (6 months)</div>
-                  <svg width="100%" height="140" viewBox="0 0 320 140" preserveAspectRatio="xMidYMid meet">
-                    <defs>
-                      <linearGradient id="acqGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--gold)" stopOpacity="0.3" />
-                        <stop offset="100%" stopColor="var(--gold)" stopOpacity="0" />
-                      </linearGradient>
-                    </defs>
-                    {/* Grid lines */}
-                    {[0, 1, 2, 3].map(i => (
-                      <line key={i} x1="30" y1={20 + i * 30} x2="310" y2={20 + i * 30} stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
-                    ))}
-                    {/* Area fill */}
-                    {(() => {
-                      const pts = monthCounts.map((v, i) => ({ x: 30 + (i * 280) / 5, y: 110 - (v / maxMonthCount) * 85 }));
-                      const pathD = `M ${pts[0].x} 110 ` + pts.map(p => `L ${p.x} ${p.y}`).join(' ') + ` L ${pts[pts.length - 1].x} 110 Z`;
-                      const lineD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-                      return (<>
-                        <path d={pathD} fill="url(#acqGrad)" />
-                        <path d={lineD} fill="none" stroke="var(--gold)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                        {pts.map((p, i) => (
-                          <g key={i}>
-                            <circle cx={p.x} cy={p.y} r="4" fill="var(--gold)" stroke="rgba(15,15,15,0.9)" strokeWidth="2" />
-                            <text x={p.x} y={p.y - 10} textAnchor="middle" fill="var(--text-white)" fontSize="10" fontWeight="700">{monthCounts[i]}</text>
-                          </g>
-                        ))}
-                      </>);
-                    })()}
-                    {/* Month labels */}
-                    {monthLabels.map((m, i) => (
-                      <text key={i} x={30 + (i * 280) / 5} y="130" textAnchor="middle" fill="var(--text-dim)" fontSize="9" fontWeight="600">{m}</text>
-                    ))}
-                  </svg>
-                </div>
-                <div className="ci-chart-card">
-                  <div className="ci-chart-title">Most Popular Services</div>
-                  {svcRanked.map(([svc, count], i) => (
-                    <div key={i} className="ci-bar">
-                      <div className="ci-bar-label" title={svc}>{svc.length > 12 ? svc.slice(0, 12) + '…' : svc}</div>
-                      <div className="ci-bar-track">
-                        <div className="ci-bar-fill ci-svc-bar-fill" style={{ width: `${(count / maxSvcCount) * 100}%` }} />
-                      </div>
-                      <div className="ci-bar-val">{count} bookings</div>
-                    </div>
-                  ))}
-                  {svcRanked.length === 0 && <p style={{ color: 'var(--text-dim)', fontSize: 12 }}>No service data yet.</p>}
-                </div>
-              </div>
-
-              {/* ── Customer Data Table ── */}
-              <div className="ci-chart-card" style={{ marginBottom: 0 }}>
-                <div className="ci-chart-title">Customer Directory</div>
-                <div className="ci-table-header">
-                  <div className="ci-search-wrap">
-                    <SearchIcon size={14} />
-                    <input
-                      className="ci-search"
-                      placeholder="Search by name or username…"
-                      value={customerSearch}
-                      onChange={e => setCustomerSearch(e.target.value)}
-                    />
-                  </div>
-                  {['revenue', 'bookings', 'recent', 'name'].map(s => (
-                    <button key={s} className={`ci-sort-btn ${customerSort === s ? 'active' : ''}`} onClick={() => setCustomerSort(s)}>
-                      {s === 'revenue' ? '₱ Revenue' : s === 'bookings' ? '# Bookings' : s === 'recent' ? 'Recent' : 'A-Z'}
-                    </button>
-                  ))}
-                </div>
-                <div className="responsive-table-container">
-                  <table className="ci-table">
-                    <thead>
-                      <tr>
-                        <th>Customer</th>
-                        <th>Bookings</th>
-                        <th>Completed</th>
-                        <th>Revenue</th>
-                        <th>Last Visit</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sorted.map((c, i) => {
-                        const isActive = c.lastVisit && ((new Date() - new Date(c.lastVisit)) / (1000 * 60 * 60 * 24)) < 60;
-                        const isExpanded = expandedCustomer === c.user;
-                        return (
-                          <React.Fragment key={i}>
-                            <tr onClick={() => setExpandedCustomer(isExpanded ? null : c.user)}>
-                              <td>
-                                <div style={{ display: 'flex', alignItems: 'center' }}>
-                                  <span className="ci-table-avatar">{(c.name || '?')[0].toUpperCase()}</span>
-                                  <div>
-                                    <div className="ci-table-name">{c.name}</div>
-                                    <div className="ci-table-user">@{c.user}</div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td style={{ fontWeight: 600 }}>{c.bookings}</td>
-                              <td>{c.completed}</td>
-                              <td style={{ fontWeight: 700, color: 'var(--gold)' }}>₱{c.revenue.toLocaleString()}</td>
-                              <td>{c.lastVisit || '—'}</td>
-                              <td><span className={`ci-tag ${isActive ? 'ci-tag-active' : 'ci-tag-inactive'}`}>{isActive ? 'Active' : 'Inactive'}</span></td>
-                            </tr>
-                            {isExpanded && (
-                              <tr className="ci-expand">
-                                <td colSpan="6">
-                                  <div style={{ marginBottom: 8, fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Recent Bookings</div>
-                                  <div className="ci-expand-grid">
-                                    {c.bookingsList.slice(-6).reverse().map((b, bi) => (
-                                      <div key={bi} className="ci-expand-item">
-                                        <span>{b.date} · {b.service}</span>
-                                        <span style={{ color: b.status === 'Completed' ? '#4ade80' : b.status === 'Pending' ? '#c9a84c' : b.status === 'Approved' ? '#60a5fa' : '#f87171' }}>
-                                          {b.status} {b.paidAmount ? `· ₱${b.paidAmount.toLocaleString()}` : ''}
-                                        </span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                  {c.bookingsList.length > 6 && (
-                                    <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 8 }}>…and {c.bookingsList.length - 6} more bookings</p>
-                                  )}
-                                </td>
-                              </tr>
-                            )}
-                          </React.Fragment>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-                {sorted.length === 0 && customerSearch && (
-                  <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-dim)' }}>
-                    <SearchIcon size={32} style={{ opacity: 0.3, marginBottom: 8 }} />
-                    <p>No customers match "{customerSearch}"</p>
-                  </div>
-                )}
-              </div>
-
-              </>)}
-            </section>
-            );
-          })()}
-
-          {/* ══════ SERVICES ══════ */}
-          {activeTab === 'services' && (() => {
-            const displayServices = svcSearch ? services.filter(s => s.name.toLowerCase().includes(svcSearch.toLowerCase())) : services;
-            return (
-              <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
-                <div className="section-header"><p className="section-label">MANAGE</p><h2 className="section-heading">Salon Services</h2></div>
-                <div style={{ marginBottom: 16 }}>
-                  <input className="search-input" placeholder="Search services..." value={svcSearch} onChange={e => setSvcSearch(e.target.value)} style={{ maxWidth: 260, paddingLeft: 16 }} />
-                </div>
-                <form className="admin-form-row" onSubmit={handleAddService} style={{ marginBottom: 12 }}>
-                  <div className="input-group" style={{ flex: 1, marginBottom: 0 }}><label>Service Name</label><input type="text" placeholder="e.g. Hair Rebond" value={newSvcName} onChange={e => setNewSvcName(e.target.value)} /></div>
-                  <div className="input-group" style={{ width: 160, marginBottom: 0 }}><label>Price</label><input type="text" placeholder="e.g. PHP 1500" value={newSvcPrice} onChange={e => setNewSvcPrice(e.target.value)} /></div>
-                  <button type="submit" className="btn small" style={{ alignSelf: 'flex-end', marginBottom: 1 }}>+ Add</button>
-                </form>
-                <div className="booking-list svc-scroll">
-                  {displayServices.map((s, i) => {
-                    const realIdx = services.indexOf(s);
-                    const isEditing = editingSvcIdx === realIdx;
-                    return (
-                      <div key={i} className="booking-card" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                        {isEditing ? (
-                          <div style={{ display: 'flex', gap: 10, flex: 1, alignItems: 'center' }}>
-                            <input type="text" value={editSvcName} onChange={e => setEditSvcName(e.target.value)} className="search-input" />
-                            <input type="text" value={editSvcPrice} onChange={e => setEditSvcPrice(e.target.value)} className="search-input" style={{ width: 120 }} />
-                            <button type="button" className="btn small" onClick={() => {
-                              if (editSvcName.trim() && editSvcPrice.trim()) {
-                                const arr = [...services]; arr[realIdx] = { name: editSvcName.trim(), price: editSvcPrice.trim() };
-                                persistServices(arr); setEditingSvcIdx(-1); showToast('Service updated!');
-                              }
-                            }}>Save</button>
-                            <button type="button" className="btn small outline" onClick={() => setEditingSvcIdx(-1)}>Cancel</button>
-                          </div>
-                        ) : (
-                          <>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                              <div className="service-num">{realIdx + 1}</div>
-                              <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-white)' }}>{s.name}</div>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                              <span style={{ color: 'var(--gold)', fontWeight: 600 }}>{s.price}</span>
-                              <div style={{ display: 'flex', gap: 8 }}>
-                                <button type="button" className="btn small outline" onClick={() => { setEditingSvcIdx(realIdx); setEditSvcName(s.name); setEditSvcPrice(s.price); }}>Edit</button>
-                                <button type="button" className="btn small danger" onClick={() => removeService(realIdx)}>Remove</button>
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            );
-          })()}
-
-          {/* ══════ STAFF ══════ */}
-          {activeTab === 'staff' && (
-            <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
-              <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div><p className="section-label">TEAM</p><h2 className="section-heading">Staff Management</h2></div>
-                <button className="btn small" onClick={() => setShowAddStaff(!showAddStaff)}>{showAddStaff ? 'Cancel' : '+ Add Staff'}</button>
-              </div>
-
-              {showAddStaff && (
-                <div style={{ background: 'rgba(201,168,76,0.04)', border: '1px solid rgba(201,168,76,0.15)', borderRadius: 16, padding: 24, marginBottom: 24 }}>
-                  <h3 style={{ fontSize: 15, fontFamily: 'var(--font-display)', color: 'var(--text-white)', marginBottom: 16 }}>New Team Member</h3>
-                  <div className="admin-staff-form-grid">
-                    <div className="input-group" style={{ marginBottom: 0 }}><label>Full Name</label><input type="text" placeholder="e.g. Maria Santos" value={newStaffName} onChange={e => setNewStaffName(e.target.value)} /></div>
-                    <div className="input-group" style={{ marginBottom: 0 }}><label>Role / Position</label>
-                      <select value={newStaffRole} onChange={e => setNewStaffRole(e.target.value)}>
-                        <option>Stylist</option><option>Senior Stylist</option><option>Hair Colorist</option>
-                        <option>Nail Technician</option><option>Makeup Artist</option><option>Spa Therapist</option>
-                      </select></div>
-                    <button type="button" className="btn small" style={{ marginBottom: 1 }} onClick={() => {
-                      if (!newStaffName.trim()) { showToast('Enter staff name.'); return; }
-                      const member = { id: Date.now(), name: newStaffName.trim(), role: newStaffRole, services: [] };
-                      const arr = [...staff, member]; setStaff(arr);
-                      const all = getSalons(); const idx = all.findIndex(s => s.id === currentSalonId);
-                      if (idx !== -1) { all[idx].staff = arr; setSalons(all); onRefreshSalons(); }
-                      setNewStaffName(''); setNewStaffRole('Stylist'); setShowAddStaff(false);
-                      showToast(`${member.name} added to team!`);
-                    }}>Add</button>
-                  </div>
-                </div>
-              )}
-
-              {staff.length === 0 ? (
-                <div className="empty-state"><div className="empty-icon"><UserIcon size={48} /></div><h3 className="empty-title">No Staff</h3><p>Add team members to get started.</p></div>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
-                  {staff.map((member, i) => (
-                    <div key={member.id} style={{ background: 'rgba(25,25,25,0.7)', border: '1px solid var(--border)', borderRadius: 16, padding: 24 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                        <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                          <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.05))', border: '1px solid rgba(201,168,76,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 18, color: 'var(--gold)', fontFamily: 'var(--font-display)' }}>{(member.name || '?')[0].toUpperCase()}</div>
-                          <div>
-                            <div style={{ fontWeight: 600, fontSize: 16, color: 'var(--text-white)' }}>{member.name}</div>
-                            <div style={{ fontSize: 12, color: 'var(--gold)', marginTop: 2 }}>{member.role}</div>
-                          </div>
-                        </div>
-                        <button className="btn small danger" onClick={() => {
-                          if (!window.confirm(`Remove ${member.name}?`)) return;
-                          const arr = staff.filter(m => m.id !== member.id); setStaff(arr);
-                          const all = getSalons(); const idx = all.findIndex(s => s.id === currentSalonId);
-                          if (idx !== -1) { all[idx].staff = arr; setSalons(all); onRefreshSalons(); showToast('Staff removed.'); }
-                        }}>Remove</button>
-                      </div>
-                      <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-                        <label style={{ fontSize: 10, color: 'var(--text-dim)' }}>Assign Services (click to toggle)</label>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
-                          {services.map(svc => {
-                            const isAssigned = member.services?.includes(svc.name);
-                            return (
-                              <button key={svc.name} type="button" onClick={() => {
-                                const arr = [...staff];
-                                const current = arr[i].services || [];
-                                arr[i].services = isAssigned ? current.filter(x => x !== svc.name) : [...current, svc.name];
-                                setStaff(arr);
-                                const all = getSalons(); const idx = all.findIndex(s => s.id === currentSalonId);
-                                if (idx !== -1) { all[idx].staff = arr; setSalons(all); onRefreshSalons(); }
-                              }} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 999, border: isAssigned ? '1px solid var(--gold)' : '1px solid var(--border)', background: isAssigned ? 'rgba(201,168,76,0.12)' : 'transparent', color: isAssigned ? 'var(--gold)' : 'var(--text-dim)' }}>{svc.name}</button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </section>
           )}
 
@@ -3084,85 +2933,218 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             </section>
           )}
 
-          {/* ══════ SETTINGS ══════ */}
+          {/* ══════ MANAGE SETTINGS (ADMIN & SERVICE CONFIGURATION) ══════ */}
           {activeTab === 'settings' && (
             <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
-              <div className="section-header"><p className="section-label">CONFIGURATION</p><h2 className="section-heading">Salon Settings</h2></div>
-              <div className="settings-grid">
-                <div className="settings-panel">
-                  <h3 className="settings-panel-title">Salon Information</h3>
-                  <div className="input-group"><label>Salon Name</label><input type="text" value={salonName} onChange={e => setSalonName(e.target.value)} /></div>
-                  <div className="input-group"><label>Description</label><input type="text" value={salonDesc} onChange={e => setSalonDesc(e.target.value)} /></div>
-                  
-                  {/* Financial inputs (NEW!) */}
-                  <div className="admin-settings-financials-grid">
-                    <div className="input-group" style={{ marginBottom: 0 }}>
-                      <label>Monthly Fixed Expenses (PHP)</label>
-                      <input type="number" value={salonOverhead} onChange={e => setSalonOverhead(e.target.value)} />
-                    </div>
-                    <div className="input-group" style={{ marginBottom: 0 }}>
-                      <label>Initial Operating Reserves (PHP)</label>
-                      <input type="number" value={salonCapital} onChange={e => setSalonCapital(e.target.value)} />
-                    </div>
-                  </div>
-
-                  <div className="input-group"><label>Salon Image</label>
-                    <input type="file" accept="image/*" onChange={handleSettingsImage} className="file-input" />
-                    {!salonImg?.startsWith('data:') && <input type="text" placeholder="Or paste URL" style={{ marginTop: 6 }} value={salonImg} onChange={e => setSalonImg(e.target.value)} />}
-                  </div>
-                  <div className="input-group"><label>Address</label><input type="text" placeholder="Address" value={salonAddress} onChange={e => setSalonAddress(e.target.value)} /></div>
-                  <div className="input-group"><label>Contact Number</label><input type="text" placeholder="Contact" value={salonContact} onChange={e => setSalonContact(e.target.value)} /></div>
-                  <div className="input-group"><label>Operating Hours</label><input type="text" placeholder="Hours" value={salonHours} onChange={e => setSalonHours(e.target.value)} /></div>
-                  
-                  <div className="input-group" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16, marginTop: 16 }}>
-                    <label style={{ color: 'var(--gold)', fontWeight: 600 }}>GCash Integration Settings</label>
-                    <div style={{
-                      background: 'rgba(201, 168, 76, 0.05)',
-                      border: '1px solid rgba(201, 168, 76, 0.15)',
-                      borderRadius: '8px',
-                      padding: '12px 14px',
-                      marginTop: '8px',
-                      fontSize: '11px',
-                      color: 'rgba(255, 255, 255, 0.7)',
-                      lineHeight: '1.5'
-                    }}>
-                      <strong style={{ color: 'var(--gold)', display: 'block', marginBottom: '4px' }}>💡 How to get your GCash QR Code:</strong>
-                      <ol style={{ margin: 0, paddingLeft: '16px' }}>
-                        <li>Open the <strong>GCash App</strong>.</li>
-                        <li>Tap the blue <strong>QR</strong> button in the bottom menu bar.</li>
-                        <li>Tap the <strong>Generate QR</strong> (+ icon) on the screen.</li>
-                        <li>Select <strong>Receive Money via QR Code</strong>.</li>
-                        <li>Tap <strong>Download</strong> to save the QR code to your gallery.</li>
-                        <li>Send the image to your computer and upload it below.</li>
-                      </ol>
-                    </div>
-                  </div>
-                  <div className="input-group">
-                    <label>GCash Number (For receiving payments)</label>
-                    <input type="text" placeholder="e.g. 09123456789" value={salonGcashNumber} onChange={e => setSalonGcashNumber(e.target.value)} />
-                  </div>
-                  <div className="input-group">
-                    <label>GCash QR Code Image</label>
-                    <input type="file" accept="image/*" onChange={handleGcashQrImage} className="file-input" style={{ marginBottom: 6 }} />
-                    {salonGcashQrImage && (
-                      <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <img src={salonGcashQrImage} alt="QR Preview" style={{ width: 80, height: 80, objectFit: 'contain', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, background: '#fff', padding: 2 }} />
-                        <button type="button" className="btn small outline danger" style={{ width: 'auto', padding: '6px 12px', fontSize: 11 }} onClick={() => setSalonGcashQrImage('')}>Remove QR</button>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <button type="button" className="btn" style={{ marginTop: 12 }} onClick={handleSaveSettings}>Save Changes</button>
-                </div>
-
-                <div className="settings-panel">
-                  <h3 className="settings-panel-title">Preview</h3>
-                  <div className="settings-preview-card">
-                    <div className="settings-preview-img" style={{ backgroundImage: `url(${salonImg || salon?.image})` }} />
-                    <div className="settings-preview-body"><h4>{salonName || 'Salon Name'}</h4><p>{salonDesc || 'Description...'}</p><span>{services.length} services</span></div>
-                  </div>
+              <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                  <p className="section-label">CONFIGURATION</p>
+                  <h2 className="section-heading">Manage Settings</h2>
                 </div>
               </div>
+
+              {/* Sub-Tabs: Admin Settings vs Service Settings */}
+              <div style={{ display: 'flex', gap: 12, marginBottom: 28, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
+                <button 
+                  className={`btn small ${settingsCategory === 'admin' ? 'primary' : 'outline'}`}
+                  onClick={() => setSettingsCategory('admin')}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <SettingsIcon size={14} /> Admin Settings
+                </button>
+                <button 
+                  className={`btn small ${settingsCategory === 'services' ? 'primary' : 'outline'}`}
+                  onClick={() => setSettingsCategory('services')}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <ScissorsIcon size={14} /> Service Settings ({services.length})
+                </button>
+              </div>
+
+              {/* 1. ADMIN SETTINGS (Salon Profile, Staff Roster, Overheads, GCash) */}
+              {settingsCategory === 'admin' && (
+                <div className="settings-grid">
+                  <div className="settings-panel">
+                    <h3 className="settings-panel-title">General Salon Profile</h3>
+                    <div className="input-group"><label>Salon Name</label><input type="text" value={salonName} onChange={e => setSalonName(e.target.value)} /></div>
+                    <div className="input-group"><label>Description</label><input type="text" value={salonDesc} onChange={e => setSalonDesc(e.target.value)} /></div>
+                    
+                    {/* Financial inputs */}
+                    <div className="admin-settings-financials-grid">
+                      <div className="input-group" style={{ marginBottom: 0 }}>
+                        <label>Monthly Fixed Expenses (PHP)</label>
+                        <input type="number" value={salonOverhead} onChange={e => setSalonOverhead(e.target.value)} />
+                      </div>
+                      <div className="input-group" style={{ marginBottom: 0 }}>
+                        <label>Initial Operating Reserves (PHP)</label>
+                        <input type="number" value={salonCapital} onChange={e => setSalonCapital(e.target.value)} />
+                      </div>
+                    </div>
+
+                    <div className="input-group"><label>Salon Banner Image</label>
+                      <input type="file" accept="image/*" onChange={handleSettingsImage} className="file-input" />
+                      {!salonImg?.startsWith('data:') && <input type="text" placeholder="Or paste URL" style={{ marginTop: 6 }} value={salonImg} onChange={e => setSalonImg(e.target.value)} />}
+                    </div>
+                    <div className="input-group"><label>Address</label><input type="text" placeholder="Address" value={salonAddress} onChange={e => setSalonAddress(e.target.value)} /></div>
+                    <div className="input-group"><label>Contact Number</label><input type="text" placeholder="Contact" value={salonContact} onChange={e => setSalonContact(e.target.value)} /></div>
+                    <div className="input-group"><label>Operating Hours</label><input type="text" placeholder="Hours" value={salonHours} onChange={e => setSalonHours(e.target.value)} /></div>
+                    
+                    {/* GCash Settings */}
+                    <div className="input-group" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16, marginTop: 16 }}>
+                      <label style={{ color: 'var(--gold)', fontWeight: 600 }}>GCash Payment Settings</label>
+                    </div>
+                    <div className="input-group">
+                      <label>GCash Account Number</label>
+                      <input type="text" placeholder="e.g. 09123456789" value={salonGcashNumber} onChange={e => setSalonGcashNumber(e.target.value)} />
+                    </div>
+                    <div className="input-group">
+                      <label>GCash QR Code Image</label>
+                      <input type="file" accept="image/*" onChange={handleGcashQrImage} className="file-input" style={{ marginBottom: 6 }} />
+                      {salonGcashQrImage && (
+                        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <img src={salonGcashQrImage} alt="QR Preview" style={{ width: 80, height: 80, objectFit: 'contain', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, background: '#fff', padding: 2 }} />
+                          <button type="button" className="btn small outline danger" style={{ width: 'auto', padding: '6px 12px', fontSize: 11 }} onClick={() => setSalonGcashQrImage('')}>Remove QR</button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <button type="button" className="btn" style={{ marginTop: 12 }} onClick={handleSaveSettings}>Save Profile Changes</button>
+                  </div>
+
+                  {/* Staff Management Roster inside Admin Settings */}
+                  <div className="settings-panel">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                      <h3 className="settings-panel-title" style={{ margin: 0 }}>Staff Roster ({staff.length})</h3>
+                      <button className="btn small" onClick={() => setShowAddStaff(!showAddStaff)}>
+                        {showAddStaff ? 'Cancel' : '+ Add Stylist'}
+                      </button>
+                    </div>
+
+                    {showAddStaff && (
+                      <div style={{ background: 'rgba(201,168,76,0.04)', border: '1px solid rgba(201,168,76,0.15)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                        <div className="input-group" style={{ marginBottom: 8 }}>
+                          <label>Staff Full Name</label>
+                          <input type="text" placeholder="e.g. Maria Santos" value={newStaffName} onChange={e => setNewStaffName(e.target.value)} />
+                        </div>
+                        <div className="input-group" style={{ marginBottom: 12 }}>
+                          <label>Specialization / Role</label>
+                          <select value={newStaffRole} onChange={e => setNewStaffRole(e.target.value)}>
+                            <option>Master Stylist</option>
+                            <option>Creative Colorist</option>
+                            <option>Rebonding Specialist</option>
+                            <option>Nail & Spa Aesthetician</option>
+                            <option>Barber & Scalp Specialist</option>
+                          </select>
+                        </div>
+                        <button type="button" className="btn small" onClick={() => {
+                          if (!newStaffName.trim()) { showToast('Enter staff name.'); return; }
+                          const member = { id: Date.now(), name: newStaffName.trim(), role: newStaffRole, services: [] };
+                          const arr = [...staff, member]; setStaff(arr);
+                          const all = getSalons(); const idx = all.findIndex(s => s.id === currentSalonId);
+                          if (idx !== -1) { all[idx].staff = arr; setSalons(all); onRefreshSalons(); }
+                          setNewStaffName(''); setNewStaffRole('Stylist'); setShowAddStaff(false);
+                          showToast(`${member.name} added to staff roster!`);
+                        }}>Add to Team</button>
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 440, overflowY: 'auto' }}>
+                      {staff.map((member, i) => (
+                        <div key={member.id || i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--gold)' }}>
+                              {(member.name || '?')[0].toUpperCase()}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: 13, color: '#fff' }}>{member.name}</div>
+                              <div style={{ fontSize: 11, color: 'var(--gold)' }}>{member.role}</div>
+                            </div>
+                          </div>
+                          <button className="btn small danger" style={{ padding: '4px 10px', fontSize: 10 }} onClick={() => {
+                            if (!window.confirm(`Remove ${member.name}?`)) return;
+                            const arr = staff.filter(m => m.id !== member.id); setStaff(arr);
+                            const all = getSalons(); const idx = all.findIndex(s => s.id === currentSalonId);
+                            if (idx !== -1) { all[idx].staff = arr; setSalons(all); onRefreshSalons(); showToast('Staff removed.'); }
+                          }}>Remove</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 2. SERVICE SETTINGS (Full Service CRUD Menu) */}
+              {settingsCategory === 'services' && (() => {
+                const displayServices = svcSearch ? services.filter(s => s.name.toLowerCase().includes(svcSearch.toLowerCase())) : services;
+                return (
+                  <div style={{ background: 'rgba(25,25,25,0.7)', border: '1px solid var(--border)', borderRadius: 16, padding: 24 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+                      <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-white)', fontFamily: 'var(--font-display)' }}>
+                        Service Menu Catalog ({services.length} Services)
+                      </h3>
+                      <input 
+                        className="search-input" 
+                        placeholder="Search service catalog..." 
+                        value={svcSearch} 
+                        onChange={e => setSvcSearch(e.target.value)} 
+                        style={{ maxWidth: 240, padding: '6px 12px', fontSize: 12 }} 
+                      />
+                    </div>
+
+                    {/* Add New Service Form */}
+                    <form className="admin-form-row" onSubmit={handleAddService} style={{ marginBottom: 20, background: 'rgba(201,168,76,0.03)', padding: 16, borderRadius: 12, border: '1px solid rgba(201,168,76,0.1)' }}>
+                      <div className="input-group" style={{ flex: 1, marginBottom: 0 }}>
+                        <label>New Service Name</label>
+                        <input type="text" placeholder="e.g. Loreal X-Tenso Rebonding" value={newSvcName} onChange={e => setNewSvcName(e.target.value)} />
+                      </div>
+                      <div className="input-group" style={{ width: 160, marginBottom: 0 }}>
+                        <label>Price (PHP)</label>
+                        <input type="text" placeholder="e.g. PHP 2,500" value={newSvcPrice} onChange={e => setNewSvcPrice(e.target.value)} />
+                      </div>
+                      <button type="submit" className="btn small" style={{ alignSelf: 'flex-end', marginBottom: 1 }}>+ Add Service</button>
+                    </form>
+
+                    {/* Services List Table */}
+                    <div className="booking-list svc-scroll" style={{ maxHeight: 480 }}>
+                      {displayServices.map((s, i) => {
+                        const realIdx = services.indexOf(s);
+                        const isEditing = editingSvcIdx === realIdx;
+                        return (
+                          <div key={i} className="booking-card" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px' }}>
+                            {isEditing ? (
+                              <div style={{ display: 'flex', gap: 10, flex: 1, alignItems: 'center' }}>
+                                <input type="text" value={editSvcName} onChange={e => setEditSvcName(e.target.value)} className="search-input" />
+                                <input type="text" value={editSvcPrice} onChange={e => setEditSvcPrice(e.target.value)} className="search-input" style={{ width: 130 }} />
+                                <button type="button" className="btn small" onClick={() => {
+                                  if (editSvcName.trim() && editSvcPrice.trim()) {
+                                    const arr = [...services]; arr[realIdx] = { name: editSvcName.trim(), price: editSvcPrice.trim() };
+                                    persistServices(arr); setEditingSvcIdx(-1); showToast('Service updated!');
+                                  }
+                                }}>Save</button>
+                                <button type="button" className="btn small outline" onClick={() => setEditingSvcIdx(-1)}>Cancel</button>
+                              </div>
+                            ) : (
+                              <>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                  <div className="service-num">{realIdx + 1}</div>
+                                  <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-white)' }}>{s.name}</div>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                  <span style={{ color: 'var(--gold)', fontWeight: 700, fontSize: 15 }}>{s.price}</span>
+                                  <div style={{ display: 'flex', gap: 8 }}>
+                                    <button type="button" className="btn small outline" onClick={() => { setEditingSvcIdx(realIdx); setEditSvcName(s.name); setEditSvcPrice(s.price); }}>Edit</button>
+                                    <button type="button" className="btn small danger" onClick={() => removeService(realIdx)}>Remove</button>
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
             </section>
           )}
         </>
@@ -4229,6 +4211,53 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
         </div>
       )}
 
+      {/* 🛑 REJECTION REASON MODAL */}
+      {rejectionModalBooking && (
+        <div className="modal" onClick={() => setRejectionModalBooking(null)}>
+          <div className="rejection-modal-content" onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid rgba(239,68,68,0.2)', paddingBottom: 12 }}>
+              <h3 style={{ margin: 0, fontSize: 16, color: '#f87171', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-display)' }}>
+                <AlertTriangleIcon size={18} /> Reject Booking Request
+              </h3>
+              <button className="close-btn" onClick={() => setRejectionModalBooking(null)}><CloseIcon size={16} /></button>
+            </div>
+
+            <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16, lineHeight: 1.5 }}>
+              Rejecting appointment for <strong style={{ color: '#fff' }}>{rejectionModalBooking.customer}</strong> ({rejectionModalBooking.service} on {rejectionModalBooking.date} at {rejectionModalBooking.time}).
+            </p>
+
+            <div className="input-group" style={{ marginBottom: 14 }}>
+              <label>Select Preset Reason</label>
+              <select 
+                value={selectedPresetReason} 
+                onChange={e => { setSelectedPresetReason(e.target.value); setManualRejectionReason(''); }}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--border)' }}
+              >
+                {PRESET_REJECTION_REASONS.map((r, idx) => (
+                  <option key={idx} value={r} style={{ background: '#111', color: '#fff' }}>{r}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="input-group" style={{ marginBottom: 20 }}>
+              <label>Or Type Custom Reason</label>
+              <textarea 
+                rows={3} 
+                placeholder="e.g. Salon is undergoing emergency maintenance or stylist called in sick..."
+                value={manualRejectionReason}
+                onChange={e => setManualRejectionReason(e.target.value)}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--border)', fontFamily: 'var(--font-body)', fontSize: 13 }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+              <button className="btn small outline" onClick={() => setRejectionModalBooking(null)}>Cancel</button>
+              <button className="btn small danger" onClick={handleConfirmRejection}>Confirm Rejection</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Floating Bottom Navigation for Mobile */}
       <div className="mobile-bottom-nav">
         {viewScope === 'branch' ? (
@@ -4242,14 +4271,6 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               {pending > 0 && <span className="mobile-nav-badge">{pending}</span>}
             </button>
             <button 
-              className={`mobile-nav-item ${activeTab === 'schedule' ? 'active' : ''}`} 
-              onClick={() => setActiveTab('schedule')}
-            >
-              <CalendarIcon size={20} />
-              <span>Schedule</span>
-              {todaySchedule.length > 0 && <span className="mobile-nav-badge">{todaySchedule.length}</span>}
-            </button>
-            <button 
               className={`mobile-nav-item ${activeTab === 'analytics' ? 'active' : ''}`} 
               onClick={() => setActiveTab('analytics')}
             >
@@ -4257,11 +4278,18 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               <span>Analytics</span>
             </button>
             <button 
-              className={`mobile-nav-item ${['manage', 'services', 'staff', 'customers', 'reports', 'settings'].includes(activeTab) ? 'active' : ''}`} 
-              onClick={() => setActiveTab('manage')}
+              className={`mobile-nav-item ${activeTab === 'reports' ? 'active' : ''}`} 
+              onClick={() => setActiveTab('reports')}
+            >
+              <FileTextIcon size={20} />
+              <span>Reports</span>
+            </button>
+            <button 
+              className={`mobile-nav-item ${activeTab === 'settings' ? 'active' : ''}`} 
+              onClick={() => setActiveTab('settings')}
             >
               <SettingsIcon size={20} />
-              <span>Manage</span>
+              <span>Settings</span>
             </button>
           </>
         ) : (
