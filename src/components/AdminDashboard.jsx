@@ -1209,19 +1209,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
     <div className="app-shell admin-shell">
       {/* Navigation Header */}
       <nav className="navbar admin-navbar" style={{ position: 'sticky', top: 0, borderBottom: '1px solid var(--border)', background: 'rgba(10, 10, 10, 0.98)', backdropFilter: 'blur(16px)', zIndex: 1000 }}>
-        {/* Left: Brand / Logo + Branch Breadcrumb Lockup (Part 1) */}
-        <div className="brand admin-brand" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        {/* Left: Brand / Logo */}
+        <div className="brand admin-brand" style={{ display: 'flex', alignItems: 'center' }}>
           <BrushUpLogo size="small" />
-          
-          <div style={{ width: 1, height: 26, background: 'rgba(255, 255, 255, 0.12)' }} />
-          
-          <div className="admin-header-branch-lockup">
-            <div className="branch-title">
-              <StoreIcon size={13} style={{ color: 'var(--gold)' }} />
-              <span>{salonName || salon?.name || 'Palma Beauty Salon'}</span>
-            </div>
-            <span className="branch-subtitle">Branch Management</span>
-          </div>
         </div>
 
         {/* Center: Superadmin View Switcher (Or clean space for normal admin) */}
