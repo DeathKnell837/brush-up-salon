@@ -786,6 +786,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
               }}>
                 <SearchIcon size={18} style={{ color: 'var(--text-dim)', marginRight: '12px', flexShrink: 0 }} />
                 <input 
+                  className="search-inner-input"
                   placeholder="Search salons, services..."
                   value={search} 
                   onChange={(e) => setSearch(e.target.value)} 

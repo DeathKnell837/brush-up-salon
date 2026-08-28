@@ -2003,6 +2003,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         <SearchIcon size={15} style={{ color: 'var(--text-dim)', marginRight: '8px', flexShrink: 0 }} />
                         <input
                           type="text"
+                          className="search-inner-input"
                           placeholder="Search customer, phone, service, ref #..."
                           value={bookingSearch}
                           onChange={e => setBookingSearch(e.target.value)}
@@ -2598,6 +2599,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         }}>
                           <SearchIcon size={14} style={{ color: 'var(--text-dim)', marginRight: '8px', flexShrink: 0 }} />
                           <input
+                            className="search-inner-input"
                             placeholder="Search customers..."
                             value={customerSearch}
                             onChange={e => setCustomerSearch(e.target.value)}
@@ -3763,6 +3765,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       }}>
                         <SearchIcon size={14} style={{ color: 'var(--text-dim)', marginRight: '8px', flexShrink: 0 }} />
                         <input 
+                          className="search-inner-input"
                           placeholder="Search service catalog..." 
                           value={svcSearch} 
                           onChange={e => setSvcSearch(e.target.value)} 
