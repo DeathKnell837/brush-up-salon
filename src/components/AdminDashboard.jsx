@@ -1983,22 +1983,46 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   )}
 
                   {/* Search Bar + Filter Status Dropdown + View Mode Toggle Toolbar (Part 2) */}
-                  <div className="bookings-toolbar">
-                    {/* 1. Real-time Search Box */}
-                    <div className="bookings-search-box">
-                      <SearchIcon size={16} className="bookings-search-icon" />
+                  <div className="bookings-toolbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '18px' }}>
+                    {/* 1. Bulletproof Search Box (Icon & Input as flex siblings - impossible to overlap) */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      background: 'rgba(255, 255, 255, 0.04)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '10px',
+                      padding: '0 14px',
+                      height: '40px',
+                      flex: '1',
+                      minWidth: '260px',
+                      maxWidth: '420px',
+                      boxSizing: 'border-box',
+                      transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
+                    }}>
+                      <SearchIcon size={16} style={{ color: 'var(--text-dim)', marginRight: '10px', flexShrink: 0 }} />
                       <input
                         type="text"
-                        className="bookings-search-input"
                         placeholder="Search customer, phone, service, ref #..."
                         value={bookingSearch}
                         onChange={e => setBookingSearch(e.target.value)}
-                        style={{ paddingLeft: 44, paddingRight: 36, height: 40, boxSizing: 'border-box' }}
+                        style={{
+                          flex: 1,
+                          background: 'transparent',
+                          border: 'none',
+                          outline: 'none',
+                          color: 'var(--text-white)',
+                          fontSize: '13px',
+                          fontFamily: 'var(--font-body)',
+                          padding: '0',
+                          margin: '0',
+                          width: '100%',
+                          minWidth: '0'
+                        }}
                       />
                       {bookingSearch && (
                         <button 
                           onClick={() => setBookingSearch('')} 
-                          style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 14 }}
+                          style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '14px', padding: '0 0 0 6px', display: 'flex', alignItems: 'center' }}
                           title="Clear search"
                         >
                           ✕
@@ -2006,31 +2030,58 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       )}
                     </div>
 
-                    {/* 2. Status Filter Single Dropdown (Pending first & default, All last) */}
+                    {/* 2. Status Filter Single Dropdown with Gold Chevron */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <label style={{ fontSize: '12px', color: 'var(--text-dim)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.8px', display: 'flex', alignItems: 'center', gap: 5 }}>
                         <FilterIcon size={13} /> Filter Status:
                       </label>
-                      <select
-                        value={statusFilter}
-                        onChange={e => setStatusFilter(e.target.value)}
-                        className="search-input"
-                        style={{ minWidth: 150, padding: '7px 12px', borderRadius: 8, fontSize: 12, background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--border)', cursor: 'pointer' }}
-                      >
-                        <option value="pending" style={{ background: '#111', color: '#fff' }}>Pending ({pending})</option>
-                        <option value="approved" style={{ background: '#111', color: '#fff' }}>Approved ({approved})</option>
-                        <option value="completed" style={{ background: '#111', color: '#fff' }}>Completed ({completed})</option>
-                        <option value="rejected" style={{ background: '#111', color: '#fff' }}>Rejected ({rejected})</option>
-                        <option value="all" style={{ background: '#111', color: '#fff' }}>All ({total})</option>
-                      </select>
+                      <div style={{
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center',
+                        background: 'rgba(255, 255, 255, 0.04)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '10px',
+                        height: '40px',
+                        boxSizing: 'border-box'
+                      }}>
+                        <select
+                          value={statusFilter}
+                          onChange={e => setStatusFilter(e.target.value)}
+                          style={{
+                            appearance: 'none',
+                            WebkitAppearance: 'none',
+                            MozAppearance: 'none',
+                            background: 'transparent',
+                            border: 'none',
+                            outline: 'none',
+                            color: '#fff',
+                            fontSize: '12px',
+                            fontFamily: 'var(--font-body)',
+                            fontWeight: 600,
+                            padding: '0 34px 0 14px',
+                            height: '100%',
+                            cursor: 'pointer',
+                            minWidth: '150px'
+                          }}
+                        >
+                          <option value="pending" style={{ background: '#111', color: '#fff' }}>Pending ({pending})</option>
+                          <option value="approved" style={{ background: '#111', color: '#fff' }}>Approved ({approved})</option>
+                          <option value="completed" style={{ background: '#111', color: '#fff' }}>Completed ({completed})</option>
+                          <option value="rejected" style={{ background: '#111', color: '#fff' }}>Rejected ({rejected})</option>
+                          <option value="all" style={{ background: '#111', color: '#fff' }}>All ({total})</option>
+                        </select>
+                        <ChevronDownIcon size={13} style={{ position: 'absolute', right: 12, pointerEvents: 'none', color: 'var(--gold)' }} />
+                      </div>
                     </div>
 
                     {/* 3. View Mode Toggle: Compact Rows vs Detailed Cards */}
-                    <div className="bookings-view-toggle">
+                    <div className="bookings-view-toggle" style={{ height: '40px', boxSizing: 'border-box', display: 'inline-flex', alignItems: 'center' }}>
                       <button
                         className={`bookings-view-btn ${bookingsViewMode === 'compact' ? 'active' : ''}`}
                         onClick={() => setBookingsViewMode('compact')}
                         title="Compact Row Layout"
+                        style={{ height: '32px' }}
                       >
                         <ListIcon size={13} /> Compact
                       </button>
@@ -2038,6 +2089,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         className={`bookings-view-btn ${bookingsViewMode === 'cards' ? 'active' : ''}`}
                         onClick={() => setBookingsViewMode('cards')}
                         title="Detailed Cards Layout"
+                        style={{ height: '32px' }}
                       >
                         <GridIcon size={13} /> Cards
                       </button>
@@ -2474,14 +2526,35 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         Registered Customer Directory ({sortedCusts.length})
                       </h3>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <div className="search-input-wrapper" style={{ maxWidth: 220 }}>
-                          <SearchIcon size={14} className="search-icon" />
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          background: 'rgba(255, 255, 255, 0.04)',
+                          border: '1px solid var(--border)',
+                          borderRadius: '8px',
+                          padding: '0 10px',
+                          height: '34px',
+                          maxWidth: '220px',
+                          boxSizing: 'border-box'
+                        }}>
+                          <SearchIcon size={14} style={{ color: 'var(--text-dim)', marginRight: '8px', flexShrink: 0 }} />
                           <input
-                            className="search-input"
                             placeholder="Search customers..."
                             value={customerSearch}
                             onChange={e => setCustomerSearch(e.target.value)}
-                            style={{ height: 34, fontSize: 12, paddingLeft: 36 }}
+                            style={{
+                              flex: 1,
+                              background: 'transparent',
+                              border: 'none',
+                              outline: 'none',
+                              color: 'var(--text-white)',
+                              fontSize: '12px',
+                              fontFamily: 'var(--font-body)',
+                              padding: 0,
+                              margin: 0,
+                              width: '100%',
+                              minWidth: 0
+                            }}
                           />
                         </div>
                         {['revenue', 'bookings', 'recent', 'name'].map(s => (
@@ -3618,14 +3691,35 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-white)', fontFamily: 'var(--font-display)' }}>
                         Service Menu Catalog ({services.length} Services)
                       </h3>
-                      <div className="search-input-wrapper" style={{ maxWidth: 240 }}>
-                        <SearchIcon size={14} className="search-icon" />
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        background: 'rgba(255, 255, 255, 0.04)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '8px',
+                        padding: '0 10px',
+                        height: '34px',
+                        maxWidth: '240px',
+                        boxSizing: 'border-box'
+                      }}>
+                        <SearchIcon size={14} style={{ color: 'var(--text-dim)', marginRight: '8px', flexShrink: 0 }} />
                         <input 
-                          className="search-input" 
                           placeholder="Search service catalog..." 
                           value={svcSearch} 
                           onChange={e => setSvcSearch(e.target.value)} 
-                          style={{ height: 34, fontSize: 12, paddingLeft: 36 }} 
+                          style={{
+                            flex: 1,
+                            background: 'transparent',
+                            border: 'none',
+                            outline: 'none',
+                            color: 'var(--text-white)',
+                            fontSize: '12px',
+                            fontFamily: 'var(--font-body)',
+                            padding: 0,
+                            margin: 0,
+                            width: '100%',
+                            minWidth: 0
+                          }} 
                         />
                       </div>
                     </div>

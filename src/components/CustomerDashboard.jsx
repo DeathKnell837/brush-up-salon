@@ -772,14 +772,36 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
           {/* Search & Filters */}
           <div className="search-bar">
             <div className="search-row">
-              <div className="search-wrapper">
-                <SearchIcon size={16} className="search-icon" />
+              <div style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid var(--border)',
+                borderRadius: '12px',
+                padding: '0 16px',
+                height: '46px',
+                width: '100%',
+                boxSizing: 'border-box'
+              }}>
+                <SearchIcon size={18} style={{ color: 'var(--text-dim)', marginRight: '12px', flexShrink: 0 }} />
                 <input 
-                  className="search-input" 
                   placeholder="Search salons, services..."
                   value={search} 
                   onChange={(e) => setSearch(e.target.value)} 
-                  style={{ paddingLeft: 44, paddingRight: 36, height: 44, boxSizing: 'border-box' }}
+                  style={{
+                    flex: 1,
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    color: 'var(--text-white)',
+                    fontSize: '14px',
+                    fontFamily: 'var(--font-body)',
+                    padding: 0,
+                    margin: 0,
+                    width: '100%',
+                    minWidth: 0
+                  }}
                 />
               </div>
               <button 
