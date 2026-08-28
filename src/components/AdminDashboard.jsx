@@ -2507,8 +2507,179 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       </div>
                     )}
                   </div>
-
                 </div>
+              </div>
+
+              {/* 📈 VISUAL CHARTS: 6-MONTH RUNWAY TRAJECTORY & BREAK-EVEN BENCHMARK */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 20, marginTop: 24 }}>
+                
+                {/* 1. Cash Reserves 6-Month Projection Chart */}
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(25, 25, 25, 0.7), rgba(15, 15, 15, 0.85))',
+                  backdropFilter: 'blur(16px)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: 16,
+                  padding: '24px 26px',
+                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: 14, color: 'var(--text-white)', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <ChartIcon size={15} style={{ color: 'var(--gold)' }} /> 6-Month Cash Reserves Trajectory
+                      </h4>
+                      <p style={{ margin: '4px 0 0 0', fontSize: 11, color: 'var(--text-dim)' }}>
+                        Projected cash reserves at current monthly burn rate (₱{Math.abs(netIncome).toLocaleString()}/mo)
+                      </p>
+                    </div>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: netIncome >= 0 ? '#4ade80' : '#f87171', background: netIncome >= 0 ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)', padding: '4px 10px', borderRadius: 20, border: `1px solid ${netIncome >= 0 ? 'rgba(74,222,128,0.25)' : 'rgba(248,113,113,0.25)'}` }}>
+                      {netIncome >= 0 ? 'Surplus Track' : `${runwayMonths.toFixed(1)} Mo. Runway`}
+                    </span>
+                  </div>
+
+                  {/* SVG Line Chart for Runway Trajectory */}
+                  {(() => {
+                    const projMonths = ['Current', 'M+1', 'M+2', 'M+3', 'M+4', 'M+5'];
+                    const points = projMonths.map((m, idx) => {
+                      const projectedReserves = Math.max(0, operatingCapitalVal + (netIncome * idx));
+                      return { label: m, val: projectedReserves };
+                    });
+                    const maxVal = Math.max(operatingCapitalVal * 1.1, 100000);
+                    const width = 460;
+                    const height = 140;
+                    const padX = 35;
+                    const padY = 20;
+                    const chartW = width - padX * 2;
+                    const chartH = height - padY * 2;
+
+                    const coords = points.map((p, i) => {
+                      const x = padX + (i / (points.length - 1)) * chartW;
+                      const y = padY + chartH - (p.val / maxVal) * chartH;
+                      return { ...p, x, y };
+                    });
+
+                    const pathD = coords.reduce((acc, pt, i) => i === 0 ? `M ${pt.x} ${pt.y}` : `${acc} L ${pt.x} ${pt.y}`, '');
+                    const areaD = `${pathD} L ${coords[coords.length - 1].x} ${padY + chartH} L ${coords[0].x} ${padY + chartH} Z`;
+
+                    return (
+                      <div style={{ position: 'relative', width: '100%', height: 160, marginTop: 6 }}>
+                        <svg width="100%" height="160" viewBox={`0 0 ${width} ${height + 20}`} style={{ display: 'block', overflow: 'visible' }}>
+                          <defs>
+                            <linearGradient id="runwayGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                              <stop offset="0%" stopColor={netIncome >= 0 ? '#4ade80' : 'var(--gold)'} stopOpacity="0.35" />
+                              <stop offset="100%" stopColor={netIncome >= 0 ? '#4ade80' : 'var(--gold)'} stopOpacity="0.0" />
+                            </linearGradient>
+                          </defs>
+
+                          {/* Grid Lines */}
+                          {[0, 0.5, 1].map((pct, idx) => (
+                            <line
+                              key={idx}
+                              x1={padX}
+                              y1={padY + chartH * pct}
+                              x2={padX + chartW}
+                              y2={padY + chartH * pct}
+                              stroke="rgba(255,255,255,0.06)"
+                              strokeDasharray="4 4"
+                            />
+                          ))}
+
+                          {/* Area & Line */}
+                          <path d={areaD} fill="url(#runwayGrad)" />
+                          <path d={pathD} fill="none" stroke={netIncome >= 0 ? '#4ade80' : 'var(--gold)'} strokeWidth="2.5" strokeLinecap="round" />
+
+                          {/* Data Nodes & Values */}
+                          {coords.map((pt, i) => (
+                            <g key={i}>
+                              <circle cx={pt.x} cy={pt.y} r="4" fill={netIncome >= 0 ? '#4ade80' : 'var(--gold)'} stroke="#0e1118" strokeWidth="2" />
+                              <text x={pt.x} y={pt.y - 8} textAnchor="middle" fontSize="9px" fontWeight="700" fill="var(--text-white)">
+                                ₱{Math.round(pt.val / 1000)}k
+                              </text>
+                              <text x={pt.x} y={padY + chartH + 16} textAnchor="middle" fontSize="9px" fontWeight="600" fill="var(--text-dim)">
+                                {pt.label}
+                              </text>
+                            </g>
+                          ))}
+                        </svg>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* 2. Break-Even Benchmark & Staff Capacity Bars */}
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(25, 25, 25, 0.7), rgba(15, 15, 15, 0.85))',
+                  backdropFilter: 'blur(16px)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: 16,
+                  padding: '24px 26px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)'
+                }}>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: 14, color: 'var(--text-white)', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <ScissorsIcon size={15} style={{ color: 'var(--gold)' }} /> Revenue vs Break-Even Benchmark
+                    </h4>
+                    <p style={{ margin: '4px 0 16px 0', fontSize: 11, color: 'var(--text-dim)' }}>
+                      Monthly Revenue (₱{monthlyRevenue.toLocaleString()}) vs Fixed Expenses (₱{monthlyOverheadVal.toLocaleString()})
+                    </p>
+
+                    {/* Progress Bar */}
+                    {(() => {
+                      const breakEvenPct = Math.min(100, Math.round((monthlyRevenue / monthlyOverheadVal) * 100));
+                      return (
+                        <div style={{ marginBottom: 20 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 6 }}>
+                            <span style={{ color: 'var(--gold)', fontWeight: 700 }}>{breakEvenPct}% of Target Covered</span>
+                            <span style={{ color: 'var(--text-dim)' }}>Target: ₱{monthlyOverheadVal.toLocaleString()}</span>
+                          </div>
+                          <div style={{ height: 10, borderRadius: 5, background: 'rgba(255,255,255,0.06)', overflow: 'hidden', position: 'relative' }}>
+                            <div style={{
+                              width: `${breakEvenPct}%`,
+                              height: '100%',
+                              background: breakEvenPct >= 100 ? 'linear-gradient(90deg, #4ade80, #22c55e)' : 'linear-gradient(90deg, var(--gold), #eab308)',
+                              borderRadius: 5,
+                              transition: 'width 1s ease'
+                            }} />
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Staff Workload Distribution */}
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 14 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 }}>
+                        Staff Workload Capacity ({staff.length} Active Stylists)
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {staff.slice(0, 3).map((st, sidx) => {
+                          const staffBookings = bookingsState.filter(b => b.status === 'Completed' && (b.staff === st.name || b.staffName === st.name)).length;
+                          const staffPct = Math.min(100, Math.round((staffBookings / 20) * 100));
+                          return (
+                            <div key={sidx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: 120 }}>
+                                <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  {(st.name || '?')[0]}
+                                </div>
+                                <span style={{ fontSize: 12, color: '#fff', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {st.name}
+                                </span>
+                              </div>
+                              <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                                <div style={{ width: `${Math.max(15, staffPct)}%`, height: '100%', background: 'var(--gold)', borderRadius: 3 }} />
+                              </div>
+                              <span style={{ fontSize: 11, color: 'var(--text-dim)', width: 60, textAlign: 'right' }}>
+                                {staffBookings} appts
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
 
               {/* Active Operational Parameters (Without handle display) */}
