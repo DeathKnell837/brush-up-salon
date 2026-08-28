@@ -27,11 +27,12 @@ const fileToBase64 = (file) => new Promise((resolve) => {
 
 // Preset Rejection Reasons for Salon Bookings
 const PRESET_REJECTION_REASONS = [
-  'Time slot unavailable / Fully booked',
+  'Customer no longer needs the slot',
+  'Fully booked at that time',
+  'Duplicate booking request',
   'Assigned stylist unavailable',
-  'Outside regular operating hours',
-  'Invalid contact details or payment proof',
-  'Duplicate booking request'
+  'Invalid contact details or unverified payment',
+  'Outside regular operating hours'
 ];
 
 // API keys for the Predictive AI Audit (split to avoid scanning alerts)
@@ -1164,53 +1165,50 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   return (
     <div className="app-shell admin-shell">
       {/* Navigation Header */}
-      <nav className="navbar admin-navbar" style={{ borderBottom: '1px solid var(--border)', background: 'rgba(10, 10, 10, 0.95)', backdropFilter: 'blur(10px)', zIndex: 1000 }}>
+      <nav className="navbar admin-navbar" style={{ position: 'sticky', top: 0, borderBottom: '1px solid var(--border)', background: 'rgba(10, 10, 10, 0.98)', backdropFilter: 'blur(16px)', zIndex: 1000 }}>
         {/* Left: Brand / Logo */}
         <div className="brand admin-brand">
           <BrushUpLogo size="small" />
         </div>
 
-        {/* Center: Toggle Tabs and Optional Salon Switcher */}
+        {/* Center: Salon Switcher or Salon Name Badge (NO Branch Operations button) */}
         <div className="navbar-center admin-navbar-center">
-          {/* Toggle Tabs */}
-          <div className="admin-navbar-tabs">
-            <button 
-              className={`navbar-tab ${viewScope === 'branch' ? 'active' : ''} admin-navbar-tab`}
-              onClick={() => { setViewScope('branch'); setActiveTab('bookings'); }}
-            >
-              <StoreIcon size={14} /> Branch Operations
-            </button>
-            {isSuperAdmin && (
-              <button
-                className={`navbar-tab ${viewScope === 'network' ? 'active' : ''} admin-navbar-tab`}
-                onClick={() => { setViewScope('network'); setActiveTab('network-overview'); }}
-              >
-                <ShieldIcon size={14} /> Network HQ View
-              </button>
-            )}
-          </div>
-
-          {/* Vertical separator if superadmin / has switcher */}
-          {viewScope === 'branch' && <div className="admin-nav-separator" />}
-
-          {/* Salon Switcher (Dropdown for super admin, styled label for normal admin) */}
-          {viewScope === 'branch' && (
-            currentUser.salonId === 'all' ? (
-              <div className="admin-salon-switcher">
-                <select 
-                  value={currentSalonId} 
-                  onChange={e => setCurrentSalonId(e.target.value)} 
-                  className="admin-salon-select"
+          {isSuperAdmin ? (
+            <>
+              <div className="admin-navbar-tabs">
+                <button 
+                  className={`navbar-tab ${viewScope === 'branch' ? 'active' : ''} admin-navbar-tab`}
+                  onClick={() => { setViewScope('branch'); setActiveTab('bookings'); }}
                 >
-                  {allSalons.map(s => <option key={s.id} value={s.id} style={{ background: '#0f1118', color: '#fff' }}>{s.name}</option>)}
-                </select>
-                <span className="admin-select-arrow" />
+                  <StoreIcon size={14} /> Branch View
+                </button>
+                <button
+                  className={`navbar-tab ${viewScope === 'network' ? 'active' : ''} admin-navbar-tab`}
+                  onClick={() => { setViewScope('network'); setActiveTab('network-overview'); }}
+                >
+                  <ShieldIcon size={14} /> Network HQ
+                </button>
               </div>
-            ) : (
-              <div className="admin-salon-label">
-                {salonName || salon?.name}
-              </div>
-            )
+              {viewScope === 'branch' && (
+                <>
+                  <div className="admin-nav-separator" />
+                  <div className="admin-salon-switcher">
+                    <select 
+                      value={currentSalonId} 
+                      onChange={e => setCurrentSalonId(e.target.value)} 
+                      className="admin-salon-select"
+                    >
+                      {allSalons.map(s => <option key={s.id} value={s.id} style={{ background: '#0f1118', color: '#fff' }}>{s.name}</option>)}
+                    </select>
+                    <span className="admin-select-arrow" />
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            <div className="admin-salon-label" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: '20px', color: 'var(--gold)', fontWeight: 600, fontSize: '13px', letterSpacing: '0.5px' }}>
+              <StoreIcon size={14} /> {salonName || salon?.name}
+            </div>
           )}
         </div>
 
