@@ -15,6 +15,7 @@ import {
   PhoneIcon, ScissorsIcon, UserIcon, ListIcon, SettingsIcon, AlertCircleIcon, 
   ChartIcon, CloseIcon, StoreIcon, ShieldIcon, ClipboardIcon, SparklesIcon, BellIcon, SearchIcon,
   CashIcon, GcashIcon, MailIcon, AlertTriangleIcon, ChevronDownIcon, ChevronUpIcon, 
+  ChevronLeftIcon, ChevronRightIcon, GridIcon,
   DownloadIcon, FileTextIcon, FilterIcon, GlobeIcon
 } from './Icons';
 
@@ -146,10 +147,16 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const [showMessagesPopover, setShowMessagesPopover] = useState(false);
   const [showAlertsPopover, setShowAlertsPopover] = useState(false);
 
-  // Manage Bookings Sub-View & Calendar States
+  // Manage Bookings Sub-View, Search, Pagination, View Mode & Calendar States
   const [bookingsSubView, setBookingsSubView] = useState('list'); // 'list' | 'customers'
   const [showCalendarView, setShowCalendarView] = useState(false);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
+  const [bookingSearch, setBookingSearch] = useState('');
+  const [bookingsPage, setBookingsPage] = useState(1);
+  const [bookingsViewMode, setBookingsViewMode] = useState('compact'); // 'compact' | 'cards'
+  const [expandedBookingRows, setExpandedBookingRows] = useState({});
+  const bookingsPerPage = 15;
 
   // Rejection Reason Modal States
   const [rejectionModalBooking, setRejectionModalBooking] = useState(null);
@@ -578,12 +585,50 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const completed = bookingsState.filter(b => b.status === 'Completed').length;
   const rejected = bookingsState.filter(b => b.status === 'Rejected').length;
   
-  // Status + Calendar Date filtering
-  const filtered = bookingsState.filter(b => {
-    const matchStatus = statusFilter === 'all' || b.status.toLowerCase() === statusFilter.toLowerCase();
-    const matchDate = !selectedCalendarDate || b.date === selectedCalendarDate;
-    return matchStatus && matchDate;
-  });
+  // Status + Calendar Date + Search Query filtering (Part 2)
+  const filtered = React.useMemo(() => {
+    return bookingsState.filter(b => {
+      const matchStatus = statusFilter === 'all' || b.status.toLowerCase() === statusFilter.toLowerCase();
+      const matchDate = !selectedCalendarDate || b.date === selectedCalendarDate;
+      
+      let matchSearch = true;
+      if (bookingSearch.trim()) {
+        const q = bookingSearch.toLowerCase().trim();
+        matchSearch = 
+          (b.customer && b.customer.toLowerCase().includes(q)) ||
+          (b.contact && b.contact.toLowerCase().includes(q)) ||
+          (b.service && b.service.toLowerCase().includes(q)) ||
+          (b.paymentReference && b.paymentReference.toLowerCase().includes(q)) ||
+          (b.paymentMethod && b.paymentMethod.toLowerCase().includes(q)) ||
+          (b.staff && b.staff.toLowerCase().includes(q)) ||
+          (b.id && String(b.id).toLowerCase().includes(q));
+      }
+      return matchStatus && matchDate && matchSearch;
+    });
+  }, [bookingsState, statusFilter, selectedCalendarDate, bookingSearch]);
+
+  // Pagination calculations (Part 2)
+  const totalBookingsPages = Math.ceil(filtered.length / bookingsPerPage) || 1;
+  const paginatedBookings = React.useMemo(() => {
+    const start = (bookingsPage - 1) * bookingsPerPage;
+    return filtered.slice(start, start + bookingsPerPage);
+  }, [filtered, bookingsPage, bookingsPerPage]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setBookingsPage(1);
+  }, [statusFilter, selectedCalendarDate, bookingSearch]);
+
+  // Calendar month navigation (Part 3)
+  const handlePrevMonth = () => {
+    setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+  const handleNextMonth = () => {
+    setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+  const handleTodayMonth = () => {
+    setCalendarMonth(new Date());
+  };
 
   // Rejection Alerts Log for Red Alert Notifications
   const rejectionAlerts = React.useMemo(() => {
@@ -624,11 +669,10 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   };
   const today = getLocalDateString();
 
-  // Calendar monthly grid data
+  // Calendar monthly grid data (Dynamic for any month) (Part 3)
   const calendarDays = React.useMemo(() => {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = d.getMonth();
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
     const firstDayIndex = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     
@@ -649,7 +693,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       });
     }
     return days;
-  }, [bookingsByDate, today]);
+  }, [calendarMonth, bookingsByDate, today]);
 
   /* eslint-disable react-hooks/exhaustive-deps */
   const allCustomers = React.useMemo(() => {
@@ -1166,14 +1210,24 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
     <div className="app-shell admin-shell">
       {/* Navigation Header */}
       <nav className="navbar admin-navbar" style={{ position: 'sticky', top: 0, borderBottom: '1px solid var(--border)', background: 'rgba(10, 10, 10, 0.98)', backdropFilter: 'blur(16px)', zIndex: 1000 }}>
-        {/* Left: Brand / Logo */}
-        <div className="brand admin-brand">
+        {/* Left: Brand / Logo + Branch Breadcrumb Lockup (Part 1) */}
+        <div className="brand admin-brand" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <BrushUpLogo size="small" />
+          
+          <div style={{ width: 1, height: 26, background: 'rgba(255, 255, 255, 0.12)' }} />
+          
+          <div className="admin-header-branch-lockup">
+            <div className="branch-title">
+              <StoreIcon size={13} style={{ color: 'var(--gold)' }} />
+              <span>{salonName || salon?.name || 'Palma Beauty Salon'}</span>
+            </div>
+            <span className="branch-subtitle">Branch Management</span>
+          </div>
         </div>
 
-        {/* Center: Salon Switcher or Salon Name Badge (NO Branch Operations button) */}
+        {/* Center: Superadmin View Switcher (Or clean space for normal admin) */}
         <div className="navbar-center admin-navbar-center">
-          {isSuperAdmin ? (
+          {isSuperAdmin && (
             <>
               <div className="admin-navbar-tabs">
                 <button 
@@ -1205,10 +1259,6 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 </>
               )}
             </>
-          ) : (
-            <div className="admin-salon-label" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: '20px', color: 'var(--gold)', fontWeight: 600, fontSize: '13px', letterSpacing: '0.5px' }}>
-              <StoreIcon size={14} /> {salonName || salon?.name}
-            </div>
           )}
         </div>
 
@@ -1835,20 +1885,44 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 </div>
               </div>
 
-              {/* Calendar Availability Grid (When Opened) */}
+              {/* Calendar Availability Grid (When Opened) (Part 3) */}
               {showCalendarView && (
                 <div className="calendar-grid-container">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 12, flexWrap: 'wrap', gap: 10 }}>
+                  {/* Month Navigation & Controls Bar */}
+                  <div className="calendar-nav-bar">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <CalendarIcon size={18} style={{ color: 'var(--gold)' }} />
                       <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-white)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
                         Monthly Booking Density & Availability
                       </h3>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 11 }}>
+
+                    {/* Month/Year Navigation Arrows & Today Button */}
+                    <div className="calendar-nav-controls">
+                      <button className="calendar-nav-btn" onClick={handlePrevMonth} title="Previous Month">
+                        <ChevronLeftIcon size={14} />
+                      </button>
+                      <span className="calendar-month-title">
+                        {calendarMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                      </span>
+                      <button className="calendar-nav-btn" onClick={handleNextMonth} title="Next Month">
+                        <ChevronRightIcon size={14} />
+                      </button>
+                      <button 
+                        className="btn small outline" 
+                        style={{ padding: '4px 10px', fontSize: 11, marginLeft: 4 }}
+                        onClick={handleTodayMonth}
+                        title="Jump to Current Month"
+                      >
+                        Today
+                      </button>
+                    </div>
+
+                    {/* Legend Badges */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11 }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#f87171' }}>
                         <span style={{ width: 10, height: 10, borderRadius: 2, background: 'rgba(239,68,68,0.3)', border: '1px solid #ef4444' }} />
-                        Fully Booked (5+ Appts)
+                        Fully Booked (5+)
                       </span>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--gold)' }}>
                         <span style={{ width: 10, height: 10, borderRadius: 2, background: 'rgba(201,168,76,0.2)', border: '1px solid var(--gold)' }} />
@@ -1861,6 +1935,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     </div>
                   </div>
 
+                  {/* Day Grid */}
                   <div className="calendar-days-grid">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
                       <div key={d} className="calendar-day-header">{d}</div>
@@ -1875,6 +1950,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                           key={item.dateStr} 
                           className={`calendar-day-cell ${item.isFullyBooked ? 'is-fully-booked' : ''} ${isSelected ? 'is-selected' : ''}`}
                           onClick={() => setSelectedCalendarDate(isSelected ? null : item.dateStr)}
+                          title={`Click to filter appointments for ${item.dateStr}`}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span className="calendar-day-number" style={{ color: item.isToday ? 'var(--gold)' : 'var(--text-white)' }}>
@@ -1895,211 +1971,479 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 </div>
               )}
 
-              {/* Status Filter Single Dropdown & Active Date Filter Notice */}
+              {/* LIST SUBVIEW (Part 2) */}
               {bookingsSubView === 'list' && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 12, flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <label style={{ fontSize: '12px', color: 'var(--text-dim)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.8px', display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <FilterIcon size={14} /> Filter Status:
-                    </label>
-                    <select
-                      value={statusFilter}
-                      onChange={e => setStatusFilter(e.target.value)}
-                      className="search-input"
-                      style={{ minWidth: 170, padding: '8px 14px', borderRadius: 8, fontSize: 13, background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--border)', cursor: 'pointer' }}
-                    >
-                      <option value="pending" style={{ background: '#111', color: '#fff' }}>Pending ({bookingsState.filter(b => b.status === 'Pending').length})</option>
-                      <option value="approved" style={{ background: '#111', color: '#fff' }}>Approved ({bookingsState.filter(b => b.status === 'Approved').length})</option>
-                      <option value="completed" style={{ background: '#111', color: '#fff' }}>Completed ({bookingsState.filter(b => b.status === 'Completed').length})</option>
-                      <option value="rejected" style={{ background: '#111', color: '#fff' }}>Rejected ({bookingsState.filter(b => b.status === 'Rejected').length})</option>
-                      <option value="all" style={{ background: '#111', color: '#fff' }}>All ({total})</option>
-                    </select>
-                  </div>
-
+                <>
+                  {/* Active Date Filter Notice Banner */}
                   {selectedCalendarDate && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 12, color: 'var(--gold)', background: 'rgba(201,168,76,0.1)', padding: '6px 12px', borderRadius: 20, border: '1px solid rgba(201,168,76,0.25)', fontWeight: 600 }}>
-                        Filtered Date: {selectedCalendarDate}
-                      </span>
-                      <button className="btn small outline" style={{ padding: '6px 12px', fontSize: 11 }} onClick={() => setSelectedCalendarDate(null)}>
-                        Clear Date Filter
+                    <div className="active-date-filter-banner">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <CalendarIcon size={15} />
+                        <span>
+                          Filtered by Date: <strong>{selectedCalendarDate}</strong> ({filtered.length} matching appointment{filtered.length === 1 ? '' : 's'})
+                        </span>
+                      </div>
+                      <button 
+                        className="btn small outline" 
+                        style={{ padding: '4px 10px', fontSize: 11, color: 'var(--gold)', borderColor: 'rgba(201,168,76,0.4)' }}
+                        onClick={() => setSelectedCalendarDate(null)}
+                      >
+                        Clear Date Filter ✕
                       </button>
                     </div>
                   )}
-                </div>
-              )}
 
-              {/* LIST SUBVIEW */}
-              {bookingsSubView === 'list' && (
-                filtered.length === 0 ? (
-                  <div className="empty-state">
-                    <div className="empty-icon"><ListIcon size={48} /></div>
-                    <h3 className="empty-title">No Bookings Found</h3>
-                    <p>No {statusFilter === 'all' ? '' : statusFilter} bookings match your filter{selectedCalendarDate ? ` for ${selectedCalendarDate}` : ''}.</p>
+                  {/* Search Bar + Filter Status Dropdown + View Mode Toggle Toolbar (Part 2) */}
+                  <div className="bookings-toolbar">
+                    {/* 1. Real-time Search Box */}
+                    <div className="bookings-search-box">
+                      <SearchIcon size={14} className="bookings-search-icon" />
+                      <input
+                        type="text"
+                        className="bookings-search-input"
+                        placeholder="Search customer, phone, service, ref #..."
+                        value={bookingSearch}
+                        onChange={e => setBookingSearch(e.target.value)}
+                      />
+                      {bookingSearch && (
+                        <button 
+                          onClick={() => setBookingSearch('')} 
+                          style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 13 }}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+
+                    {/* 2. Status Filter Single Dropdown */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <label style={{ fontSize: '12px', color: 'var(--text-dim)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.8px', display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <FilterIcon size={13} /> Filter Status:
+                      </label>
+                      <select
+                        value={statusFilter}
+                        onChange={e => setStatusFilter(e.target.value)}
+                        className="search-input"
+                        style={{ minWidth: 150, padding: '7px 12px', borderRadius: 8, fontSize: 12, background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--border)', cursor: 'pointer' }}
+                      >
+                        <option value="all" style={{ background: '#111', color: '#fff' }}>All ({total})</option>
+                        <option value="pending" style={{ background: '#111', color: '#fff' }}>Pending ({pending})</option>
+                        <option value="approved" style={{ background: '#111', color: '#fff' }}>Approved ({approved})</option>
+                        <option value="completed" style={{ background: '#111', color: '#fff' }}>Completed ({completed})</option>
+                        <option value="rejected" style={{ background: '#111', color: '#fff' }}>Rejected ({rejected})</option>
+                      </select>
+                    </div>
+
+                    {/* 3. View Mode Toggle: Compact Rows vs Detailed Cards */}
+                    <div className="bookings-view-toggle">
+                      <button
+                        className={`bookings-view-btn ${bookingsViewMode === 'compact' ? 'active' : ''}`}
+                        onClick={() => setBookingsViewMode('compact')}
+                        title="Compact Row Layout"
+                      >
+                        <ListIcon size={13} /> Compact
+                      </button>
+                      <button
+                        className={`bookings-view-btn ${bookingsViewMode === 'cards' ? 'active' : ''}`}
+                        onClick={() => setBookingsViewMode('cards')}
+                        title="Detailed Cards Layout"
+                      >
+                        <GridIcon size={13} /> Cards
+                      </button>
+                    </div>
                   </div>
-                ) : (
-                  <div className="booking-list">
-                    {filtered.map(b => {
-                      const isWalkIn = b.userId === 'walk-in' || b.isWalkIn;
-                      return (
-                        <div key={b.id} className="booking-card">
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                              <div className="booking-customer" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                {b.customer}
-                                {/* Simple 2-option tag: Walk-in or Online */}
-                                <span className="trust-badge" style={{
-                                  background: isWalkIn ? 'rgba(56,189,248,0.12)' : 'rgba(74,222,128,0.12)',
-                                  color: isWalkIn ? '#38bdf8' : '#4ade80',
-                                  border: `1px solid ${isWalkIn ? 'rgba(56,189,248,0.3)' : 'rgba(74,222,128,0.3)'}`,
-                                  fontSize: '10px',
-                                  fontWeight: '700',
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.8px',
-                                  padding: '2px 8px',
-                                  borderRadius: '12px'
-                                }}>
-                                  {isWalkIn ? 'Walk-in' : 'Online'}
+
+                  {/* Empty State */}
+                  {filtered.length === 0 ? (
+                    <div className="empty-state">
+                      <div className="empty-icon"><ListIcon size={48} /></div>
+                      <h3 className="empty-title">No Bookings Found</h3>
+                      <p>No bookings match your filter criteria{selectedCalendarDate ? ` for ${selectedCalendarDate}` : ''}{bookingSearch ? ` matching "${bookingSearch}"` : ''}.</p>
+                    </div>
+                  ) : bookingsViewMode === 'compact' ? (
+                    /* COMPACT TABLE ROW VIEW (Part 2) */
+                    <div className="compact-bookings-wrapper">
+                      <table className="compact-bookings-table">
+                        <thead>
+                          <tr>
+                            <th>Customer</th>
+                            <th>Service</th>
+                            <th>Date & Time</th>
+                            <th>Payment</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th style={{ textAlign: 'right' }}>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {paginatedBookings.map(b => {
+                            const isWalkIn = b.userId === 'walk-in' || b.isWalkIn;
+                            const isExpanded = !!expandedBookingRows[b.id];
+                            return (
+                              <React.Fragment key={b.id}>
+                                <tr 
+                                  className={`compact-booking-row ${isExpanded ? 'is-expanded' : ''}`}
+                                  onClick={() => setExpandedBookingRows(p => ({ ...p, [b.id]: !p[b.id] }))}
+                                >
+                                  {/* Customer */}
+                                  <td>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                        {(b.customer || '?')[0].toUpperCase()}
+                                      </div>
+                                      <div>
+                                        <div style={{ fontWeight: 700, color: 'var(--text-white)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                          {b.customer}
+                                          <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 4, background: isWalkIn ? 'rgba(56,189,248,0.15)' : 'rgba(74,222,128,0.15)', color: isWalkIn ? '#38bdf8' : '#4ade80', border: `1px solid ${isWalkIn ? 'rgba(56,189,248,0.3)' : 'rgba(74,222,128,0.3)'}`, fontWeight: 700, textTransform: 'uppercase' }}>
+                                            {isWalkIn ? 'Walk-in' : 'Online'}
+                                          </span>
+                                        </div>
+                                        {b.contact && <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>{b.contact}</div>}
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  {/* Service */}
+                                  <td>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, color: 'var(--text-white)' }}>
+                                      <ScissorsIcon size={12} style={{ color: 'var(--gold)' }} />
+                                      {b.service}
+                                    </div>
+                                    {b.staff && <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>Stylist: {b.staff}</div>}
+                                  </td>
+
+                                  {/* Date & Time */}
+                                  <td>
+                                    <div style={{ fontSize: 12, color: 'var(--text-white)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                                      <CalendarIcon size={12} style={{ color: 'var(--gold)' }} /> {b.date}
+                                    </div>
+                                    <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 5 }}>
+                                      <ClockIcon size={11} /> {b.time}
+                                    </div>
+                                  </td>
+
+                                  {/* Payment */}
+                                  <td>
+                                    <span className={`pmt-badge pmt-badge-${(b.paymentMethod || 'Cash').toLowerCase()}`} style={{ fontSize: 10, padding: '3px 8px' }}>
+                                      {b.paymentMethod === 'GCash' ? <><GcashIcon size={10} /> GCash</> : <><CashIcon size={10} /> Cash</>}
+                                    </span>
+                                    {b.paymentReference && <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 3 }}>Ref: {b.paymentReference}</div>}
+                                  </td>
+
+                                  {/* Amount */}
+                                  <td>
+                                    <strong style={{ color: 'var(--gold)', fontFamily: 'var(--font-display)', fontSize: 14 }}>
+                                      {b.servicePriceLabel || (services.find(s => s.name === b.service)?.price || 'PHP 0')}
+                                    </strong>
+                                  </td>
+
+                                  {/* Status */}
+                                  <td>
+                                    <span className={`status ${b.status.toLowerCase()}`} style={{ fontSize: 10, padding: '3px 8px' }}>
+                                      {b.status === 'Pending' && <HourglassIcon size={10} />}
+                                      {(b.status === 'Approved' || b.status === 'Completed') && <CheckCircleIcon size={10} />}
+                                      {b.status === 'Rejected' && <XCircleIcon size={10} />} {b.status}
+                                    </span>
+                                  </td>
+
+                                  {/* Actions */}
+                                  <td style={{ textAlign: 'right' }} onClick={e => e.stopPropagation()}>
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6 }}>
+                                      {b.status === 'Pending' && (
+                                        <>
+                                          <button className="btn small" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => updateStatus(b.id, 'Approved')}>
+                                            <CheckCircleIcon size={12} /> Approve
+                                          </button>
+                                          <button 
+                                            className="btn small secondary" 
+                                            style={{ padding: '4px 10px', fontSize: 11 }}
+                                            onClick={() => {
+                                              setRejectionModalBooking(b);
+                                              setManualRejectionReason('');
+                                              setSelectedPresetReason(PRESET_REJECTION_REASONS[0]);
+                                            }}
+                                          >
+                                            <XCircleIcon size={12} /> Reject
+                                          </button>
+                                        </>
+                                      )}
+                                      {b.status === 'Approved' && (
+                                        <>
+                                          <button className="btn small" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => updateStatus(b.id, 'Completed')}>
+                                            <CheckCircleIcon size={12} /> Done
+                                          </button>
+                                          <button className="btn small outline" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => updateStatus(b.id, 'Pending')}>
+                                            Revert
+                                          </button>
+                                        </>
+                                      )}
+                                      {b.status === 'Completed' && (
+                                        <button className="btn small outline" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => updateStatus(b.id, 'Approved')}>
+                                          Revert
+                                        </button>
+                                      )}
+                                      {b.status === 'Rejected' && (
+                                        <button className="btn small danger" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => deleteBooking(b.id)}>
+                                          Remove
+                                        </button>
+                                      )}
+                                      <button 
+                                        className="btn small outline" 
+                                        style={{ padding: '4px 8px', fontSize: 11 }}
+                                        onClick={() => setExpandedBookingRows(p => ({ ...p, [b.id]: !p[b.id] }))}
+                                        title="View Details"
+                                      >
+                                        {isExpanded ? <ChevronUpIcon size={12} /> : <ChevronDownIcon size={12} />}
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+
+                                {/* Expanded Drawer */}
+                                {isExpanded && (
+                                  <tr>
+                                    <td colSpan="7" style={{ padding: 0 }}>
+                                      <div className="compact-drawer">
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+                                          <div>
+                                            <div style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Booking Details</div>
+                                            <div style={{ fontSize: 12, color: '#fff' }}>Booking ID: <strong style={{ color: 'var(--gold)' }}>{b.id}</strong></div>
+                                            <div style={{ fontSize: 12, color: '#fff', marginTop: 2 }}>Contact: {b.contact || 'N/A'}</div>
+                                            <div style={{ fontSize: 12, color: '#fff', marginTop: 2 }}>Payment Mode: {b.paymentMethod || 'Cash'} {b.paymentReference ? `(Ref: ${b.paymentReference})` : ''}</div>
+                                          </div>
+
+                                          {b.paymentProof && (
+                                            <div>
+                                              <div style={{ fontSize: 11, color: '#4ade80', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>GCash Proof of Payment</div>
+                                              <img 
+                                                src={b.paymentProof} 
+                                                alt="Proof" 
+                                                style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8, border: '1px solid rgba(74,222,128,0.4)', cursor: 'pointer' }}
+                                                onClick={() => window.open(b.paymentProof, '_blank')}
+                                              />
+                                            </div>
+                                          )}
+
+                                          {b.status === 'Rejected' && (
+                                            <div style={{ gridColumn: '1 / -1', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '10px 14px' }}>
+                                              <strong style={{ color: '#f87171', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+                                                <AlertTriangleIcon size={14} /> Rejection Reason:
+                                              </strong>
+                                              <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#fff', fontStyle: 'italic' }}>
+                                                "{b.rejectionReason || 'Time slot unavailable / Rejected by salon'}"
+                                              </p>
+                                            </div>
+                                          )}
+
+                                          {b.review && (
+                                            <div style={{ gridColumn: '1 / -1', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '10px 14px' }}>
+                                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <span style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Customer Review:</span>
+                                                <span style={{ color: 'var(--gold)', fontSize: 13 }}>{'★'.repeat(b.review)}{'☆'.repeat(5-b.review)}</span>
+                                              </div>
+                                              {b.reviewComment && <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#fff', fontStyle: 'italic' }}>"{b.reviewComment}"</p>}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    /* CARDS VIEW (Part 2) */
+                    <div className="booking-list">
+                      {paginatedBookings.map(b => {
+                        const isWalkIn = b.userId === 'walk-in' || b.isWalkIn;
+                        return (
+                          <div key={b.id} className="booking-card">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <div>
+                                <div className="booking-customer" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  {b.customer}
+                                  <span className="trust-badge" style={{
+                                    background: isWalkIn ? 'rgba(56,189,248,0.12)' : 'rgba(74,222,128,0.12)',
+                                    color: isWalkIn ? '#38bdf8' : '#4ade80',
+                                    border: `1px solid ${isWalkIn ? 'rgba(56,189,248,0.3)' : 'rgba(74,222,128,0.3)'}`,
+                                    fontSize: '10px',
+                                    fontWeight: '700',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.8px',
+                                    padding: '2px 8px',
+                                    borderRadius: '12px'
+                                  }}>
+                                    {isWalkIn ? 'Walk-in' : 'Online'}
+                                  </span>
+                                </div>
+                                <div className="booking-meta" style={{ marginTop: 6 }}>
+                                  <ScissorsIcon size={12} /> {b.service}
+                                </div>
+                              </div>
+                              <span className={`status ${b.status.toLowerCase()}`}>
+                                {b.status === 'Pending' && <HourglassIcon size={10} />}
+                                {(b.status === 'Approved' || b.status === 'Completed') && <CheckCircleIcon size={10} />}
+                                {b.status === 'Rejected' && <XCircleIcon size={10} />} {b.status}
+                              </span>
+                            </div>
+
+                            <div className="booking-meta">
+                              <CalendarIcon size={12} /> {b.date} <ClockIcon size={12} /> {b.time}
+                              {b.contact && <><PhoneIcon size={12} /> {b.contact}</>}
+                            </div>
+
+                            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                              <span className={`pmt-badge pmt-badge-${(b.paymentMethod || 'Cash').toLowerCase()}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600 }}>
+                                {b.paymentMethod === 'GCash' ? <><GcashIcon size={12} /> Paying through Gcash</> : <><CashIcon size={12} /> Paying through Cash</>}
+                              </span>
+                              {b.paymentReference && (
+                                <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+                                  Ref: <strong style={{ color: 'var(--gold)' }}>{b.paymentReference}</strong>
                                 </span>
-                              </div>
-                              <div className="booking-meta" style={{ marginTop: 6 }}>
-                                <ScissorsIcon size={12} /> {b.service}
-                              </div>
+                              )}
                             </div>
-                            <span className={`status ${b.status.toLowerCase()}`}>
-                              {b.status === 'Pending' && <HourglassIcon size={10} />}
-                              {(b.status === 'Approved' || b.status === 'Completed') && <CheckCircleIcon size={10} />}
-                              {b.status === 'Rejected' && <XCircleIcon size={10} />} {b.status}
-                            </span>
-                          </div>
 
-                          <div className="booking-meta">
-                            <CalendarIcon size={12} /> {b.date} <ClockIcon size={12} /> {b.time}
-                            {b.contact && <><PhoneIcon size={12} /> {b.contact}</>}
-                          </div>
-
-                          {/* Clear payment wording: Paying through Cash vs Paying through Gcash */}
-                          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                            <span className={`pmt-badge pmt-badge-${(b.paymentMethod || 'Cash').toLowerCase()}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600 }}>
-                              {b.paymentMethod === 'GCash' ? <><GcashIcon size={12} /> Paying through Gcash</> : <><CashIcon size={12} /> Paying through Cash</>}
-                            </span>
-                            {b.paymentReference && (
-                              <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-                                Ref: <strong style={{ color: 'var(--gold)' }}>{b.paymentReference}</strong>
-                              </span>
+                            {/* Payment proof indicator */}
+                            {b.status === 'Approved' && b.paymentMethod === 'GCash' && (
+                              <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                {b.paymentProof ? (
+                                  <div className="payment-proof-admin">
+                                    <CheckCircleIcon size={12} />
+                                    <span style={{ color: '#4ade80', fontSize: 11, fontWeight: 600 }}>Payment Proof Uploaded</span>
+                                    <img src={b.paymentProof} alt="Payment proof" className="payment-proof-thumb" onClick={() => window.open(b.paymentProof, '_blank')} />
+                                  </div>
+                                ) : (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <HourglassIcon size={12} />
+                                    <span style={{ color: '#f59e0b', fontSize: 11, fontWeight: 600 }}>Awaiting GCash Payment Proof</span>
+                                  </div>
+                                )}
+                              </div>
                             )}
-                          </div>
 
-                          {/* Payment proof indicator */}
-                          {b.status === 'Approved' && b.paymentMethod === 'GCash' && (
-                            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                              {b.paymentProof ? (
-                                <div className="payment-proof-admin">
-                                  <CheckCircleIcon size={12} />
-                                  <span style={{ color: '#4ade80', fontSize: 11, fontWeight: 600 }}>Payment Proof Uploaded</span>
-                                  <img src={b.paymentProof} alt="Payment proof" className="payment-proof-thumb" onClick={() => window.open(b.paymentProof, '_blank')} />
+                            {/* Rejection Reason Display */}
+                            {b.status === 'Rejected' && (
+                              <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 8, background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', color: '#f87171', fontSize: 12 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, marginBottom: 2 }}>
+                                  <AlertTriangleIcon size={13} /> Rejection Reason:
                                 </div>
-                              ) : (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <HourglassIcon size={12} />
-                                  <span style={{ color: '#f59e0b', fontSize: 11, fontWeight: 600 }}>Awaiting GCash Payment Proof</span>
+                                <div style={{ color: 'rgba(255, 255, 255, 0.85)', fontStyle: 'italic', paddingLeft: 19 }}>
+                                  "{b.rejectionReason || 'Time slot unavailable / Rejected by salon'}"
                                 </div>
-                              )}
-                            </div>
-                          )}
-
-                          {b.status === 'Approved' && (!b.paymentMethod || b.paymentMethod === 'Cash') && (
-                            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <CheckCircleIcon size={12} />
-                              <span style={{ color: '#4ade80', fontSize: 11, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                <CashIcon size={12} /> Cash — Collect at salon on arrival
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Rejection Reason Display */}
-                          {b.status === 'Rejected' && (
-                            <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 8, background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', color: '#f87171', fontSize: 12 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, marginBottom: 2 }}>
-                                <AlertTriangleIcon size={13} /> Rejection Reason:
                               </div>
-                              <div style={{ color: 'rgba(255, 255, 255, 0.85)', fontStyle: 'italic', paddingLeft: 19 }}>
-                                "{b.rejectionReason || 'Time slot unavailable / Rejected by salon'}"
+                            )}
+
+                            {/* Price Display */}
+                            <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>
+                                  Service Amount:
+                                </span>
+                                <strong style={{ fontSize: 18, color: 'var(--gold)', fontFamily: 'var(--font-display)', fontWeight: 800 }}>
+                                  {b.servicePriceLabel || (services.find(s => s.name === b.service)?.price || 'PHP 0')}
+                                </strong>
                               </div>
-                            </div>
-                          )}
 
-                          {/* Customer Review */}
-                          {b.review && (
-                            <div style={{ marginTop: 8 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <span style={{ fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 1 }}>Customer Rating:</span>
-                                <span style={{ color: 'var(--gold)', fontSize: 14, letterSpacing: 2 }}>{'★'.repeat(b.review)}{'☆'.repeat(5-b.review)}</span>
-                              </div>
-                              {b.reviewComment && (
-                                <div style={{ marginTop: 4, fontSize: 12, color: 'var(--text-white)', fontStyle: 'italic', paddingLeft: 8, borderLeft: '2px solid rgba(201,168,76,0.5)' }}>
-                                  "{b.reviewComment}"
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Price Display Repositioned Directly Above Action Buttons */}
-                          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
-                              <span style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>
-                                Service Amount:
-                              </span>
-                              <strong style={{ fontSize: 18, color: 'var(--gold)', fontFamily: 'var(--font-display)', fontWeight: 800 }}>
-                                {b.servicePriceLabel || (services.find(s => s.name === b.service)?.price || 'PHP 0')}
-                              </strong>
-                            </div>
-
-                            <div className="booking-actions" style={{ justifyContent: 'flex-end', marginTop: 0 }}>
-                              {b.status === 'Pending' && (
-                                <>
-                                  <button className="btn small" onClick={() => updateStatus(b.id, 'Approved')}>
-                                    <CheckCircleIcon size={13} /> Approve
+                              <div className="booking-actions" style={{ justifyContent: 'flex-end', marginTop: 0 }}>
+                                {b.status === 'Pending' && (
+                                  <>
+                                    <button className="btn small" onClick={() => updateStatus(b.id, 'Approved')}>
+                                      <CheckCircleIcon size={13} /> Approve
+                                    </button>
+                                    <button 
+                                      className="btn small secondary" 
+                                      onClick={() => {
+                                        setRejectionModalBooking(b);
+                                        setManualRejectionReason('');
+                                        setSelectedPresetReason(PRESET_REJECTION_REASONS[0]);
+                                      }}
+                                    >
+                                      <XCircleIcon size={13} /> Reject
+                                    </button>
+                                  </>
+                                )}
+                                {b.status === 'Rejected' && (
+                                  <button className="btn small danger" onClick={() => deleteBooking(b.id)}>
+                                    Remove
                                   </button>
-                                  <button 
-                                    className="btn small secondary" 
-                                    onClick={() => {
-                                      setRejectionModalBooking(b);
-                                      setManualRejectionReason('');
-                                      setSelectedPresetReason(PRESET_REJECTION_REASONS[0]);
-                                    }}
-                                  >
-                                    <XCircleIcon size={13} /> Reject
-                                  </button>
-                                </>
-                              )}
-                              {b.status === 'Rejected' && (
-                                <button className="btn small danger" onClick={() => deleteBooking(b.id)}>
-                                  Remove
-                                </button>
-                              )}
-                              {b.status === 'Approved' && (
-                                <>
-                                  <button className="btn small" onClick={() => updateStatus(b.id, 'Completed')}>
-                                    <CheckCircleIcon size={13} /> Mark Done
-                                  </button>
-                                  <button className="btn small outline" onClick={() => updateStatus(b.id, 'Pending')}>
+                                )}
+                                {b.status === 'Approved' && (
+                                  <>
+                                    <button className="btn small" onClick={() => updateStatus(b.id, 'Completed')}>
+                                      <CheckCircleIcon size={13} /> Mark Done
+                                    </button>
+                                    <button className="btn small outline" onClick={() => updateStatus(b.id, 'Pending')}>
+                                      Revert
+                                    </button>
+                                  </>
+                                )}
+                                {b.status === 'Completed' && (
+                                  <button className="btn small outline" onClick={() => updateStatus(b.id, 'Approved')}>
                                     Revert
                                   </button>
-                                </>
-                              )}
-                              {b.status === 'Completed' && (
-                                <button className="btn small outline" onClick={() => updateStatus(b.id, 'Approved')}>
-                                  Revert
-                                </button>
-                              )}
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Pagination Bar (Part 2) */}
+                  {filtered.length > bookingsPerPage && (
+                    <div className="pagination-container">
+                      <div className="pagination-info">
+                        Showing <strong>{(bookingsPage - 1) * bookingsPerPage + 1}–{Math.min(bookingsPage * bookingsPerPage, filtered.length)}</strong> of <strong>{filtered.length}</strong> bookings
+                      </div>
+                      <div className="pagination-btn-group">
+                        <button 
+                          className="page-btn" 
+                          disabled={bookingsPage <= 1} 
+                          onClick={() => setBookingsPage(p => Math.max(1, p - 1))}
+                        >
+                          <ChevronLeftIcon size={13} style={{ marginRight: 4 }} /> Prev
+                        </button>
+
+                        {Array.from({ length: totalBookingsPages }, (_, i) => i + 1).map(pageNum => {
+                          if (
+                            pageNum === 1 || 
+                            pageNum === totalBookingsPages || 
+                            (pageNum >= bookingsPage - 1 && pageNum <= bookingsPage + 1)
+                          ) {
+                            return (
+                              <button
+                                key={pageNum}
+                                className={`page-btn ${bookingsPage === pageNum ? 'active' : ''}`}
+                                onClick={() => setBookingsPage(pageNum)}
+                              >
+                                {pageNum}
+                              </button>
+                            );
+                          } else if (
+                            (pageNum === bookingsPage - 2 && bookingsPage > 3) || 
+                            (pageNum === bookingsPage + 2 && bookingsPage < totalBookingsPages - 2)
+                          ) {
+                            return <span key={pageNum} style={{ color: 'var(--text-dim)', padding: '0 4px' }}>…</span>;
+                          }
+                          return null;
+                        })}
+
+                        <button 
+                          className="page-btn" 
+                          disabled={bookingsPage >= totalBookingsPages} 
+                          onClick={() => setBookingsPage(p => Math.min(totalBookingsPages, p + 1))}
+                        >
+                          Next <ChevronRightIcon size={13} style={{ marginLeft: 4 }} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
 
               {/* CUSTOMER DIRECTORY SUBVIEW */}

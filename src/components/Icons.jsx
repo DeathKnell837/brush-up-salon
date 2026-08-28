@@ -368,3 +368,24 @@ export const GlobeIcon = (props) => (
     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
   </Svg>
 );
+
+export const ChevronLeftIcon = (props) => (
+  <Svg {...props}>
+    <polyline points="15 18 9 12 15 6" />
+  </Svg>
+);
+
+export const ChevronRightIcon = (props) => (
+  <Svg {...props}>
+    <polyline points="9 18 15 12 9 6" />
+  </Svg>
+);
+
+export const GridIcon = (props) => (
+  <Svg {...props}>
+    <rect x="3" y="3" width="7" height="7" />
+    <rect x="14" y="3" width="7" height="7" />
+    <rect x="14" y="14" width="7" height="7" />
+    <rect x="3" y="14" width="7" height="7" />
+  </Svg>
+);
