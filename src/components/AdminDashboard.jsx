@@ -1081,34 +1081,10 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
       let responseText = "";
 
-      // Try Groq First
+      // 1. Try Gemini 3.5 Flash First (with user API key)
       try {
-        if (!GROQ_KEY) throw new Error("No Groq Key");
-        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${GROQ_KEY}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: "llama-3.1-8b-instant",
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: `Here is the current business data: ${dataString}` }
-            ],
-            temperature: 0.6
-          })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          responseText = data.choices[0].message.content;
-        } else {
-          throw new Error("Groq failed");
-        }
-      } catch (e) {
-        // Fallback to Gemini
         if (!GEMINI_KEY) throw new Error("No Gemini Key");
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_KEY}`, {
+        let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_KEY}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1116,11 +1092,56 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             contents: [{ role: "user", parts: [{ text: `Here is the current business data: ${dataString}` }] }]
           })
         });
+
+        // Fallback to flash-lite if needed
+        if (!res.ok) {
+          res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${GEMINI_KEY}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: systemPrompt }] },
+              contents: [{ role: "user", parts: [{ text: `Here is the current business data: ${dataString}` }] }]
+            })
+          });
+        }
+
         if (res.ok) {
           const data = await res.json();
-          responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Unable to compile generative forecast.";
+          responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
         } else {
-          throw new Error("Gemini failed");
+          throw new Error("Gemini API failed");
+        }
+      } catch (geminiError) {
+        console.warn("Gemini attempt failed, trying Groq fallback:", geminiError);
+        
+        // 2. Try Groq Fallback
+        try {
+          if (!GROQ_KEY) throw new Error("No Groq Key");
+          const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${GROQ_KEY}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              model: "qwen/qwen3.6-27b",
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: `Here is the current business data: ${dataString}` }
+              ],
+              temperature: 0.6
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            responseText = data.choices[0].message.content;
+          } else {
+            throw new Error("Groq fallback failed");
+          }
+        } catch (groqError) {
+          console.error("All AI endpoints failed:", groqError);
+          // 3. Fallback to analytical summary generator
+          responseText = `### Insolvency & Bankruptcy Risk Assessment\nBased on current fixed overheads of PHP ${monthlyOverheadVal.toLocaleString()} and monthly revenues of PHP ${monthlyRevenue.toLocaleString()}, the branch is running at a net ${financialStatus.toLowerCase()} of PHP ${Math.abs(netIncome).toLocaleString()}. Operating reserves will sustain the business for approximately ${runwayMonths.toFixed(1)} months.\n\n### Financial Trajectory & Runway Projections\nWithout intervention, current operating capital of PHP ${operatingCapitalVal.toLocaleString()} will face severe liquidity compression. Immediate revenue-per-appointment optimization is critical.\n\n### Strategic Turnaround Plan\n1. Introduce high-margin service bundles (e.g. Rebond + Keratin Treatment combos) to raise average ticket size from current metrics.\n2. Implement targeted weekday promotions to boost staff utilization during off-peak hours.\n3. Verify unverified GCash transactions and streamline deposit collection for appointments.`;
         }
       }
 
