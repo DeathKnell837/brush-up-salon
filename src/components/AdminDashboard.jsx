@@ -1983,105 +1983,107 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   )}
 
                   {/* Search Bar + Filter Status Dropdown + View Mode Toggle Toolbar (Part 2) */}
-                  <div className="bookings-toolbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '18px' }}>
-                    {/* 1. Bulletproof Search Box (Icon & Input as flex siblings - impossible to overlap) */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      background: 'rgba(255, 255, 255, 0.04)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '10px',
-                      padding: '0 14px',
-                      height: '40px',
-                      flex: '1',
-                      minWidth: '260px',
-                      maxWidth: '420px',
-                      boxSizing: 'border-box',
-                      transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
-                    }}>
-                      <SearchIcon size={16} style={{ color: 'var(--text-dim)', marginRight: '10px', flexShrink: 0 }} />
-                      <input
-                        type="text"
-                        placeholder="Search customer, phone, service, ref #..."
-                        value={bookingSearch}
-                        onChange={e => setBookingSearch(e.target.value)}
-                        style={{
-                          flex: 1,
-                          background: 'transparent',
-                          border: 'none',
-                          outline: 'none',
-                          color: 'var(--text-white)',
-                          fontSize: '13px',
-                          fontFamily: 'var(--font-body)',
-                          padding: '0',
-                          margin: '0',
-                          width: '100%',
-                          minWidth: '0'
-                        }}
-                      />
-                      {bookingSearch && (
-                        <button 
-                          onClick={() => setBookingSearch('')} 
-                          style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '14px', padding: '0 0 0 6px', display: 'flex', alignItems: 'center' }}
-                          title="Clear search"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-
-                    {/* 2. Status Filter Single Dropdown with Gold Chevron */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <label style={{ fontSize: '12px', color: 'var(--text-dim)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.8px', display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <FilterIcon size={13} /> Filter Status:
-                      </label>
+                  <div className="bookings-toolbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                    {/* Left: Search + Status Filter Group */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', flex: '1 1 auto' }}>
+                      {/* 1. Bulletproof Search Box */}
                       <div style={{
-                        position: 'relative',
                         display: 'flex',
                         alignItems: 'center',
                         background: 'rgba(255, 255, 255, 0.04)',
                         border: '1px solid var(--border)',
                         borderRadius: '10px',
-                        height: '40px',
+                        padding: '0 12px',
+                        height: '38px',
+                        minWidth: '240px',
+                        maxWidth: '340px',
+                        flex: '1 1 240px',
                         boxSizing: 'border-box'
                       }}>
-                        <select
-                          value={statusFilter}
-                          onChange={e => setStatusFilter(e.target.value)}
+                        <SearchIcon size={15} style={{ color: 'var(--text-dim)', marginRight: '8px', flexShrink: 0 }} />
+                        <input
+                          type="text"
+                          placeholder="Search customer, phone, service, ref #..."
+                          value={bookingSearch}
+                          onChange={e => setBookingSearch(e.target.value)}
                           style={{
-                            appearance: 'none',
-                            WebkitAppearance: 'none',
-                            MozAppearance: 'none',
+                            flex: 1,
                             background: 'transparent',
                             border: 'none',
                             outline: 'none',
-                            color: '#fff',
-                            fontSize: '12px',
+                            color: 'var(--text-white)',
+                            fontSize: '13px',
                             fontFamily: 'var(--font-body)',
-                            fontWeight: 600,
-                            padding: '0 34px 0 14px',
-                            height: '100%',
-                            cursor: 'pointer',
-                            minWidth: '150px'
+                            padding: 0,
+                            margin: 0,
+                            width: '100%',
+                            minWidth: 0
                           }}
-                        >
-                          <option value="pending" style={{ background: '#111', color: '#fff' }}>Pending ({pending})</option>
-                          <option value="approved" style={{ background: '#111', color: '#fff' }}>Approved ({approved})</option>
-                          <option value="completed" style={{ background: '#111', color: '#fff' }}>Completed ({completed})</option>
-                          <option value="rejected" style={{ background: '#111', color: '#fff' }}>Rejected ({rejected})</option>
-                          <option value="all" style={{ background: '#111', color: '#fff' }}>All ({total})</option>
-                        </select>
-                        <ChevronDownIcon size={13} style={{ position: 'absolute', right: 12, pointerEvents: 'none', color: 'var(--gold)' }} />
+                        />
+                        {bookingSearch && (
+                          <button 
+                            onClick={() => setBookingSearch('')} 
+                            style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '13px', padding: '0 0 0 4px', display: 'flex', alignItems: 'center' }}
+                            title="Clear search"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+
+                      {/* 2. Status Filter Single Dropdown */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <label style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <FilterIcon size={12} /> Status:
+                        </label>
+                        <div style={{
+                          position: 'relative',
+                          display: 'flex',
+                          alignItems: 'center',
+                          background: 'rgba(255, 255, 255, 0.04)',
+                          border: '1px solid var(--border)',
+                          borderRadius: '10px',
+                          height: '38px',
+                          boxSizing: 'border-box'
+                        }}>
+                          <select
+                            value={statusFilter}
+                            onChange={e => setStatusFilter(e.target.value)}
+                            style={{
+                              appearance: 'none',
+                              WebkitAppearance: 'none',
+                              MozAppearance: 'none',
+                              background: 'transparent',
+                              border: 'none',
+                              outline: 'none',
+                              color: '#fff',
+                              fontSize: '12px',
+                              fontFamily: 'var(--font-body)',
+                              fontWeight: 600,
+                              padding: '0 32px 0 12px',
+                              height: '100%',
+                              cursor: 'pointer',
+                              minWidth: '135px'
+                            }}
+                          >
+                            <option value="pending" style={{ background: '#111', color: '#fff' }}>Pending ({pending})</option>
+                            <option value="approved" style={{ background: '#111', color: '#fff' }}>Approved ({approved})</option>
+                            <option value="completed" style={{ background: '#111', color: '#fff' }}>Completed ({completed})</option>
+                            <option value="rejected" style={{ background: '#111', color: '#fff' }}>Rejected ({rejected})</option>
+                            <option value="all" style={{ background: '#111', color: '#fff' }}>All ({total})</option>
+                          </select>
+                          <ChevronDownIcon size={12} style={{ position: 'absolute', right: 10, pointerEvents: 'none', color: 'var(--gold)' }} />
+                        </div>
                       </div>
                     </div>
 
-                    {/* 3. View Mode Toggle: Compact Rows vs Detailed Cards */}
-                    <div className="bookings-view-toggle" style={{ height: '40px', boxSizing: 'border-box', display: 'inline-flex', alignItems: 'center' }}>
+                    {/* Right: View Mode Toggle */}
+                    <div className="bookings-view-toggle" style={{ height: '38px', boxSizing: 'border-box', display: 'inline-flex', alignItems: 'center' }}>
                       <button
                         className={`bookings-view-btn ${bookingsViewMode === 'compact' ? 'active' : ''}`}
                         onClick={() => setBookingsViewMode('compact')}
                         title="Compact Row Layout"
-                        style={{ height: '32px' }}
+                        style={{ height: '30px' }}
                       >
                         <ListIcon size={13} /> Compact
                       </button>
@@ -2089,7 +2091,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         className={`bookings-view-btn ${bookingsViewMode === 'cards' ? 'active' : ''}`}
                         onClick={() => setBookingsViewMode('cards')}
                         title="Detailed Cards Layout"
-                        style={{ height: '32px' }}
+                        style={{ height: '30px' }}
                       >
                         <GridIcon size={13} /> Cards
                       </button>
@@ -2109,102 +2111,114 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       <table className="compact-bookings-table">
                         <thead>
                           <tr>
-                            <th>Customer</th>
-                            <th>Service</th>
-                            <th>Date & Time</th>
-                            <th>Payment</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th style={{ textAlign: 'right' }}>Actions</th>
+                            <th style={{ width: '22%' }}>Customer</th>
+                            <th style={{ width: '20%' }}>Service & Stylist</th>
+                            <th style={{ width: '16%' }}>Date & Time</th>
+                            <th style={{ width: '14%' }}>Payment</th>
+                            <th style={{ width: '10%' }}>Amount</th>
+                            <th style={{ width: '8%' }}>Status</th>
+                            <th style={{ width: '10%', textAlign: 'right' }}>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
                           {paginatedBookings.map(b => {
+                            const isExpanded = expandedBookingRows.includes(b.id);
                             const isWalkIn = b.userId === 'walk-in' || b.isWalkIn;
-                            const isExpanded = !!expandedBookingRows[b.id];
                             return (
                               <React.Fragment key={b.id}>
                                 <tr 
                                   className={`compact-booking-row ${isExpanded ? 'is-expanded' : ''}`}
-                                  onClick={() => setExpandedBookingRows(p => ({ ...p, [b.id]: !p[b.id] }))}
+                                  onClick={() => toggleRowExpand(b.id)}
                                 >
-                                  {/* Customer */}
+                                  {/* 1. Customer */}
                                   <td>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                        {(b.customer || '?')[0].toUpperCase()}
+                                      <div style={{
+                                        width: 32, height: 32, borderRadius: '50%',
+                                        background: 'var(--gold-dim)', color: 'var(--gold)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontWeight: 700, fontSize: 13, flexShrink: 0, border: '1px solid rgba(201,168,76,0.3)'
+                                      }}>
+                                        {(b.customer || 'U').charAt(0).toUpperCase()}
                                       </div>
                                       <div>
-                                        <div style={{ fontWeight: 700, color: 'var(--text-white)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <div style={{ fontWeight: 600, color: 'var(--text-white)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
                                           {b.customer}
-                                          <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 4, background: isWalkIn ? 'rgba(56,189,248,0.15)' : 'rgba(74,222,128,0.15)', color: isWalkIn ? '#38bdf8' : '#4ade80', border: `1px solid ${isWalkIn ? 'rgba(56,189,248,0.3)' : 'rgba(74,222,128,0.3)'}`, fontWeight: 700, textTransform: 'uppercase' }}>
+                                          <span style={{
+                                            fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5,
+                                            padding: '1px 5px', borderRadius: 4,
+                                            background: isWalkIn ? 'rgba(56,189,248,0.12)' : 'rgba(74,222,128,0.12)',
+                                            color: isWalkIn ? '#38bdf8' : '#4ade80',
+                                            border: `1px solid ${isWalkIn ? 'rgba(56,189,248,0.3)' : 'rgba(74,222,128,0.3)'}`
+                                          }}>
                                             {isWalkIn ? 'Walk-in' : 'Online'}
                                           </span>
                                         </div>
-                                        {b.contact && <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>{b.contact}</div>}
+                                        <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+                                          {b.contact || (isWalkIn ? 'In-salon guest' : 'No phone')}
+                                        </div>
                                       </div>
                                     </div>
                                   </td>
 
-                                  {/* Service */}
+                                  {/* 2. Service & Stylist */}
                                   <td>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, color: 'var(--text-white)' }}>
-                                      <ScissorsIcon size={12} style={{ color: 'var(--gold)' }} />
-                                      {b.service}
-                                    </div>
-                                    {b.staff && <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>Stylist: {b.staff}</div>}
+                                    <div style={{ fontWeight: 500, color: 'var(--text-white)' }}>{b.service}</div>
+                                    <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{b.staff || 'Any Stylist'}</div>
                                   </td>
 
-                                  {/* Date & Time */}
+                                  {/* 3. Date & Time */}
                                   <td>
-                                    <div style={{ fontSize: 12, color: 'var(--text-white)', display: 'flex', alignItems: 'center', gap: 5 }}>
-                                      <CalendarIcon size={12} style={{ color: 'var(--gold)' }} /> {b.date}
-                                    </div>
-                                    <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 5 }}>
-                                      <ClockIcon size={11} /> {b.time}
-                                    </div>
+                                    <div style={{ color: 'var(--text-white)', fontWeight: 500 }}>{b.date}</div>
+                                    <div style={{ fontSize: 11, color: 'var(--gold)' }}>{b.time}</div>
                                   </td>
 
-                                  {/* Payment */}
+                                  {/* 4. Payment */}
                                   <td>
-                                    <span className={`pmt-badge pmt-badge-${(b.paymentMethod || 'Cash').toLowerCase()}`} style={{ fontSize: 10, padding: '3px 8px' }}>
-                                      {b.paymentMethod === 'GCash' ? <><GcashIcon size={10} /> GCash</> : <><CashIcon size={10} /> Cash</>}
+                                    <span className={`pmt-badge pmt-badge-${(b.paymentMethod || 'Cash').toLowerCase()}`} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6 }}>
+                                      {b.paymentMethod === 'GCash' ? 'GCash' : 'Cash'}
                                     </span>
-                                    {b.paymentReference && <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 3 }}>Ref: {b.paymentReference}</div>}
+                                    {b.paymentReference && (
+                                      <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
+                                        Ref: <span style={{ color: 'var(--gold)' }}>{b.paymentReference}</span>
+                                      </div>
+                                    )}
                                   </td>
 
-                                  {/* Amount */}
+                                  {/* 5. Amount */}
                                   <td>
                                     <strong style={{ color: 'var(--gold)', fontFamily: 'var(--font-display)', fontSize: 14 }}>
                                       {b.servicePriceLabel || (services.find(s => s.name === b.service)?.price || 'PHP 0')}
                                     </strong>
                                   </td>
 
-                                  {/* Status */}
+                                  {/* 6. Status */}
                                   <td>
                                     <span className={`status ${b.status.toLowerCase()}`} style={{ fontSize: 10, padding: '3px 8px' }}>
-                                      {b.status === 'Pending' && <HourglassIcon size={10} />}
-                                      {(b.status === 'Approved' || b.status === 'Completed') && <CheckCircleIcon size={10} />}
-                                      {b.status === 'Rejected' && <XCircleIcon size={10} />} {b.status}
+                                      {b.status === 'Pending' && <HourglassIcon size={9} />}
+                                      {(b.status === 'Approved' || b.status === 'Completed') && <CheckCircleIcon size={9} />}
+                                      {b.status === 'Rejected' && <XCircleIcon size={9} />}
+                                      {b.status}
                                     </span>
                                   </td>
 
-                                  {/* Actions */}
+                                  {/* 7. Actions */}
                                   <td style={{ textAlign: 'right' }} onClick={e => e.stopPropagation()}>
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6 }}>
+                                    <div style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
                                       {b.status === 'Pending' && (
                                         <>
-                                          <button className="btn small" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => updateStatus(b.id, 'Approved')}>
+                                          <button className="btn small" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => updateStatus(b.id, 'Approved')} title="Approve Booking">
                                             <CheckCircleIcon size={12} /> Approve
                                           </button>
                                           <button 
                                             className="btn small secondary" 
-                                            style={{ padding: '4px 10px', fontSize: 11 }}
+                                            style={{ padding: '4px 8px', fontSize: 11 }} 
                                             onClick={() => {
                                               setRejectionModalBooking(b);
                                               setManualRejectionReason('');
                                               setSelectedPresetReason(PRESET_REJECTION_REASONS[0]);
                                             }}
+                                            title="Reject Booking"
                                           >
                                             <XCircleIcon size={12} /> Reject
                                           </button>
@@ -2212,81 +2226,102 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                       )}
                                       {b.status === 'Approved' && (
                                         <>
-                                          <button className="btn small" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => updateStatus(b.id, 'Completed')}>
+                                          <button className="btn small" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => updateStatus(b.id, 'Completed')} title="Mark Done">
                                             <CheckCircleIcon size={12} /> Done
                                           </button>
-                                          <button className="btn small outline" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => updateStatus(b.id, 'Pending')}>
+                                          <button className="btn small outline" style={{ padding: '4px 6px', fontSize: 10 }} onClick={() => updateStatus(b.id, 'Pending')} title="Revert to Pending">
                                             Revert
                                           </button>
                                         </>
                                       )}
                                       {b.status === 'Completed' && (
-                                        <button className="btn small outline" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => updateStatus(b.id, 'Approved')}>
+                                        <button className="btn small outline" style={{ padding: '4px 6px', fontSize: 10 }} onClick={() => updateStatus(b.id, 'Approved')} title="Revert to Approved">
                                           Revert
                                         </button>
                                       )}
                                       {b.status === 'Rejected' && (
-                                        <button className="btn small danger" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => deleteBooking(b.id)}>
+                                        <button className="btn small danger" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => deleteBooking(b.id)} title="Remove Booking">
                                           Remove
                                         </button>
                                       )}
                                       <button 
                                         className="btn small outline" 
-                                        style={{ padding: '4px 8px', fontSize: 11 }}
-                                        onClick={() => setExpandedBookingRows(p => ({ ...p, [b.id]: !p[b.id] }))}
-                                        title="View Details"
+                                        style={{ padding: '4px 6px', fontSize: 11, color: 'var(--text-dim)' }}
+                                        onClick={() => toggleRowExpand(b.id)}
+                                        title={isExpanded ? "Collapse details" : "Expand details"}
                                       >
-                                        {isExpanded ? <ChevronUpIcon size={12} /> : <ChevronDownIcon size={12} />}
+                                        {isExpanded ? '▲' : '▼'}
                                       </button>
                                     </div>
                                   </td>
                                 </tr>
 
-                                {/* Expanded Drawer */}
+                                {/* Expandable Drawer */}
                                 {isExpanded && (
                                   <tr>
-                                    <td colSpan="7" style={{ padding: 0 }}>
+                                    <td colSpan={7} style={{ padding: 0 }}>
                                       <div className="compact-drawer">
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                                          {/* Details */}
                                           <div>
-                                            <div style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Booking Details</div>
-                                            <div style={{ fontSize: 12, color: '#fff' }}>Booking ID: <strong style={{ color: 'var(--gold)' }}>{b.id}</strong></div>
-                                            <div style={{ fontSize: 12, color: '#fff', marginTop: 2 }}>Contact: {b.contact || 'N/A'}</div>
-                                            <div style={{ fontSize: 12, color: '#fff', marginTop: 2 }}>Payment Mode: {b.paymentMethod || 'Cash'} {b.paymentReference ? `(Ref: ${b.paymentReference})` : ''}</div>
+                                            <div style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 700, marginBottom: 6 }}>
+                                              Booking Info
+                                            </div>
+                                            <div style={{ fontSize: 12, color: 'var(--text-white)', lineHeight: 1.6 }}>
+                                              <div><strong>Service:</strong> {b.service}</div>
+                                              <div><strong>Stylist:</strong> {b.staff || 'Any available'}</div>
+                                              <div><strong>Created:</strong> {b.createdAt ? new Date(b.createdAt).toLocaleString() : 'N/A'}</div>
+                                              <div><strong>Booking ID:</strong> #{String(b.id).slice(-6)}</div>
+                                            </div>
                                           </div>
 
-                                          {b.paymentProof && (
-                                            <div>
-                                              <div style={{ fontSize: 11, color: '#4ade80', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>GCash Proof of Payment</div>
-                                              <img 
-                                                src={b.paymentProof} 
-                                                alt="Proof" 
-                                                style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8, border: '1px solid rgba(74,222,128,0.4)', cursor: 'pointer' }}
-                                                onClick={() => window.open(b.paymentProof, '_blank')}
-                                              />
+                                          {/* Payment Details */}
+                                          <div>
+                                            <div style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 700, marginBottom: 6 }}>
+                                              Payment Information
                                             </div>
-                                          )}
-
-                                          {b.status === 'Rejected' && (
-                                            <div style={{ gridColumn: '1 / -1', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '10px 14px' }}>
-                                              <strong style={{ color: '#f87171', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                                                <AlertTriangleIcon size={14} /> Rejection Reason:
-                                              </strong>
-                                              <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#fff', fontStyle: 'italic' }}>
-                                                "{b.rejectionReason || 'Time slot unavailable / Rejected by salon'}"
-                                              </p>
+                                            <div style={{ fontSize: 12, color: 'var(--text-white)', lineHeight: 1.6 }}>
+                                              <div><strong>Method:</strong> {b.paymentMethod || 'Cash'}</div>
+                                              {b.paymentReference && <div><strong>Reference:</strong> {b.paymentReference}</div>}
+                                              {b.paymentProof && (
+                                                <div style={{ marginTop: 6 }}>
+                                                  <span style={{ fontSize: 11, color: '#4ade80', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                                                    <CheckCircleIcon size={11} /> Proof Attached:
+                                                  </span>
+                                                  <img 
+                                                    src={b.paymentProof} 
+                                                    alt="Payment proof" 
+                                                    style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--border)', cursor: 'pointer' }}
+                                                    onClick={() => window.open(b.paymentProof, '_blank')}
+                                                  />
+                                                </div>
+                                              )}
                                             </div>
-                                          )}
+                                          </div>
 
-                                          {b.review && (
-                                            <div style={{ gridColumn: '1 / -1', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '10px 14px' }}>
-                                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                <span style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Customer Review:</span>
-                                                <span style={{ color: 'var(--gold)', fontSize: 13 }}>{'★'.repeat(b.review)}{'☆'.repeat(5-b.review)}</span>
+                                          {/* Rejection / Review info if present */}
+                                          <div>
+                                            {b.rejectionReason && (
+                                              <div style={{ padding: 10, borderRadius: 8, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                                                <div style={{ fontSize: 11, fontWeight: 700, color: '#f87171', marginBottom: 2 }}>
+                                                  Rejection Reason:
+                                                </div>
+                                                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', fontStyle: 'italic' }}>
+                                                  "{b.rejectionReason}"
+                                                </div>
                                               </div>
-                                              {b.reviewComment && <p style={{ margin: '4px 0 0 0', fontSize: 12, color: '#fff', fontStyle: 'italic' }}>"{b.reviewComment}"</p>}
-                                            </div>
-                                          )}
+                                            )}
+                                            {b.review && (
+                                              <div style={{ padding: 10, borderRadius: 8, background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.2)' }}>
+                                                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', marginBottom: 2 }}>
+                                                  Customer Review: {'★'.repeat(b.rating || 5)}
+                                                </div>
+                                                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)' }}>
+                                                  "{b.review}"
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
                                         </div>
                                       </div>
                                     </td>
@@ -2299,17 +2334,34 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       </table>
                     </div>
                   ) : (
-                    /* CARDS VIEW (Part 2) */
-                    <div className="booking-list">
+                    /* CARDS VIEW (Part 2) — Responsive Card Grid */
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                      gap: '14px'
+                    }}>
                       {paginatedBookings.map(b => {
                         const isWalkIn = b.userId === 'walk-in' || b.isWalkIn;
                         return (
-                          <div key={b.id} className="booking-card">
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                              <div>
-                                <div className="booking-customer" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  {b.customer}
-                                  <span className="trust-badge" style={{
+                          <div key={b.id} style={{
+                            background: 'rgba(25, 25, 25, 0.7)',
+                            backdropFilter: 'blur(10px)',
+                            border: '1px solid var(--border)',
+                            borderRadius: '14px',
+                            padding: '16px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            gap: '12px',
+                            transition: 'all 0.2s ease',
+                            boxShadow: '0 4px 16px rgba(0,0,0,0.2)'
+                          }}>
+                            {/* Card Header & Content */}
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                  <strong style={{ fontSize: '14px', color: 'var(--text-white)' }}>{b.customer}</strong>
+                                  <span style={{
                                     background: isWalkIn ? 'rgba(56,189,248,0.12)' : 'rgba(74,222,128,0.12)',
                                     color: isWalkIn ? '#38bdf8' : '#4ade80',
                                     border: `1px solid ${isWalkIn ? 'rgba(56,189,248,0.3)' : 'rgba(74,222,128,0.3)'}`,
@@ -2317,115 +2369,122 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                     fontWeight: '700',
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.8px',
-                                    padding: '2px 8px',
-                                    borderRadius: '12px'
+                                    padding: '2px 7px',
+                                    borderRadius: '10px'
                                   }}>
                                     {isWalkIn ? 'Walk-in' : 'Online'}
                                   </span>
                                 </div>
-                                <div className="booking-meta" style={{ marginTop: 6 }}>
-                                  <ScissorsIcon size={12} /> {b.service}
+                                <span className={`status ${b.status.toLowerCase()}`}>
+                                  {b.status === 'Pending' && <HourglassIcon size={10} />}
+                                  {(b.status === 'Approved' || b.status === 'Completed') && <CheckCircleIcon size={10} />}
+                                  {b.status === 'Rejected' && <XCircleIcon size={10} />} {b.status}
+                                </span>
+                              </div>
+
+                              {/* Service + Date + Contact */}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: '12px', color: 'var(--text-dim)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-white)' }}>
+                                  <ScissorsIcon size={13} style={{ color: 'var(--gold)' }} />
+                                  <span>{b.service}</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><CalendarIcon size={12} /> {b.date}</span>
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><ClockIcon size={12} /> {b.time}</span>
+                                  {b.contact && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><PhoneIcon size={12} /> {b.contact}</span>}
                                 </div>
                               </div>
-                              <span className={`status ${b.status.toLowerCase()}`}>
-                                {b.status === 'Pending' && <HourglassIcon size={10} />}
-                                {(b.status === 'Approved' || b.status === 'Completed') && <CheckCircleIcon size={10} />}
-                                {b.status === 'Rejected' && <XCircleIcon size={10} />} {b.status}
-                              </span>
-                            </div>
 
-                            <div className="booking-meta">
-                              <CalendarIcon size={12} /> {b.date} <ClockIcon size={12} /> {b.time}
-                              {b.contact && <><PhoneIcon size={12} /> {b.contact}</>}
-                            </div>
-
-                            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                              <span className={`pmt-badge pmt-badge-${(b.paymentMethod || 'Cash').toLowerCase()}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600 }}>
-                                {b.paymentMethod === 'GCash' ? <><GcashIcon size={12} /> Paying through Gcash</> : <><CashIcon size={12} /> Paying through Cash</>}
-                              </span>
-                              {b.paymentReference && (
-                                <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-                                  Ref: <strong style={{ color: 'var(--gold)' }}>{b.paymentReference}</strong>
+                              {/* Payment info */}
+                              <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                <span className={`pmt-badge pmt-badge-${(b.paymentMethod || 'Cash').toLowerCase()}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '6px' }}>
+                                  {b.paymentMethod === 'GCash' ? <><GcashIcon size={12} /> GCash</> : <><CashIcon size={12} /> Cash</>}
                                 </span>
+                                {b.paymentReference && (
+                                  <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
+                                    Ref: <strong style={{ color: 'var(--gold)' }}>{b.paymentReference}</strong>
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Payment proof indicator */}
+                              {b.status === 'Approved' && b.paymentMethod === 'GCash' && (
+                                <div style={{ marginTop: 8 }}>
+                                  {b.paymentProof ? (
+                                    <div className="payment-proof-admin" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px', background: 'rgba(74,222,128,0.06)', borderRadius: 6, border: '1px solid rgba(74,222,128,0.2)' }}>
+                                      <CheckCircleIcon size={12} style={{ color: '#4ade80' }} />
+                                      <span style={{ color: '#4ade80', fontSize: 11, fontWeight: 600 }}>Proof Uploaded</span>
+                                      <img src={b.paymentProof} alt="Payment proof" className="payment-proof-thumb" onClick={() => window.open(b.paymentProof, '_blank')} style={{ width: 24, height: 24, objectFit: 'cover', borderRadius: 4, cursor: 'pointer', marginLeft: 'auto' }} />
+                                    </div>
+                                  ) : (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', background: 'rgba(245,158,11,0.06)', borderRadius: 6, border: '1px solid rgba(245,158,11,0.2)' }}>
+                                      <HourglassIcon size={12} style={{ color: '#f59e0b' }} />
+                                      <span style={{ color: '#f59e0b', fontSize: 11, fontWeight: 600 }}>Awaiting Proof</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Rejection Reason Display */}
+                              {b.status === 'Rejected' && (
+                                <div style={{ marginTop: 8, padding: '6px 10px', borderRadius: 6, background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', color: '#f87171', fontSize: 11 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontWeight: 700, marginBottom: 2 }}>
+                                    <AlertTriangleIcon size={12} /> Reason:
+                                  </div>
+                                  <div style={{ color: 'rgba(255, 255, 255, 0.85)', fontStyle: 'italic' }}>
+                                    "{b.rejectionReason || 'Time slot unavailable / Rejected by salon'}"
+                                  </div>
+                                </div>
                               )}
                             </div>
 
-                            {/* Payment proof indicator */}
-                            {b.status === 'Approved' && b.paymentMethod === 'GCash' && (
-                              <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                {b.paymentProof ? (
-                                  <div className="payment-proof-admin">
-                                    <CheckCircleIcon size={12} />
-                                    <span style={{ color: '#4ade80', fontSize: 11, fontWeight: 600 }}>Payment Proof Uploaded</span>
-                                    <img src={b.paymentProof} alt="Payment proof" className="payment-proof-thumb" onClick={() => window.open(b.paymentProof, '_blank')} />
-                                  </div>
-                                ) : (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <HourglassIcon size={12} />
-                                    <span style={{ color: '#f59e0b', fontSize: 11, fontWeight: 600 }}>Awaiting GCash Payment Proof</span>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Rejection Reason Display */}
-                            {b.status === 'Rejected' && (
-                              <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 8, background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', color: '#f87171', fontSize: 12 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, marginBottom: 2 }}>
-                                  <AlertTriangleIcon size={13} /> Rejection Reason:
-                                </div>
-                                <div style={{ color: 'rgba(255, 255, 255, 0.85)', fontStyle: 'italic', paddingLeft: 19 }}>
-                                  "{b.rejectionReason || 'Time slot unavailable / Rejected by salon'}"
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Price Display */}
-                            <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
-                                <span style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>
-                                  Service Amount:
+                            {/* Card Footer: Amount + Actions */}
+                            <div style={{ paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <span style={{ fontSize: 9, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: 600 }}>
+                                  Amount
                                 </span>
-                                <strong style={{ fontSize: 18, color: 'var(--gold)', fontFamily: 'var(--font-display)', fontWeight: 800 }}>
+                                <strong style={{ fontSize: 15, color: 'var(--gold)', fontFamily: 'var(--font-display)', fontWeight: 800 }}>
                                   {b.servicePriceLabel || (services.find(s => s.name === b.service)?.price || 'PHP 0')}
                                 </strong>
                               </div>
 
-                              <div className="booking-actions" style={{ justifyContent: 'flex-end', marginTop: 0 }}>
+                              <div className="booking-actions" style={{ display: 'flex', gap: 6, margin: 0 }}>
                                 {b.status === 'Pending' && (
                                   <>
-                                    <button className="btn small" onClick={() => updateStatus(b.id, 'Approved')}>
-                                      <CheckCircleIcon size={13} /> Approve
+                                    <button className="btn small" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => updateStatus(b.id, 'Approved')}>
+                                      <CheckCircleIcon size={12} /> Approve
                                     </button>
                                     <button 
                                       className="btn small secondary" 
+                                      style={{ padding: '6px 12px', fontSize: 12 }}
                                       onClick={() => {
                                         setRejectionModalBooking(b);
                                         setManualRejectionReason('');
                                         setSelectedPresetReason(PRESET_REJECTION_REASONS[0]);
                                       }}
                                     >
-                                      <XCircleIcon size={13} /> Reject
+                                      <XCircleIcon size={12} /> Reject
                                     </button>
                                   </>
                                 )}
                                 {b.status === 'Rejected' && (
-                                  <button className="btn small danger" onClick={() => deleteBooking(b.id)}>
+                                  <button className="btn small danger" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => deleteBooking(b.id)}>
                                     Remove
                                   </button>
                                 )}
                                 {b.status === 'Approved' && (
                                   <>
-                                    <button className="btn small" onClick={() => updateStatus(b.id, 'Completed')}>
-                                      <CheckCircleIcon size={13} /> Mark Done
+                                    <button className="btn small" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => updateStatus(b.id, 'Completed')}>
+                                      <CheckCircleIcon size={12} /> Done
                                     </button>
-                                    <button className="btn small outline" onClick={() => updateStatus(b.id, 'Pending')}>
+                                    <button className="btn small outline" style={{ padding: '6px 10px', fontSize: 11 }} onClick={() => updateStatus(b.id, 'Pending')}>
                                       Revert
                                     </button>
                                   </>
                                 )}
                                 {b.status === 'Completed' && (
-                                  <button className="btn small outline" onClick={() => updateStatus(b.id, 'Approved')}>
+                                  <button className="btn small outline" style={{ padding: '6px 10px', fontSize: 11 }} onClick={() => updateStatus(b.id, 'Approved')}>
                                     Revert
                                   </button>
                                 )}

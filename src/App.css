@@ -375,8 +375,8 @@ input[type="text"]:focus, input[type="password"]:focus, input[type="email"]:focu
 .booking-list{display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto}
 .booking-list::-webkit-scrollbar{width:3px}
 .booking-list::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.2);border-radius:3px}
-.booking-card{padding:16px;border-radius:var(--r);background:rgba(255,255,255,0.02);border:1px solid var(--border);
-  display:flex;flex-direction:column;gap:8px;transition:all var(--t)}
+.booking-card{padding:14px 16px;border-radius:var(--r);background:rgba(255,255,255,0.02);border:1px solid var(--border);
+  display:flex;flex-direction:column;gap:4px;transition:all var(--t)}
 .booking-card:hover{background:rgba(255,255,255,0.04);border-color:var(--border-light)}
 .booking-card .booking-customer{font-weight:600;font-size:14px;color:var(--text-white)}
 .booking-card .booking-meta{display:flex;gap:14px;font-size:12px;color:var(--text-dim);align-items:center}
