@@ -167,6 +167,11 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   // Manage Settings Category Sub-Tabs
   const [settingsCategory, setSettingsCategory] = useState('admin'); // 'admin' | 'services'
 
+  // Reports and Comparison States
+  const [reportTimeframe, setReportTimeframe] = useState('monthly');
+  const [compSortBy, setCompSortBy] = useState('totalRevenue');
+  const [compSortOrder, setCompSortOrder] = useState('desc');
+
   const [customerSearch, setCustomerSearch] = useState('');
   const [customerSort, setCustomerSort] = useState('revenue');
   const [expandedCustomer, setExpandedCustomer] = useState(null);
