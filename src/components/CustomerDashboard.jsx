@@ -774,8 +774,13 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
             <div className="search-row">
               <div className="search-wrapper">
                 <SearchIcon size={16} className="search-icon" />
-                <input className="search-input" placeholder="Search salons, services..."
-                  value={search} onChange={(e) => setSearch(e.target.value)} />
+                <input 
+                  className="search-input" 
+                  placeholder="Search salons, services..."
+                  value={search} 
+                  onChange={(e) => setSearch(e.target.value)} 
+                  style={{ paddingLeft: 44, paddingRight: 36, height: 44, boxSizing: 'border-box' }}
+                />
               </div>
               <button 
                 type="button" 

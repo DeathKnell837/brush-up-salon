@@ -1986,19 +1986,20 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   <div className="bookings-toolbar">
                     {/* 1. Real-time Search Box */}
                     <div className="bookings-search-box">
-                      <SearchIcon size={15} className="bookings-search-icon" />
+                      <SearchIcon size={16} className="bookings-search-icon" />
                       <input
                         type="text"
                         className="bookings-search-input"
                         placeholder="Search customer, phone, service, ref #..."
                         value={bookingSearch}
                         onChange={e => setBookingSearch(e.target.value)}
-                        style={{ paddingLeft: 42, paddingRight: 34, height: 38, boxSizing: 'border-box' }}
+                        style={{ paddingLeft: 44, paddingRight: 36, height: 40, boxSizing: 'border-box' }}
                       />
                       {bookingSearch && (
                         <button 
                           onClick={() => setBookingSearch('')} 
-                          style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 13 }}
+                          style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: 14 }}
+                          title="Clear search"
                         >
                           ✕
                         </button>
@@ -2472,14 +2473,17 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-white)', fontFamily: 'var(--font-display)' }}>
                         Registered Customer Directory ({sortedCusts.length})
                       </h3>
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        <input
-                          className="search-input"
-                          placeholder="Search customers..."
-                          value={customerSearch}
-                          onChange={e => setCustomerSearch(e.target.value)}
-                          style={{ maxWidth: 220, padding: '6px 12px', fontSize: 12 }}
-                        />
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <div className="search-input-wrapper" style={{ maxWidth: 220 }}>
+                          <SearchIcon size={14} className="search-icon" />
+                          <input
+                            className="search-input"
+                            placeholder="Search customers..."
+                            value={customerSearch}
+                            onChange={e => setCustomerSearch(e.target.value)}
+                            style={{ height: 34, fontSize: 12, paddingLeft: 36 }}
+                          />
+                        </div>
                         {['revenue', 'bookings', 'recent', 'name'].map(s => (
                           <button 
                             key={s} 
@@ -3614,13 +3618,16 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-white)', fontFamily: 'var(--font-display)' }}>
                         Service Menu Catalog ({services.length} Services)
                       </h3>
-                      <input 
-                        className="search-input" 
-                        placeholder="Search service catalog..." 
-                        value={svcSearch} 
-                        onChange={e => setSvcSearch(e.target.value)} 
-                        style={{ maxWidth: 240, padding: '6px 12px', fontSize: 12 }} 
-                      />
+                      <div className="search-input-wrapper" style={{ maxWidth: 240 }}>
+                        <SearchIcon size={14} className="search-icon" />
+                        <input 
+                          className="search-input" 
+                          placeholder="Search service catalog..." 
+                          value={svcSearch} 
+                          onChange={e => setSvcSearch(e.target.value)} 
+                          style={{ height: 34, fontSize: 12, paddingLeft: 36 }} 
+                        />
+                      </div>
                     </div>
 
                     {/* Add New Service Form */}
