@@ -71,15 +71,11 @@ const TrustBadge = ({ userId, allBookings }) => {
 
 function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, showToast, syncTick, onOpenProfile }) {
   const allSalons = getSalons();
-  const isSuperAdmin = currentUser.salonId === 'all' || currentUser.role === 'superadmin';
+  const isSuperAdmin = false;
   
-  // Decoupled salon scoping
-  const [currentSalonId, setCurrentSalonId] = useState(
-    currentUser.salonId === 'all' ? (allSalons[0]?.id || 'elegant') : currentUser.salonId
-  );
-  
-  // Dashboard view toggle: 'branch' (Local) vs 'network' (HQ Overview)
-  const [viewScope, setViewScope] = useState(currentUser.salonId === 'all' ? 'network' : 'branch');
+  // Scoped to the admin's specific salon branch
+  const currentSalonId = currentUser.salonId || 'babie-co';
+  const viewScope = 'branch';
   
   const [bookingsState, setBookingsState] = useState([]);
   const [activeTab, setActiveTab] = useState('bookings');
@@ -173,6 +169,12 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
   // Manage Settings Category Sub-Tabs
   const [settingsCategory, setSettingsCategory] = useState('admin'); // 'admin' | 'services'
+
+  // Messages Popover Composer States
+  const [showComposeMessage, setShowComposeMessage] = useState(false);
+  const [composeMsgTitle, setComposeMsgTitle] = useState('');
+  const [composeMsgBody, setComposeMsgBody] = useState('');
+  const [composeMsgType, setComposeMsgType] = useState('notice'); // 'notice' | 'promo' | 'warning'
 
   // Reports and Comparison States
   const [reportTimeframe, setReportTimeframe] = useState('monthly');
@@ -471,6 +473,32 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
     saveAnnouncements(filtered);
     setAnnouncements(filtered);
     showToast('Broadcast removed.');
+  };
+
+  const handleSendQuickMessage = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!composeMsgTitle.trim() || !composeMsgBody.trim()) {
+      showToast('Please fill in both title and message.');
+      return;
+    }
+    const newMsg = {
+      id: 'ann_' + Date.now(),
+      title: composeMsgTitle.trim(),
+      message: composeMsgBody.trim(),
+      type: composeMsgType,
+      author: currentUser?.name || 'Admin',
+      salonId: currentSalonId || 'all',
+      timestamp: new Date().toISOString()
+    };
+    const currentAnn = getAnnouncements();
+    const updated = [newMsg, ...currentAnn];
+    saveAnnouncements(updated);
+    setAnnouncements(updated);
+    logAuditAction(currentUser?.user, 'Posted Notice / Message', `Title: ${composeMsgTitle.trim()}`);
+    setComposeMsgTitle('');
+    setComposeMsgBody('');
+    setShowComposeMessage(false);
+    showToast('Message posted successfully!');
   };
 
   const handleAddSalon = async (e) => {
@@ -815,6 +843,15 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
     fraudAlerts.forEach(a => a.affectedBookings.forEach(id => ids.add(id)));
     return ids;
   }, [fraudAlerts]);
+
+  const branchFraudAlerts = React.useMemo(() => {
+    return fraudAlerts.filter(a => {
+      if (!a.affectedBookings || a.affectedBookings.length === 0) return true;
+      return a.affectedBookings.some(id => bookingsState.some(b => b.id === id));
+    });
+  }, [fraudAlerts, bookingsState]);
+
+  const totalWarningAlerts = pending + branchFraudAlerts.length + unverifiedGcashBookings.length;
 
   // Salon Performance Comparison calculations
   const comparisonData = React.useMemo(() => {
@@ -1214,42 +1251,8 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           <BrushUpLogo size="small" />
         </div>
 
-        {/* Center: Superadmin View Switcher (Or clean space for normal admin) */}
-        <div className="navbar-center admin-navbar-center">
-          {isSuperAdmin && (
-            <>
-              <div className="admin-navbar-tabs">
-                <button 
-                  className={`navbar-tab ${viewScope === 'branch' ? 'active' : ''} admin-navbar-tab`}
-                  onClick={() => { setViewScope('branch'); setActiveTab('bookings'); }}
-                >
-                  <StoreIcon size={14} /> Branch View
-                </button>
-                <button
-                  className={`navbar-tab ${viewScope === 'network' ? 'active' : ''} admin-navbar-tab`}
-                  onClick={() => { setViewScope('network'); setActiveTab('network-overview'); }}
-                >
-                  <ShieldIcon size={14} /> Network HQ
-                </button>
-              </div>
-              {viewScope === 'branch' && (
-                <>
-                  <div className="admin-nav-separator" />
-                  <div className="admin-salon-switcher">
-                    <select 
-                      value={currentSalonId} 
-                      onChange={e => setCurrentSalonId(e.target.value)} 
-                      className="admin-salon-select"
-                    >
-                      {allSalons.map(s => <option key={s.id} value={s.id} style={{ background: '#0f1118', color: '#fff' }}>{s.name}</option>)}
-                    </select>
-                    <span className="admin-select-arrow" />
-                  </div>
-                </>
-              )}
-            </>
-          )}
-        </div>
+        {/* Center: Clean space for branch admin */}
+        <div className="navbar-center admin-navbar-center" />
 
         {/* Right: Dual Notifications (Messages & Alerts) + Welcome Admin + Profile icon + Logout */}
         <div className="navbar-right" style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
@@ -1326,9 +1329,25 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '8px' }}>
                   <h3 style={{ margin: 0, fontSize: '14px', color: 'var(--gold)', fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <MailIcon size={16} /> Broadcasts & Notices
+                    <MailIcon size={16} /> Broadcasts & Messages
                   </h3>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <button 
+                      onClick={() => setShowComposeMessage(!showComposeMessage)}
+                      style={{
+                        background: showComposeMessage ? 'var(--gold)' : 'rgba(201,168,76,0.15)',
+                        color: showComposeMessage ? '#000' : 'var(--gold)',
+                        border: '1px solid var(--gold)',
+                        borderRadius: '6px',
+                        padding: '2px 8px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      {showComposeMessage ? 'Cancel' : '+ Compose'}
+                    </button>
                     {unreadAnnouncements.length > 0 && (
                       <button 
                         onClick={handleMarkAllRead} 
@@ -1349,6 +1368,82 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     </button>
                   </div>
                 </div>
+
+                {/* Inline Message Composer Form */}
+                {showComposeMessage && (
+                  <form onSubmit={handleSendQuickMessage} style={{
+                    background: 'rgba(0,0,0,0.35)',
+                    border: '1px solid rgba(201,168,76,0.3)',
+                    borderRadius: '8px',
+                    padding: '10px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        New Message / Notice
+                      </span>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        {['notice', 'promo', 'update'].map(t => (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => setComposeMsgType(t)}
+                            style={{
+                              fontSize: '9px',
+                              textTransform: 'uppercase',
+                              fontWeight: 700,
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              border: composeMsgType === t ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)',
+                              background: composeMsgType === t ? 'var(--gold)' : 'transparent',
+                              color: composeMsgType === t ? '#000' : 'var(--text-dim)',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <input
+                      type="text"
+                      className="search-input"
+                      placeholder="Title or subject..."
+                      value={composeMsgTitle}
+                      onChange={e => setComposeMsgTitle(e.target.value)}
+                      style={{ fontSize: '12px', padding: '6px 10px', background: 'rgba(255,255,255,0.05)' }}
+                      required
+                    />
+                    <textarea
+                      className="search-input"
+                      placeholder="Write your message here..."
+                      rows={3}
+                      value={composeMsgBody}
+                      onChange={e => setComposeMsgBody(e.target.value)}
+                      style={{ fontSize: '12px', padding: '6px 10px', resize: 'none', background: 'rgba(255,255,255,0.05)' }}
+                      required
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+                      <button
+                        type="button"
+                        className="btn small outline"
+                        style={{ fontSize: '11px', padding: '4px 10px' }}
+                        onClick={() => setShowComposeMessage(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="btn small"
+                        style={{ fontSize: '11px', padding: '4px 12px' }}
+                      >
+                        Post Message
+                      </button>
+                    </div>
+                  </form>
+                )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {unreadAnnouncements.length === 0 ? (
                     <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-dim)', fontSize: '13px' }}>No active broadcasts.</div>
@@ -1429,7 +1524,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               }}
             >
               <AlertTriangleIcon size={18} />
-              {pending > 0 && (
+              {totalWarningAlerts > 0 && (
                 <span style={{
                   position: 'absolute',
                   top: '-2px',
@@ -1446,7 +1541,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   justifyContent: 'center',
                   boxShadow: '0 0 10px rgba(239, 68, 68, 0.6)'
                 }}>
-                  {pending}
+                  {totalWarningAlerts}
                 </span>
               )}
             </button>
@@ -1457,8 +1552,8 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 position: 'absolute',
                 top: '50px',
                 right: '0',
-                width: '370px',
-                maxHeight: '460px',
+                width: '380px',
+                maxHeight: '480px',
                 background: 'linear-gradient(135deg, rgba(25, 20, 20, 0.98), rgba(15, 12, 12, 0.99))',
                 backdropFilter: 'blur(20px)',
                 border: '1px solid rgba(239, 68, 68, 0.3)',
@@ -1473,7 +1568,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '8px' }}>
                   <h3 style={{ margin: 0, fontSize: '14px', color: '#f87171', fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <AlertTriangleIcon size={16} /> Alerts & Notifications
+                    <AlertTriangleIcon size={16} /> Alerts & Security Warnings
                   </h3>
                   <button 
                     onClick={() => setShowAlertsPopover(false)} 
@@ -1486,6 +1581,29 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {/* Security & Fraud Warnings (Scam / Spam / Suspicious Activities) */}
+                  {branchFraudAlerts.length > 0 && (
+                    <div style={{
+                      background: 'rgba(239, 68, 68, 0.12)',
+                      border: '1px solid rgba(239, 68, 68, 0.35)',
+                      borderLeft: '4px solid #ef4444',
+                      borderRadius: '8px',
+                      padding: '10px 12px'
+                    }}>
+                      <div style={{ fontSize: '12px', fontWeight: '700', color: '#f87171', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <AlertTriangleIcon size={13} /> {branchFraudAlerts.length} Suspicious / Fraud Warning{branchFraudAlerts.length > 1 ? 's' : ''}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
+                        {branchFraudAlerts.map((fa, fIdx) => (
+                          <div key={fIdx} style={{ background: 'rgba(0,0,0,0.3)', padding: '6px 8px', borderRadius: 4, fontSize: 11 }}>
+                            <div style={{ color: '#fff', fontWeight: 600 }}>{fa.title}</div>
+                            <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 10, marginTop: 2 }}>{fa.detail}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Pending Bookings Alert */}
                   {pending > 0 && (
                     <div style={{
@@ -1567,9 +1685,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     </div>
                   )}
 
-                  {pending === 0 && rejectionAlerts.length === 0 && unverifiedGcashBookings.length === 0 && (
+                  {totalWarningAlerts === 0 && (
                     <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-dim)', fontSize: '13px' }}>
-                      No active alerts or action items.
+                      No active alerts or security warnings.
                     </div>
                   )}
                 </div>
@@ -1586,73 +1704,37 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       </nav>
 
       {/* Section Hero Banner */}
-      {viewScope === 'branch' ? (
-        <section className="hero" style={{
-          backgroundImage: `linear-gradient(to right, rgba(15,15,15,0.93), rgba(15,15,15,0.6)), url(${salonImg || salon?.image})`,
-          backgroundSize: 'cover', backgroundPosition: 'center'
-        }}>
-          <div className="hero-content">
-            <h1 className="hero-title" style={{ fontSize: '36px', marginBottom: 12 }}>{salonName || salon?.name}</h1>
-            <div className="hero-stats">
-              {[{ v: pending, l: 'Pending' }, { v: approved, l: 'Approved' }, { v: completed, l: 'Completed' }, { v: total, l: 'Total' }].map((s, i) => (
-                <React.Fragment key={i}>
-                  {i > 0 && <div className="hero-stat-divider" />}
-                  <div className="hero-stat"><strong>{s.v}</strong><span>{s.l}</span></div>
-                </React.Fragment>
-              ))}
-            </div>
+      <section className="hero" style={{
+        backgroundImage: `linear-gradient(180deg, rgba(15,15,15,0.2) 0%, rgba(15,15,15,0.7) 65%, rgba(15,15,15,0.98) 100%), linear-gradient(to right, rgba(15,15,15,0.92) 0%, rgba(15,15,15,0.55) 100%), url(${salonImg || salon?.image})`,
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center'
+      }}>
+        <div className="hero-content">
+          <h1 className="hero-title" style={{ fontSize: '36px', marginBottom: 12 }}>{salonName || salon?.name}</h1>
+          <div className="hero-stats">
+            {[{ v: pending, l: 'Pending' }, { v: approved, l: 'Approved' }, { v: completed, l: 'Completed' }, { v: total, l: 'Total' }].map((s, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <div className="hero-stat-divider" />}
+                <div className="hero-stat"><strong>{s.v}</strong><span>{s.l}</span></div>
+              </React.Fragment>
+            ))}
           </div>
-        </section>
-      ) : (
-        <section className="hero" style={{ 
-          backgroundImage: `linear-gradient(135deg, rgba(10,10,10,0.95), rgba(15,15,15,0.7)), url(/images/salon-bg.webp)`, 
-          backgroundSize: 'cover', backgroundPosition: 'center' 
-        }}>
-          <div className="hero-content">
-            <p className="hero-label" style={{ letterSpacing: 4 }}>NETWORK COMMAND CENTER</p>
-            <h1 className="hero-title">Master <em>Dashboard</em></h1>
-            <p className="hero-desc">Complete cooperative oversight of the salon network.</p>
-            <div className="hero-stats">
-              <div className="hero-stat"><strong>{allSalons.length}</strong><span>Branches</span></div>
-              <div className="hero-stat-divider" />
-              <div className="hero-stat"><strong>{networkBookings.length}</strong><span>Bookings</span></div>
-              <div className="hero-stat-divider" />
-              <div className="hero-stat"><strong>₱{networkRevenue.toLocaleString()}</strong><span>Revenue</span></div>
-              <div className="hero-stat-divider" />
-              <div className="hero-stat"><strong>{allCustomers.length}</strong><span>Customers</span></div>
-            </div>
-          </div>
-        </section>
-      )}
+        </div>
+      </section>
 
-      {/* Tabs list (Branch Streamlined Tabs vs HQ Tabs) */}
+      {/* Tabs list (Branch Admin Tabs) */}
       <div className="tab-bar">
-        {viewScope === 'branch' ? (
-          [
-            { id: 'bookings', icon: <ListIcon size={15} />, label: 'Bookings', count: pending > 0 ? pending : null },
-            { id: 'analytics', icon: <ChartIcon size={15} />, label: 'Financial Analytics' },
-            { id: 'reports', icon: <FileTextIcon size={15} />, label: 'Reports' },
-            { id: 'settings', icon: <SettingsIcon size={15} />, label: 'Manage Settings' }
-          ].map(t => (
-            <button key={t.id} className={`tab-btn ${activeTab === t.id ? 'active' : ''}`} onClick={() => setActiveTab(t.id)}>
-              {t.icon} {t.label} {t.count > 0 && <span className="tab-count">{t.count}</span>}
-            </button>
-          ))
-        ) : (
-          [
-            { id: 'network-overview', icon: <ChartIcon size={15} />, label: 'Overview' },
-            { id: 'network-comparison', icon: <ChartIcon size={15} />, label: 'Performance Comparison' },
-            { id: 'network-transactions', icon: <ListIcon size={15} />, label: 'Transactions', count: networkPending > 0 ? networkPending : null },
-            { id: 'network-salons', icon: <StoreIcon size={15} />, label: 'Salons', count: allSalons.length },
-            (currentUser.role === 'superadmin' || currentUser.salonId === 'all') && { id: 'network-admins', icon: <ShieldIcon size={15} />, label: 'Admins', count: adminUsers.length },
-            { id: 'network-broadcasts', icon: <AlertCircleIcon size={15} />, label: 'Broadcasts' },
-            { id: 'network-audit', icon: <ClipboardIcon size={15} />, label: 'Audit Log' }
-          ].filter(Boolean).map(t => (
-            <button key={t.id} className={`tab-btn ${activeTab === t.id ? 'active' : ''}`} onClick={() => setActiveTab(t.id)}>
-              {t.icon} {t.label} {t.count > 0 && <span className="tab-count">{t.count}</span>}
-            </button>
-          ))
-        )}
+        {[
+          { id: 'bookings', icon: <ListIcon size={15} />, label: 'Bookings', count: pending > 0 ? pending : null },
+          { id: 'analytics', icon: <ChartIcon size={15} />, label: 'Financial Analytics' },
+          { id: 'reports', icon: <FileTextIcon size={15} />, label: 'Reports' },
+          { id: 'settings', icon: <SettingsIcon size={15} />, label: 'Manage Settings' }
+        ].map(t => (
+          <button key={t.id} className={`tab-btn ${activeTab === t.id ? 'active' : ''}`} onClick={() => setActiveTab(t.id)}>
+            {t.icon} {t.label} {t.count > 0 && <span className="tab-count">{t.count}</span>}
+          </button>
+        ))}
       </div>
 
       {/* Mobile Back Header */}
@@ -1673,75 +1755,6 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           <h2 style={{ fontSize: 18, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)', fontWeight: 600 }}>
             Management Panel
           </h2>
-
-          {/* View Scope Toggle (if superadmin) */}
-          {isSuperAdmin && (
-            <div style={{ 
-              display: 'flex', 
-              background: 'rgba(255, 255, 255, 0.03)', 
-              border: '1px solid rgba(255, 255, 255, 0.08)', 
-              borderRadius: 10, 
-              padding: 4, 
-              marginBottom: 16 
-            }}>
-              <button 
-                style={{ 
-                  flex: 1, 
-                  padding: '8px 12px', 
-                  borderRadius: 8, 
-                  border: 'none', 
-                  fontFamily: 'var(--font-body)', 
-                  fontSize: 12, 
-                  fontWeight: 600, 
-                  background: viewScope === 'branch' ? 'var(--gold)' : 'transparent',
-                  color: viewScope === 'branch' ? '#111' : 'var(--text-dim)',
-                  cursor: 'pointer',
-                  transition: 'all 0.25s ease'
-                }}
-                onClick={() => setViewScope('branch')}
-              >
-                Branch View
-              </button>
-              <button 
-                style={{ 
-                  flex: 1, 
-                  padding: '8px 12px', 
-                  borderRadius: 8, 
-                  border: 'none', 
-                  fontFamily: 'var(--font-body)', 
-                  fontSize: 12, 
-                  fontWeight: 600, 
-                  background: viewScope === 'network' ? 'var(--gold)' : 'transparent',
-                  color: viewScope === 'network' ? '#111' : 'var(--text-dim)',
-                  cursor: 'pointer',
-                  transition: 'all 0.25s ease'
-                }}
-                onClick={() => { setViewScope('network'); setActiveTab('manage'); }}
-              >
-                Network HQ View
-              </button>
-            </div>
-          )}
-
-          {/* Branch Switcher (if branch scope and superadmin) */}
-          {viewScope === 'branch' && currentUser.salonId === 'all' && (
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', fontSize: 10, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>
-                Select Branch
-              </label>
-              <div className="admin-salon-switcher" style={{ width: '100%' }}>
-                <select 
-                  value={currentSalonId} 
-                  onChange={e => setCurrentSalonId(e.target.value)} 
-                  className="admin-salon-select"
-                  style={{ width: '100%', height: 44, padding: '10px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, color: '#fff', fontSize: 13 }}
-                >
-                  {allSalons.map(s => <option key={s.id} value={s.id} style={{ background: '#0f1118', color: '#fff' }}>{s.name}</option>)}
-                </select>
-                <span className="admin-select-arrow" style={{ right: 16 }} />
-              </div>
-            </div>
-          )}
 
           {/* Grid List of Options */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -2154,6 +2167,20 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                           }}>
                                             {isWalkIn ? 'Walk-in' : 'Online'}
                                           </span>
+                                          {fraudFlaggedBookingIds.has(b.id) && (
+                                            <span style={{
+                                              fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5,
+                                              padding: '1px 5px', borderRadius: 4,
+                                              background: 'rgba(239, 68, 68, 0.15)',
+                                              color: '#f87171',
+                                              border: '1px solid rgba(239, 68, 68, 0.35)',
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                              gap: 3
+                                            }}>
+                                              <AlertTriangleIcon size={10} /> Suspicious
+                                            </span>
+                                          )}
                                         </div>
                                         <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>
                                           {b.contact || (isWalkIn ? 'In-salon guest' : 'No phone')}
@@ -2170,14 +2197,44 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
                                   {/* 3. Date & Time */}
                                   <td>
-                                    <div style={{ color: 'var(--text-white)', fontWeight: 500 }}>{b.date}</div>
-                                    <div style={{ fontSize: 11, color: 'var(--gold)' }}>{b.time}</div>
+                                    <div 
+                                      style={{ 
+                                        color: (showCalendarView && selectedCalendarDate === b.date) ? 'var(--gold)' : 'var(--text-white)', 
+                                        fontWeight: 500,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 5,
+                                        cursor: 'pointer',
+                                        padding: '2px 6px',
+                                        borderRadius: 4,
+                                        background: (showCalendarView && selectedCalendarDate === b.date) ? 'rgba(201,168,76,0.18)' : 'transparent',
+                                        border: (showCalendarView && selectedCalendarDate === b.date) ? '1px solid var(--gold)' : '1px solid transparent'
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (showCalendarView && selectedCalendarDate === b.date) {
+                                          setShowCalendarView(false);
+                                          setSelectedCalendarDate(null);
+                                        } else {
+                                          setShowCalendarView(true);
+                                          setSelectedCalendarDate(b.date);
+                                          if (b.date) {
+                                            const [y, m] = b.date.split('-');
+                                            if (y && m) setCalendarMonth(new Date(parseInt(y), parseInt(m) - 1, 1));
+                                          }
+                                        }
+                                      }}
+                                      title={showCalendarView && selectedCalendarDate === b.date ? "Click to hide calendar" : "Click to view date in calendar"}
+                                    >
+                                      <CalendarIcon size={12} style={{ color: 'var(--gold)' }} /> {b.date}
+                                    </div>
+                                    <div style={{ fontSize: 11, color: 'var(--gold)', marginTop: 2 }}>{b.time}</div>
                                   </td>
 
                                   {/* 4. Payment */}
                                   <td>
-                                    <span className={`pmt-badge pmt-badge-${(b.paymentMethod || 'Cash').toLowerCase()}`} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6 }}>
-                                      {b.paymentMethod === 'GCash' ? 'GCash' : 'Cash'}
+                                    <span className={`pmt-badge pmt-badge-${(b.paymentMethod || 'Cash').toLowerCase()}`} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 6, whiteSpace: 'nowrap' }}>
+                                      {b.paymentMethod === 'GCash' ? 'Paying through GCash' : 'Paying through Cash'}
                                     </span>
                                     {b.paymentReference && (
                                       <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
@@ -2375,6 +2432,20 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                   }}>
                                     {isWalkIn ? 'Walk-in' : 'Online'}
                                   </span>
+                                  {fraudFlaggedBookingIds.has(b.id) && (
+                                    <span style={{
+                                      fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5,
+                                      padding: '2px 6px', borderRadius: 4,
+                                      background: 'rgba(239, 68, 68, 0.15)',
+                                      color: '#f87171',
+                                      border: '1px solid rgba(239, 68, 68, 0.35)',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 3
+                                    }}>
+                                      <AlertTriangleIcon size={10} /> Suspicious
+                                    </span>
+                                  )}
                                 </div>
                                 <span className={`status ${b.status.toLowerCase()}`}>
                                   {b.status === 'Pending' && <HourglassIcon size={10} />}
@@ -2390,7 +2461,37 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                   <span>{b.service}</span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><CalendarIcon size={12} /> {b.date}</span>
+                                  <span 
+                                    style={{ 
+                                      display: 'inline-flex', 
+                                      alignItems: 'center', 
+                                      gap: 4,
+                                      cursor: 'pointer',
+                                      padding: '2px 6px',
+                                      borderRadius: 4,
+                                      background: (showCalendarView && selectedCalendarDate === b.date) ? 'rgba(201,168,76,0.18)' : 'rgba(255,255,255,0.03)',
+                                      border: `1px solid ${(showCalendarView && selectedCalendarDate === b.date) ? 'var(--gold)' : 'rgba(255,255,255,0.08)'}`,
+                                      color: (showCalendarView && selectedCalendarDate === b.date) ? 'var(--gold)' : 'var(--text-white)',
+                                      transition: 'all 0.2s ease'
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (showCalendarView && selectedCalendarDate === b.date) {
+                                        setShowCalendarView(false);
+                                        setSelectedCalendarDate(null);
+                                      } else {
+                                        setShowCalendarView(true);
+                                        setSelectedCalendarDate(b.date);
+                                        if (b.date) {
+                                          const [y, m] = b.date.split('-');
+                                          if (y && m) setCalendarMonth(new Date(parseInt(y), parseInt(m) - 1, 1));
+                                        }
+                                      }
+                                    }}
+                                    title={showCalendarView && selectedCalendarDate === b.date ? "Click to hide calendar" : "Click to view date in calendar"}
+                                  >
+                                    <CalendarIcon size={12} style={{ color: 'var(--gold)' }} /> {b.date}
+                                  </span>
                                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><ClockIcon size={12} /> {b.time}</span>
                                   {b.contact && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><PhoneIcon size={12} /> {b.contact}</span>}
                                 </div>
@@ -2399,7 +2500,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                               {/* Payment info */}
                               <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                                 <span className={`pmt-badge pmt-badge-${(b.paymentMethod || 'Cash').toLowerCase()}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '6px' }}>
-                                  {b.paymentMethod === 'GCash' ? <><GcashIcon size={12} /> GCash</> : <><CashIcon size={12} /> Cash</>}
+                                  {b.paymentMethod === 'GCash' ? <><GcashIcon size={12} /> Paying through GCash</> : <><CashIcon size={12} /> Paying through Cash</>}
                                 </span>
                                 {b.paymentReference && (
                                   <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>

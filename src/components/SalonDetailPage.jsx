@@ -6,7 +6,7 @@ import {
 } from './Icons';
 
 function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, showToast }) {
-  const [selectedService, setSelectedService] = useState(null);
+  const [selectedServices, setSelectedServices] = useState([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [bookName, setBookName] = useState(currentUser?.name || '');
   const [bookContact, setBookContact] = useState(currentUser?.phone || '');
@@ -46,7 +46,14 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
     : categoryMap[activeCategory] || [];
 
   const handleSelectService = (service) => {
-    setSelectedService(service);
+    setSelectedServices(prev => {
+      const exists = prev.some(s => s.name === service.name);
+      if (exists) {
+        return prev.filter(s => s.name !== service.name);
+      } else {
+        return [...prev, service];
+      }
+    });
     if (window.innerWidth <= 768) {
       setTimeout(() => {
         const bookingCard = document.querySelector('.sdp-booking-card');
@@ -57,13 +64,27 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
     }
   };
 
+  const handleRemoveService = (serviceName) => {
+    setSelectedServices(prev => prev.filter(s => s.name !== serviceName));
+  };
+
+  const getServicePrice = (service) => {
+    if (service.pricingTable) {
+      return Math.min(...Object.values(service.pricingTable));
+    }
+    const cleanPrice = (service.price || 'PHP 0').replace(/[^\d.-]/g, '');
+    return parseFloat(cleanPrice) || 0;
+  };
+
+  const totalPrice = selectedServices.reduce((sum, s) => sum + getServicePrice(s), 0);
+
   const isPhoneValid = (phone) => {
     const clean = phone.replace(/[^0-9+]/g, '');
     return (clean.startsWith('09') && clean.length === 11) || (clean.startsWith('+639') && clean.length === 13);
   };
 
   const getStaffConflictMessage = () => {
-    if (!bookDate || !bookTime || !selectedService) return null;
+    if (!bookDate || !bookTime || selectedServices.length === 0) return null;
     const staffNames = (salon.staff || []).map(member => typeof member === 'string' ? member : member.name);
     if (staffNames.length === 0) return null;
 
@@ -90,8 +111,8 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
 
   const handleSubmitBooking = (e) => {
     e.preventDefault();
-    if (!bookName || !bookContact || !selectedService || !bookDate || !bookTime) {
-      showToast('Please complete all fields.');
+    if (!bookName || !bookContact || selectedServices.length === 0 || !bookDate || !bookTime) {
+      showToast('Please complete all fields and select at least one service.');
       return;
     }
     if (!isPhoneValid(bookContact)) {
@@ -106,15 +127,8 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
     }
 
     const bookings = getBookings();
-    const servicePriceLabel = selectedService.price || 'PHP 0';
-    let servicePrice = 0;
-    if (selectedService.pricingTable) {
-      const values = Object.values(selectedService.pricingTable);
-      servicePrice = Math.min(...values);
-    } else {
-      const cleanPrice = servicePriceLabel.replace(/[^\d.-]/g, '');
-      servicePrice = parseFloat(cleanPrice) || 0;
-    }
+    const serviceNames = selectedServices.map(s => s.name).join(' + ');
+    const combinedPriceLabels = selectedServices.map(s => s.price || 'PHP 0').join(' + ');
 
     bookings.push({
       id: Date.now(),
@@ -122,9 +136,9 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
       userId: currentUser?.user || 'unknown',
       customer: bookName,
       contact: bookContact,
-      service: selectedService.name,
-      servicePrice: servicePrice,
-      servicePriceLabel: servicePriceLabel,
+      service: serviceNames,
+      servicePrice: totalPrice,
+      servicePriceLabel: `PHP ${totalPrice.toLocaleString()}`,
       staff: bookStaff || 'Any',
       date: bookDate,
       time: bookTime,
@@ -132,8 +146,8 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
       paymentMethod: bookPaymentMethod
     });
     setBookings(bookings);
-    showToast('Booking submitted! Awaiting salon approval.');
-    setSelectedService(null);
+    showToast(`${selectedServices.length} service${selectedServices.length > 1 ? 's' : ''} booked! Awaiting salon approval.`);
+    setSelectedServices([]);
     setBookDate('');
     setBookTime('');
     setBookStaff('');
@@ -157,22 +171,35 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
     );
   };
 
-  const renderServiceCard = (service) => (
-    <div
-      key={service.name}
-      className={`sdp-service-card ${selectedService?.name === service.name ? 'selected' : ''}`}
-      onClick={() => handleSelectService(service)}
-    >
-      <div className="sdp-svc-info">
-        <span className="sdp-svc-name">{service.name}</span>
-        {renderPricingTable(service)}
+  const renderServiceCard = (service) => {
+    const isSelected = selectedServices.some(s => s.name === service.name);
+    return (
+      <div
+        key={service.name}
+        className={`sdp-service-card ${isSelected ? 'selected' : ''}`}
+        onClick={() => handleSelectService(service)}
+      >
+        <div className="sdp-svc-info">
+          <span className="sdp-svc-name">{service.name}</span>
+          {renderPricingTable(service)}
+        </div>
+        <div className="sdp-svc-price" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div>
+            {service.pricingTable && <span className="sdp-starts-at">from</span>}
+            <strong>{service.price}</strong>
+          </div>
+          {isSelected && (
+            <span style={{
+              width: 20, height: 20, borderRadius: '50%',
+              background: 'var(--gold)', color: '#111',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 12, fontWeight: 800, flexShrink: 0
+            }}>✓</span>
+          )}
+        </div>
       </div>
-      <div className="sdp-svc-price">
-        {service.pricingTable && <span className="sdp-starts-at">from</span>}
-        <strong>{service.price}</strong>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="app-shell customer-shell">
@@ -207,9 +234,6 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
             {salon.hours && <div className="sdp-meta-item"><span className="sdp-meta-label">Hours</span><span>{salon.hours}</span></div>}
             {salon.address && <div className="sdp-meta-item"><span className="sdp-meta-label">Location</span><span>{salon.address}</span></div>}
           </div>
-          {salon.promotions && salon.promotions.length > 0 && (
-            <div className="sdp-promo-banner">🎉 {salon.promotions[0]}</div>
-          )}
         </div>
       </section>
 
@@ -317,15 +341,53 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
             <div className="sdp-booking-card">
               <h3 className="sdp-booking-title"><ScissorsIcon size={15} /> Book Appointment</h3>
 
-              {selectedService ? (
-                <div className="sdp-selected-service">
-                  <span>Selected: <strong>{selectedService.name}</strong></span>
-                  <span className="sdp-svc-price-tag">{selectedService.price}</span>
-                  <button className="sdp-clear-svc" onClick={() => setSelectedService(null)}><CloseIcon size={10} /></button>
+              {selectedServices.length > 0 ? (
+                <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                    <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8, color: 'var(--text-dim)', fontWeight: 600 }}>
+                      Selected Services ({selectedServices.length})
+                    </span>
+                    <button 
+                      type="button"
+                      onClick={() => setSelectedServices([])}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: 11, cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                      Clear all
+                    </button>
+                  </div>
+                  {selectedServices.map(svc => (
+                    <div key={svc.name} className="sdp-selected-service" style={{ margin: 0, padding: '8px 12px' }}>
+                      <span style={{ flex: 1, fontSize: 12 }}><strong>{svc.name}</strong></span>
+                      <span className="sdp-svc-price-tag">{svc.price}</span>
+                      <button 
+                        type="button"
+                        className="sdp-clear-svc" 
+                        onClick={() => handleRemoveService(svc.name)}
+                        title="Remove service"
+                      >
+                        <CloseIcon size={12} />
+                      </button>
+                    </div>
+                  ))}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '8px 12px',
+                    background: 'rgba(201,168,76,0.12)',
+                    border: '1px solid rgba(201,168,76,0.3)',
+                    borderRadius: 'var(--r)',
+                    marginTop: 4
+                  }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-white)' }}>Estimated Total</span>
+                    <strong style={{ fontSize: 14, color: 'var(--gold)', fontFamily: 'var(--font-display)' }}>
+                      PHP {totalPrice.toLocaleString()}
+                    </strong>
+                  </div>
                 </div>
               ) : (
                 <div className="sdp-select-prompt" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <p style={{ margin: 0 }}>↑ Select a service from the menu to begin</p>
+                  <p style={{ margin: 0 }}>↑ Select one or more services from the menu</p>
                   <button 
                     type="button" 
                     className="btn secondary" 
@@ -336,15 +398,15 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
                         tabs.classList.add('shake-warning');
                         setTimeout(() => tabs.classList.remove('shake-warning'), 500);
                       }
-                      showToast('Please select a service from the list first.');
+                      showToast('Please select one or more services from the list first.');
                     }}
                   >
-                    Select a Service to Book
+                    Select Services to Book
                   </button>
                 </div>
               )}
 
-              {selectedService && (
+              {selectedServices.length > 0 && (
                 <form className="sdp-booking-form" onSubmit={handleSubmitBooking}>
                   <div className="input-group">
                     <label>Full Name</label>
@@ -407,7 +469,7 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
                     </div>
                   )}
                   <button type="submit" className="btn sdp-book-btn">
-                    <CalendarIcon size={14} /> Book
+                    <CalendarIcon size={14} /> Book Appointment ({selectedServices.length} {selectedServices.length === 1 ? 'Service' : 'Services'})
                   </button>
                 </form>
               )}

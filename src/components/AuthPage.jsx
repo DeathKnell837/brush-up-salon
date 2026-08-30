@@ -301,14 +301,7 @@ function AuthPage({ salons = [], onSignup, onLogin, onAdminLogin, isLocked = fal
                       )}
                     </div>
 
-                    {/* Promotions */}
-                    {salon.promotions && salon.promotions.length > 0 && (
-                      <div className="public-promos">
-                        {salon.promotions.map((promo, i) => (
-                          <span key={i} className="public-promo-tag">🏷️ {promo}</span>
-                        ))}
-                      </div>
-                    )}
+
 
                     {/* Service Preview / Full List */}
                     <div className="public-services-section">

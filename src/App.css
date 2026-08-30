@@ -522,7 +522,7 @@ select.search-input option{background:#1a1a1a;color:var(--text);padding:8px}
 .salon-manage-actions{flex-shrink:0}
 
 /* ═══ HERO SECTION ═══ */
-.hero{padding:48px 40px 40px;position:relative;border-bottom:1px solid var(--border);animation:fadeIn .8s ease}
+.hero{padding:48px 40px 40px;position:relative;animation:fadeIn .8s ease}
 .hero-content{max-width:640px}
 .hero-label{font-size:11px;font-weight:600;color:var(--gold);letter-spacing:3px;text-transform:uppercase;margin-bottom:16px}
 .hero-title{font-family:var(--font-display);font-size:32px;font-weight:600;color:var(--text-white);line-height:1.15;margin-bottom:12px}
@@ -2754,34 +2754,6 @@ html, body {
   }
 }
 
-/* ══════ ENLARGED HERO STATS ══════ */
-.admin-shell .hero-stats {
-  display: flex;
-  align-items: center;
-  gap: 32px;
-  margin-top: 18px;
-}
-.admin-shell .hero-stat {
-  display: flex;
-  flex-direction: column;
-}
-.admin-shell .hero-stat strong {
-  font-family: var(--font-display);
-  font-size: 34px !important;
-  font-weight: 800 !important;
-  color: var(--text-white);
-  line-height: 1.1;
-  letter-spacing: -0.5px;
-  text-shadow: 0 0 15px rgba(255, 255, 255, 0.15);
-}
-.admin-shell .hero-stat span {
-  font-size: 11px !important;
-  color: var(--gold) !important;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  font-weight: 700;
-  margin-top: 4px;
-}
 
 /* ══════ CALENDAR AVAILABILITY VIEW ══════ */
 .calendar-grid-container {
