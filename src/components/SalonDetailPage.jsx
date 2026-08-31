@@ -343,8 +343,12 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
                 <h2 className="section-heading" style={{ margin: 0 }}>Location & Map</h2>
               </div>
               {salon.address && (
-                <span style={{ fontSize: '12px', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  📍 {salon.address}
+                <span style={{ fontSize: '12px', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  {salon.address}
                 </span>
               )}
             </div>

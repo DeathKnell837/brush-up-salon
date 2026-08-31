@@ -3327,20 +3327,29 @@ html, body {
 .map-popup-meta {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.map-popup-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
   color: var(--text-dim);
-  margin-top: 4px;
 }
 
 .map-popup-rating {
   color: var(--gold);
   font-weight: 600;
+  display: flex;
+  align-items: center;
 }
 
 .map-popup-rating small {
   color: var(--text-dim);
   font-weight: 400;
+  margin-left: 4px;
 }
 
 .map-popup-address, .map-popup-hours {
@@ -3362,11 +3371,19 @@ html, body {
   color: #0e1118 !important;
   font-weight: 700 !important;
   font-size: 11px !important;
-  padding: 7px 10px !important;
+  padding: 8px 10px !important;
   border-radius: 6px !important;
   border: none !important;
-  text-align: center;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   cursor: pointer;
+  transition: all 0.2s ease !important;
+}
+
+.map-popup-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(201, 168, 76, 0.4);
 }
 
 .map-popup-dir-link {
@@ -3374,10 +3391,13 @@ html, body {
   font-size: 11px;
   font-weight: 600;
   text-decoration: none;
-  padding: 6px 8px;
+  padding: 7px 10px;
   border-radius: 6px;
   background: rgba(201, 168, 76, 0.08);
   border: 1px solid rgba(201, 168, 76, 0.2);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   transition: all 0.2s ease;
   white-space: nowrap;
 }
@@ -3385,6 +3405,30 @@ html, body {
 .map-popup-dir-link:hover {
   background: rgba(201, 168, 76, 0.2);
   color: #fff;
+}
+
+.map-directions-top-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: rgba(14, 17, 24, 0.9) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(201, 168, 76, 0.4) !important;
+  color: var(--gold) !important;
+  font-size: 12px !important;
+  padding: 8px 14px !important;
+  border-radius: 8px !important;
+  text-decoration: none !important;
+  font-weight: 600 !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6) !important;
+  transition: all 0.2s ease !important;
+}
+
+.map-directions-top-btn:hover {
+  background: rgba(201, 168, 76, 0.15) !important;
+  color: #fff !important;
+  border-color: var(--gold) !important;
+  transform: translateY(-1px) !important;
 }
 
 /* Leaflet Zoom Control Styling */
