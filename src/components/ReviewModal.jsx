@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { CloseIcon, CheckCircleIcon } from './Icons';
 
-export default function ReviewModal({ booking, salonName, onClose, onSubmit }) {
+export default function ReviewModal({ booking, salonName, onClose, onSubmit, onDelete }) {
+  const isEditing = Boolean(booking.review);
   const [rating, setRating] = useState(booking.review || 0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState(booking.reviewComment || '');
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -28,7 +30,9 @@ export default function ReviewModal({ booking, salonName, onClose, onSubmit }) {
         boxShadow: '0 24px 48px rgba(0, 0, 0, 0.6)'
       }} onClick={e => e.stopPropagation()}>
         <div style={{ padding: '24px 30px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: 18, color: 'var(--text-white)', margin: 0, fontFamily: 'var(--font-display)', letterSpacing: '0.3px' }}>Rate Your Experience</h2>
+          <h2 style={{ fontSize: 18, color: 'var(--text-white)', margin: 0, fontFamily: 'var(--font-display)', letterSpacing: '0.3px' }}>
+            {isEditing ? 'Edit Your Review' : 'Rate Your Experience'}
+          </h2>
           <button className="close-btn" onClick={onClose}><CloseIcon size={20} /></button>
         </div>
         
@@ -99,8 +103,89 @@ export default function ReviewModal({ booking, salonName, onClose, onSubmit }) {
             }}
             disabled={rating < 1}
           >
-            <CheckCircleIcon size={16} style={{ marginRight: 8 }} /> Submit Review
+            <CheckCircleIcon size={16} style={{ marginRight: 8 }} /> {isEditing ? 'Save Changes' : 'Submit Review'}
           </button>
+
+          {isEditing && onDelete && (
+            !confirmDelete ? (
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                style={{
+                  width: '100%',
+                  marginTop: 12,
+                  background: 'transparent',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  color: '#f87171',
+                  padding: '10px 16px',
+                  borderRadius: '10px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                🗑️ Delete Review
+              </button>
+            ) : (
+              <div style={{
+                marginTop: 12,
+                padding: '12px 16px',
+                borderRadius: 10,
+                background: 'rgba(239, 68, 68, 0.08)',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                textAlign: 'center'
+              }}>
+                <span style={{ fontSize: 12, color: '#fca5a5', fontWeight: 500 }}>
+                  Are you sure you want to delete your review?
+                </span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => onDelete(booking.id)}
+                    style={{
+                      flex: 1,
+                      background: '#ef4444',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 6,
+                      padding: '7px 12px',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Yes, Delete
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(false)}
+                    style={{
+                      flex: 1,
+                      background: 'rgba(255,255,255,0.06)',
+                      color: 'var(--text-dim)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 6,
+                      padding: '7px 12px',
+                      fontSize: 12,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )
+          )}
         </form>
       </div>
     </div>

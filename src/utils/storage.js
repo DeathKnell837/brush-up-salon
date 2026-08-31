@@ -1,6 +1,7 @@
 import { db, auth } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { SALON_DATA } from '../constants/salonData';
 // ─── In-memory fallback store ───
 const memoryStore = {
   luxuryUsers: [],
@@ -89,7 +90,19 @@ export const setBookings = (bookings) => {
   });
 };
 
-export const getSalons = () => storage.get('luxurySalons', []);
+export const getSalons = () => {
+  const salons = storage.get('luxurySalons', []);
+  if (!salons || salons.length === 0) return SALON_DATA;
+  return salons.map(s => {
+    const defaultData = SALON_DATA.find(d => d.id === s.id);
+    if (!defaultData) return s;
+    return {
+      ...s,
+      coordinates: s.coordinates || defaultData.coordinates,
+      address: s.address || defaultData.address
+    };
+  });
+};
 export const setSalons = (salons) => {
   storage.set('luxurySalons', salons);
   salons.forEach(s => {

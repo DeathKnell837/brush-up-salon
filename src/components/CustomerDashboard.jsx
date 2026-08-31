@@ -4,6 +4,7 @@ import { getBookings, setBookings, getAnnouncements, getSalons } from '../utils/
 import BrushUpLogo from './BrushUpLogo';
 import Chatbot from './Chatbot';
 import ReviewModal from './ReviewModal';
+import SalonMap from './SalonMap';
 import {
   StoreIcon, ClipboardIcon, SearchIcon, ScissorsIcon,
   CalendarIcon, ClockIcon, HourglassIcon, CheckCircleIcon, XCircleIcon, InboxIcon, BellIcon,
@@ -332,6 +333,7 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
 
 function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, onOpenProfile, syncTick, showToast }) {
   const [tab, setTab] = useState('salons');
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'map'
   const [search, setSearch] = useState('');
   const [filterLoc, setFilterLoc] = useState('All');
   const [filterSvc, setFilterSvc] = useState('All');
@@ -468,6 +470,20 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
       if (comment) allBookings[idx].reviewComment = comment;
       setBookings(allBookings);
       setLocalTick(t => t + 1);
+      if (showToast) showToast('Review submitted successfully!');
+    }
+    setReviewBooking(null);
+  };
+
+  const handleDeleteReview = (id) => {
+    const allBookings = getBookings();
+    const idx = allBookings.findIndex(b => b.id === id);
+    if (idx !== -1) {
+      delete allBookings[idx].review;
+      delete allBookings[idx].reviewComment;
+      setBookings(allBookings);
+      setLocalTick(t => t + 1);
+      if (showToast) showToast('Review deleted.');
     }
     setReviewBooking(null);
   };
@@ -851,11 +867,50 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                 <option value="Top Rated">Sort: Top Rated</option>
                 <option value="Most Reviewed">Sort: Most Reviewed</option>
               </select>
+              <div className="view-mode-toggle">
+                <button 
+                  type="button" 
+                  className={`view-mode-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                  onClick={() => setViewMode('grid')}
+                  title="Grid View"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                  Grid
+                </button>
+                <button 
+                  type="button" 
+                  className={`view-mode-btn ${viewMode === 'map' ? 'active' : ''}`}
+                  onClick={() => setViewMode('map')}
+                  title="Map View"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+                  Map View
+                </button>
+              </div>
             </div>
           </div>
 
+          {/* Interactive Map View */}
+          {viewMode === 'map' && (
+            <section className="content-section" style={{ marginTop: '10px' }}>
+              <div className="section-header" style={{ marginBottom: '16px' }}>
+                <p className="section-label">INTERACTIVE DIRECTORY</p>
+                <h2 className="section-heading">Salons in Midsayap, Cotabato</h2>
+                <p style={{ color: 'var(--text-dim)', fontSize: '13px', margin: '4px 0 0' }}>
+                  Explore salon locations across Midsayap. Click on any gold pin to view details and book an appointment.
+                </p>
+              </div>
+              <SalonMap 
+                salons={filtered}
+                selectedSalonId={filterLoc !== 'All' ? filtered[0]?.id : null}
+                onSelectSalon={onSelectSalon}
+                height="480px"
+              />
+            </section>
+          )}
+
           {/* Featured Section */}
-          {!search && filterLoc === 'All' && filterSvc === 'All' && (
+          {viewMode === 'grid' && !search && filterLoc === 'All' && filterSvc === 'All' && (
             <section className="content-section">
               <div className="section-header">
                 <p className="section-label">CURATED FOR YOU</p>
@@ -884,11 +939,13 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
             </section>
           )}
 
-          {/* All Salons */}
+          {/* All Salons Grid */}
           <section className="content-section">
             <div className="section-header">
-              <p className="section-label">BROWSE ALL</p>
-              <h2 className="section-heading">{search ? `Results for "${search}"` : 'All Partner Salons'}</h2>
+              <p className="section-label">{viewMode === 'map' ? 'SALON LIST' : 'BROWSE ALL'}</p>
+              <h2 className="section-heading">
+                {search ? `Results for "${search}"` : viewMode === 'map' ? 'All Partner Salons' : 'All Partner Salons'}
+              </h2>
             </div>
             {filtered.length === 0 ? (
               <div className="no-results"><p>No salons found matching your search.</p></div>
@@ -1318,6 +1375,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
           salonName={salons.find(s => s.id === reviewBooking.salonId)?.name || 'Salon'} 
           onClose={() => setReviewBooking(null)} 
           onSubmit={submitReview} 
+          onDelete={handleDeleteReview}
         />
       )}
 

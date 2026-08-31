@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { getBookings, setBookings } from '../utils/storage';
 import BrushUpLogo from './BrushUpLogo';
+import SalonMap from './SalonMap';
 import {
   ScissorsIcon, CalendarIcon, CloseIcon, StoreIcon, CashIcon, GcashIcon
 } from './Icons';
@@ -332,6 +333,27 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
                 ))}
               </div>
             )}
+          </section>
+
+          {/* ─── Location & Map ─── */}
+          <section className="sdp-section">
+            <div className="sdp-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <p className="section-label">VISIT OUR BRANCH</p>
+                <h2 className="section-heading" style={{ margin: 0 }}>Location & Map</h2>
+              </div>
+              {salon.address && (
+                <span style={{ fontSize: '12px', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  📍 {salon.address}
+                </span>
+              )}
+            </div>
+            <SalonMap 
+              salons={[salon]}
+              mode="single"
+              height="320px"
+              showDirectionsBtn={true}
+            />
           </section>
         </div>
 
