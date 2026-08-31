@@ -215,7 +215,7 @@ export default function SalonMap({
       {showDirectionsBtn && salons.length === 1 && salons[0]?.coordinates && (
         <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 1000 }}>
           <a
-            href={`https://www.google.com/maps/dir/?api=1&destination=${salons[0].coordinates.lat},${salons[0].coordinates.lng}`}
+            href={`https://www.google.com/maps/search/?api=1&query=${salons[0].coordinates.lat},${salons[0].coordinates.lng}`}
             target="_blank"
             rel="noopener noreferrer"
             className="btn small map-directions-top-btn"
