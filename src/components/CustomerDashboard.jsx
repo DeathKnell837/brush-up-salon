@@ -942,10 +942,6 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                     <span style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>Total Bookings</span>
                     <span style={{ fontSize: '24px', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-display)' }}>{bookings.length}</span>
                   </div>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <span style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>Total Investment</span>
-                    <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--gold)', fontFamily: 'var(--font-display)' }}>₱{totalSpent.toLocaleString()}</span>
-                  </div>
                   <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
                     <span style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>Favorite Salon</span>
                     <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={favoriteSalonName}>{favoriteSalonName}</span>
