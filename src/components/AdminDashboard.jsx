@@ -137,6 +137,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const [isAuditing, setIsAuditing] = useState(false);
   const [auditReport, setAuditReport] = useState(null);
   const [showAuditModal, setShowAuditModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   // Dual Notifications States (Messages vs Red Alerts)
   const [showMessagesPopover, setShowMessagesPopover] = useState(false);
@@ -421,20 +422,163 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
     setSalonImg(b64);
   };
 
-  // CSV Exports
-  const handleExportCSV = () => {
-    let csv = "ID,Date,Time,Customer,Contact,Service,Status\n";
+  // Report Generation (Excel & PDF)
+  const handleExportExcel = () => {
+    let csv = "Booking ID,Date,Time,Customer Name,Contact Number,Service(s),Payment Method,Status\n";
     bookingsState.forEach(b => {
-      csv += `${b.id},${b.date},${b.time},"${b.customer}","${b.contact}","${b.service}",${b.status}\n`;
+      const payment = (b.paymentMethod || 'Cash').toUpperCase();
+      const customer = (b.customer || '').replace(/"/g, '""');
+      const contact = (b.contact || '').replace(/"/g, '""');
+      const service = (b.service || '').replace(/"/g, '""');
+      csv += `"${b.id}","${b.date}","${b.time || ''}","${customer}","${contact}","${service}","${payment}","${b.status || 'Pending'}"\n`;
     });
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `bookings_export_${currentSalonId}_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `${(salonName || 'salon').toLowerCase().replace(/\s+/g, '_')}_report_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
-    showToast('Branch Report exported as CSV!');
+    setShowReportModal(false);
+    showToast('Excel report downloaded successfully!');
+  };
+
+  const handleGeneratePDF = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      showToast('Please allow popups to generate PDF report.');
+      return;
+    }
+    
+    const totalRevenue = bookingsState
+      .filter(b => b.status === 'Approved' || b.status === 'Completed')
+      .reduce((sum, b) => {
+        const match = (b.servicePrice || b.amount || '').toString().replace(/[^0-9]/g, '');
+        return sum + (parseInt(match, 10) || 0);
+      }, 0);
+
+    const completedCount = bookingsState.filter(b => b.status === 'Approved' || b.status === 'Completed').length;
+    const pendingCount = bookingsState.filter(b => b.status === 'Pending').length;
+    const gcashCount = bookingsState.filter(b => (b.paymentMethod || '').toLowerCase().includes('gcash')).length;
+    const cashCount = bookingsState.filter(b => (b.paymentMethod || '').toLowerCase().includes('cash')).length;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${salonName || 'Salon'} - Operations Report</title>
+          <style>
+            @page { size: A4; margin: 15mm; }
+            body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; color: #1e293b; margin: 0; padding: 24px; background: #fff; }
+            .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #c9a84c; padding-bottom: 16px; margin-bottom: 20px; }
+            .brand-title { font-size: 22px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: 0.5px; }
+            .brand-subtitle { font-size: 13px; color: #c9a84c; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+            .report-meta { text-align: right; font-size: 11px; color: #64748b; line-height: 1.5; }
+            .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+            .kpi-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; }
+            .kpi-label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+            .kpi-val { font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 4px; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 12px; }
+            th { background: #0f172a; color: #ffffff; text-align: left; padding: 9px 10px; font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
+            td { padding: 9px 10px; border-bottom: 1px solid #e2e8f0; color: #334155; }
+            tr:nth-child(even) { background: #f8fafc; }
+            .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.3px; }
+            .badge-approved { background: #dcfce7; color: #15803d; }
+            .badge-completed { background: #e0e7ff; color: #4338ca; }
+            .badge-pending { background: #fef3c7; color: #b45309; }
+            .badge-rejected, .badge-cancelled { background: #fee2e2; color: #b91c1c; }
+            .footer { margin-top: 32px; padding-top: 14px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; }
+            @media print {
+              body { padding: 0; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1 class="brand-title">BRUSH UP SALON & BEAUTY</h1>
+              <div class="brand-subtitle">${salonName || 'Branch'} - Official Report</div>
+            </div>
+            <div class="report-meta">
+              <div><strong>Generated Date:</strong> ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+              <div><strong>Branch Location:</strong> ${salonAddress || 'Midsayap, Cotabato'}</div>
+              <div><strong>Admin:</strong> ${currentUser?.name || currentUser?.user || 'Branch Admin'}</div>
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-label">Total Appointments</div>
+              <div class="kpi-val">${bookingsState.length}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Completed / Active</div>
+              <div class="kpi-val">${completedCount}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Pending Approval</div>
+              <div class="kpi-val">${pendingCount}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Payment Breakdown</div>
+              <div class="kpi-val" style="font-size: 12px; line-height: 1.4; margin-top: 2px;">
+                GCash: ${gcashCount} &bull; Cash: ${cashCount}
+              </div>
+            </div>
+          </div>
+
+          <h3 style="font-size: 13px; margin: 0 0 8px; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">Appointment Records</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Booking ID</th>
+                <th>Date & Time</th>
+                <th>Customer</th>
+                <th>Contact</th>
+                <th>Service(s)</th>
+                <th>Payment</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${bookingsState.map(b => `
+                <tr>
+                  <td>#${b.id}</td>
+                  <td>${b.date} ${b.time || ''}</td>
+                  <td><strong>${b.customer || 'Guest'}</strong></td>
+                  <td>${b.contact || 'N/A'}</td>
+                  <td>${b.service || 'General Service'}</td>
+                  <td>${(b.paymentMethod || 'Cash').toUpperCase()}</td>
+                  <td>
+                    <span class="badge badge-${(b.status || 'pending').toLowerCase()}">
+                      ${(b.status || 'Pending').toUpperCase()}
+                    </span>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            <span>Brush Up Salon Management Platform &copy; 2026</span>
+            <span>Confidential Branch Business Record</span>
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    setShowReportModal(false);
+    showToast('PDF report opened for printing / download!');
   };
 
   // HQ Handlers (from legacy SuperAdminDashboard)
@@ -1880,9 +2024,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     <UserIcon size={14} style={{ marginRight: 6 }} /> Add Walk-in
                   </button>
 
-                  {/* Export CSV */}
-                  <button className="btn small outline" onClick={handleExportCSV}>
-                    <DownloadIcon size={14} style={{ marginRight: 6 }} /> Export
+                  {/* Generate Report */}
+                  <button className="btn small outline" onClick={() => setShowReportModal(true)}>
+                    <ClipboardIcon size={14} style={{ marginRight: 6 }} /> Generate Report
                   </button>
                 </div>
               </div>
@@ -2807,8 +2951,8 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   <h2 className="section-heading" style={{ margin: 0 }}>Operations Performance</h2>
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <button className="btn small outline" onClick={handleExportFinancialReport}>
-                    <DownloadIcon size={14} style={{ marginRight: 6 }} /> Export Financial Report
+                  <button className="btn small outline" onClick={() => setShowReportModal(true)}>
+                    <ClipboardIcon size={14} style={{ marginRight: 6 }} /> Generate Report
                   </button>
                   <button 
                     className="btn small primary" 
@@ -3292,7 +3436,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
               <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
                 <div><p className="section-label">ANALYTICS</p><h2 className="section-heading">Financial Reports</h2></div>
-                <button className="btn small outline" onClick={handleExportCSV}><ListIcon size={14} style={{ marginRight: 6 }} /> Export CSV</button>
+                <button className="btn small outline" onClick={() => setShowReportModal(true)}>
+                  <ClipboardIcon size={14} style={{ marginRight: 6 }} /> Generate Report
+                </button>
               </div>
 
               {/* Timeframe Selector Pills */}
@@ -5040,6 +5186,184 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
               <button className="btn small outline" onClick={() => setRejectionModalBooking(null)}>Cancel</button>
               <button className="btn small danger" onClick={handleConfirmRejection}>Confirm Rejection</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Generate Report Modal (Excel or PDF) ─── */}
+      {showReportModal && (
+        <div className="modal" onClick={() => setShowReportModal(false)}>
+          <div 
+            className="modal-content" 
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: '480px',
+              padding: '0',
+              background: '#0e1118',
+              border: '1px solid rgba(201, 168, 76, 0.3)',
+              borderRadius: '16px',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.8)',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            <div style={{
+              padding: '24px 28px',
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div>
+                <p style={{ margin: 0, fontSize: '11px', color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>
+                  EXPORT & ANALYTICS
+                </p>
+                <h3 style={{ margin: '4px 0 0', fontSize: '18px', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+                  Generate Report
+                </h3>
+              </div>
+              <button 
+                className="close-btn" 
+                onClick={() => setShowReportModal(false)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}
+              >
+                <CloseIcon size={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: '28px' }}>
+              <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--text-dim)', lineHeight: 1.5 }}>
+                Select your preferred format to export the official records for <strong>{salonName || 'your branch'}</strong>:
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                {/* Excel Option */}
+                <div 
+                  onClick={handleExportExcel}
+                  style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '12px',
+                    padding: '20px 16px',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.25s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = '#10b981';
+                    e.currentTarget.style.background = 'rgba(16, 185, 129, 0.08)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '10px',
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    color: '#10b981',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                      <line x1="3" y1="9" x2="21" y2="9"/>
+                      <line x1="3" y1="15" x2="21" y2="15"/>
+                      <line x1="9" y1="3" x2="9" y2="21"/>
+                      <line x1="15" y1="3" x2="15" y2="21"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 style={{ margin: '0 0 4px', fontSize: '14px', color: '#fff', fontWeight: 600 }}>Excel (.CSV)</h4>
+                    <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Spreadsheet data for Excel & Sheets</span>
+                  </div>
+                  <button 
+                    type="button" 
+                    className="btn small" 
+                    style={{ marginTop: 'auto', width: '100%', background: '#10b981', color: '#000', fontWeight: 700, fontSize: '12px', border: 'none' }}
+                  >
+                    Export Excel
+                  </button>
+                </div>
+
+                {/* PDF Option */}
+                <div 
+                  onClick={handleGeneratePDF}
+                  style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '12px',
+                    padding: '20px 16px',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.25s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = 'var(--gold)';
+                    e.currentTarget.style.background = 'rgba(201, 168, 76, 0.08)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '10px',
+                    background: 'rgba(201, 168, 76, 0.15)',
+                    color: 'var(--gold)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14 2 14 8 20 8"/>
+                      <line x1="16" y1="13" x2="8" y2="13"/>
+                      <line x1="16" y1="17" x2="8" y2="17"/>
+                      <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 style={{ margin: '0 0 4px', fontSize: '14px', color: '#fff', fontWeight: 600 }}>PDF Document</h4>
+                    <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Formatted print & PDF report</span>
+                  </div>
+                  <button 
+                    type="button" 
+                    className="btn small" 
+                    style={{ marginTop: 'auto', width: '100%', background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)', color: '#000', fontWeight: 700, fontSize: '12px', border: 'none' }}
+                  >
+                    Generate PDF
+                  </button>
+                </div>
+              </div>
+
+              <button 
+                type="button" 
+                className="btn outline small" 
+                onClick={() => setShowReportModal(false)}
+                style={{ width: '100%', padding: '10px' }}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
