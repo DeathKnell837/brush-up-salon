@@ -3359,25 +3359,28 @@ html, body {
 }
 
 .map-popup-actions {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 .map-popup-btn {
-  flex: 1;
+  height: 32px !important;
+  min-height: 32px !important;
   background: linear-gradient(135deg, var(--gold) 0%, #b3924e 100%) !important;
   color: #0e1118 !important;
   font-weight: 700 !important;
   font-size: 11px !important;
-  padding: 8px 10px !important;
+  padding: 0 8px !important;
   border-radius: 6px !important;
   border: none !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+  white-space: nowrap !important;
   cursor: pointer;
+  box-sizing: border-box !important;
   transition: all 0.2s ease !important;
 }
 
@@ -3387,17 +3390,21 @@ html, body {
 }
 
 .map-popup-dir-link {
+  height: 32px;
+  min-height: 32px;
   color: var(--gold);
   font-size: 11px;
   font-weight: 600;
   text-decoration: none;
-  padding: 7px 10px;
+  padding: 0 8px;
   border-radius: 6px;
   background: rgba(201, 168, 76, 0.08);
-  border: 1px solid rgba(201, 168, 76, 0.2);
+  border: 1px solid rgba(201, 168, 76, 0.25);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
+  box-sizing: border-box;
   transition: all 0.2s ease;
   white-space: nowrap;
 }
@@ -3405,6 +3412,8 @@ html, body {
 .map-popup-dir-link:hover {
   background: rgba(201, 168, 76, 0.2);
   color: #fff;
+  border-color: var(--gold);
+  transform: translateY(-1px);
 }
 
 .map-directions-top-btn {

@@ -152,8 +152,8 @@ export default function SalonMap({
           </div>
           <div class="map-popup-actions">
             <button type="button" class="btn small map-popup-btn" id="btn-view-${salon.id}">
-              <span>View Salon & Book</span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 4px;">
+              <span>View Salon</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 4px; flex-shrink: 0;">
                 <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
               </svg>
             </button>
@@ -162,10 +162,10 @@ export default function SalonMap({
                rel="noopener noreferrer" 
                class="map-popup-dir-link" 
                title="Get Directions on Google Maps">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; flex-shrink: 0;">
                 <polygon points="3 11 22 2 13 21 11 13 3 11"/>
               </svg>
-              Directions
+              <span>Directions</span>
             </a>
           </div>
         </div>
