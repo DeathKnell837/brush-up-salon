@@ -395,9 +395,9 @@ function App() {
                 <line x1="21" y1="12" x2="9" y2="12"></line>
               </svg>
             </div>
-            <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>Log Out?</h3>
+            <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>Log out?</h3>
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '24px' }}>
-              Are you sure you want to log out of Brush Up Salon?
+              Are you sure you want to log out of your account?
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button
