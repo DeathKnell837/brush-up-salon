@@ -7,11 +7,12 @@ export default function ReviewModal({ booking, salonName, onClose, onSubmit, onD
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState(booking.reviewComment || '');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [reviewError, setReviewError] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (rating < 1) {
-      alert("Please select a star rating.");
+      setReviewError("Please select a star rating.");
       return;
     }
     onSubmit(booking.id, rating, comment);
@@ -37,6 +38,21 @@ export default function ReviewModal({ booking, salonName, onClose, onSubmit, onD
         </div>
         
         <form onSubmit={handleSubmit} style={{ padding: '30px' }}>
+          {reviewError && (
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              color: '#fca5a5',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              fontSize: '12px',
+              marginBottom: '16px',
+              textAlign: 'center',
+              fontWeight: 500
+            }}>
+              {reviewError}
+            </div>
+          )}
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
             <p style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 12 }}>How was your {booking.service} at <strong>{salonName}</strong>?</p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>

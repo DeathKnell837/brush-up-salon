@@ -14,6 +14,7 @@ function BookingModal({ salon, initialDetails, onClose, onSubmit, currentUser })
   const [bookService, setBookService] = useState(defaultService);
   const [bookDate, setBookDate] = useState(initialDetails?.date || '');
   const [bookTime, setBookTime] = useState(initialDetails?.time || '');
+  const [formError, setFormError] = useState('');
 
   const allBookings = getBookings();
   const reviews = allBookings
@@ -24,9 +25,16 @@ function BookingModal({ salon, initialDetails, onClose, onSubmit, currentUser })
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!bookName || !bookContact || !bookService || !bookDate || !bookTime) { alert('Please complete the booking form.'); return; }
+    setFormError('');
+    if (!bookName || !bookContact || !bookService || !bookDate || !bookTime) {
+      setFormError('Please complete all fields in the booking form.');
+      return;
+    }
     const phoneRegex = /^[0-9+\-\s()]{7,15}$/;
-    if (!phoneRegex.test(bookContact)) { alert('Please enter a valid phone number (7-15 digits).'); return; }
+    if (!phoneRegex.test(bookContact)) {
+      setFormError('Please enter a valid phone number (7-15 digits).');
+      return;
+    }
     onSubmit({ name: bookName, contact: bookContact, service: bookService, date: bookDate, time: bookTime, paymentMethod });
   };
 
@@ -76,6 +84,20 @@ function BookingModal({ salon, initialDetails, onClose, onSubmit, currentUser })
         <div className="modal-right">
           <form className="booking-form" onSubmit={handleSubmit} style={{ background: 'transparent', border: 'none', padding: 0 }}>
             <h3><ScissorsIcon size={16} /> Book Appointment</h3>
+            {formError && (
+              <div style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#fca5a5',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                fontSize: '12px',
+                marginBottom: '12px',
+                fontWeight: 500
+              }}>
+                {formError}
+              </div>
+            )}
             <div className="input-group">
               <label>Name</label>
               <input type="text" placeholder="Your full name" value={bookName} onChange={(e) => setBookName(e.target.value)} />

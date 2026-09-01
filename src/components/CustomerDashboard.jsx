@@ -343,6 +343,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
   const [announcements, setAnnouncements] = useState([]);
   const [reviewBooking, setReviewBooking] = useState(null);
   const [paymentBookingId, setPaymentBookingId] = useState(null);
+  const [cancelModalBooking, setCancelModalBooking] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [readIds, setReadIds] = useState(() => {
     try {
@@ -446,15 +447,29 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
 
     bookingStatusesRef.current = currentStatuses;
   }, [syncTick, bookings, showToast, currentUser]);
-  const handleCancelBooking = (id) => {
-    if (!window.confirm("Are you sure you want to cancel this appointment?")) return;
-    const allBookings = getBookings();
-    const idx = allBookings.findIndex(b => b.id === id);
-    if (idx !== -1) {
-      allBookings[idx].status = 'Cancelled';
-      setBookings(allBookings);
-      setLocalTick(t => t + 1);
+  const handleCancelBooking = (bookingOrId) => {
+    let b = null;
+    if (typeof bookingOrId === 'object' && bookingOrId !== null) {
+      b = bookingOrId;
+    } else {
+      b = allBookings.find(x => x.id === bookingOrId) || bookings.find(x => x.id === bookingOrId);
     }
+    if (b) {
+      setCancelModalBooking(b);
+    }
+  };
+
+  const handleConfirmCancelBooking = () => {
+    if (!cancelModalBooking) return;
+    const currentBookings = getBookings();
+    const idx = currentBookings.findIndex(b => b.id === cancelModalBooking.id);
+    if (idx !== -1) {
+      currentBookings[idx].status = 'Cancelled';
+      setBookings(currentBookings);
+      setLocalTick(t => t + 1);
+      if (showToast) showToast('Appointment has been cancelled.');
+    }
+    setCancelModalBooking(null);
   };
 
   const handleLeaveReview = (id) => {
@@ -1386,6 +1401,65 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
           onClose={() => setPaymentBookingId(null)}
           onUpload={handlePaymentProofUpload}
         />
+      )}
+
+      {/* ─── Luxury Cancel Booking Confirmation Modal ─── */}
+      {cancelModalBooking && (
+        <div className="modal" onClick={() => setCancelModalBooking(null)}>
+          <div 
+            className="modal-content" 
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: '420px',
+              padding: '32px 28px',
+              background: 'linear-gradient(135deg, #18181c 0%, #111114 100%)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '16px',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.8)',
+              textAlign: 'center'
+            }}
+          >
+            <div style={{
+              width: '56px', height: '56px', borderRadius: '50%',
+              background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px',
+              color: '#ef4444'
+            }}>
+              <XCircleIcon size={28} />
+            </div>
+
+            <h3 style={{ color: '#fff', fontSize: '19px', fontWeight: 700, margin: '0 0 8px', fontFamily: 'var(--font-display)' }}>
+              Cancel Appointment?
+            </h3>
+            
+            <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '13px', lineHeight: 1.6, margin: '0 0 24px' }}>
+              Are you sure you want to cancel your appointment with <strong style={{ color: '#fff' }}>{salons.find(s => s.id === cancelModalBooking.salonId)?.name || cancelModalBooking.salon || 'the salon'}</strong> for <strong style={{ color: 'var(--gold)' }}>{cancelModalBooking.service}</strong> on <strong>{cancelModalBooking.date}</strong> at <strong>{cancelModalBooking.time}</strong>?
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                type="button"
+                className="btn outline small"
+                onClick={() => setCancelModalBooking(null)}
+                style={{ flex: 1, padding: '12px', fontSize: '13px', fontWeight: 600 }}
+              >
+                Keep Booking
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCancelBooking}
+                style={{
+                  flex: 1, padding: '12px', borderRadius: '8px', border: 'none',
+                  background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                  color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)'
+                }}
+              >
+                Yes, Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <Chatbot onOpenModal={onSelectSalon} currentUser={currentUser} onCancelBooking={handleCancelBooking} contextData={`User Bookings: ${JSON.stringify(bookings)}`} />

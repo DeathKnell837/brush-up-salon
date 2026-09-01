@@ -138,6 +138,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const [auditReport, setAuditReport] = useState(null);
   const [showAuditModal, setShowAuditModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   // Dual Notifications States (Messages vs Red Alerts)
   const [showMessagesPopover, setShowMessagesPopover] = useState(false);
@@ -693,19 +694,36 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
   const handleRemoveSalon = (sid) => {
     if (!isSuperAdmin) { showToast("Permission denied. Action restricted to Super Admin."); return; }
-    if (!window.confirm("Remove this salon and its admin permanently?")) return;
-    setSalons(getSalons().filter(s => s.id !== sid));
-    saveUsers(getUsers().filter(u => u.salonId !== sid));
-    logAuditAction(currentUser.user, 'DELETE_SALON', `Deleted salon ID ${sid}`);
-    onRefreshSalons(); showToast('Salon removed.');
+    setConfirmDialog({
+      title: "Remove Salon?",
+      message: "Are you sure you want to permanently remove this salon and its admin account? This action cannot be undone.",
+      confirmText: "Yes, Remove Salon",
+      danger: true,
+      onConfirm: () => {
+        setSalons(getSalons().filter(s => s.id !== sid));
+        saveUsers(getUsers().filter(u => u.salonId !== sid));
+        logAuditAction(currentUser.user, 'DELETE_SALON', `Deleted salon ID ${sid}`);
+        onRefreshSalons();
+        showToast('Salon removed.');
+      }
+    });
   };
 
   const handleRemoveAdmin = (user) => {
     if (!isSuperAdmin) { showToast("Permission denied. Action restricted to Super Admin."); return; }
     if (user === currentUser.user) { showToast("Can't remove yourself."); return; }
-    saveUsers(getUsers().filter(u => u.user !== user));
-    logAuditAction(currentUser.user, 'REMOVE_ADMIN', `Revoked access for @${user}`);
-    onRefreshSalons(); showToast(`Admin removed.`);
+    setConfirmDialog({
+      title: "Remove Admin?",
+      message: `Are you sure you want to revoke admin access for @${user}?`,
+      confirmText: "Yes, Revoke Access",
+      danger: true,
+      onConfirm: () => {
+        saveUsers(getUsers().filter(u => u.user !== user));
+        logAuditAction(currentUser.user, 'REMOVE_ADMIN', `Revoked access for @${user}`);
+        onRefreshSalons();
+        showToast('Admin removed.');
+      }
+    });
   };
 
   const handleResetPassword = async (user) => {
@@ -3978,10 +3996,24 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                             </div>
                           </div>
                           <button className="btn small danger" style={{ padding: '4px 10px', fontSize: 10 }} onClick={() => {
-                            if (!window.confirm(`Remove ${member.name}?`)) return;
-                            const arr = staff.filter(m => m.id !== member.id); setStaff(arr);
-                            const all = getSalons(); const idx = all.findIndex(s => s.id === currentSalonId);
-                            if (idx !== -1) { all[idx].staff = arr; setSalons(all); onRefreshSalons(); showToast('Staff removed.'); }
+                            setConfirmDialog({
+                              title: "Remove Staff Member?",
+                              message: `Are you sure you want to remove ${member.name} (${member.role}) from the staff roster?`,
+                              confirmText: "Yes, Remove",
+                              danger: true,
+                              onConfirm: () => {
+                                const arr = staff.filter(m => m.id !== member.id);
+                                setStaff(arr);
+                                const all = getSalons();
+                                const idx = all.findIndex(s => s.id === currentSalonId);
+                                if (idx !== -1) {
+                                  all[idx].staff = arr;
+                                  setSalons(all);
+                                  onRefreshSalons();
+                                  showToast('Staff removed.');
+                                }
+                              }
+                            });
                           }}>Remove</button>
                         </div>
                       ))}
@@ -5363,6 +5395,69 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 style={{ width: '100%', padding: '10px' }}
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Generic Luxury Confirmation Dialog ─── */}
+      {confirmDialog && (
+        <div className="modal" onClick={() => setConfirmDialog(null)}>
+          <div 
+            className="modal-content" 
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: '420px',
+              padding: '32px 28px',
+              background: 'linear-gradient(135deg, #18181c 0%, #111114 100%)',
+              border: `1px solid ${confirmDialog.danger ? 'rgba(239, 68, 68, 0.3)' : 'rgba(201, 168, 76, 0.3)'}`,
+              borderRadius: '16px',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.8)',
+              textAlign: 'center'
+            }}
+          >
+            <div style={{
+              width: '56px', height: '56px', borderRadius: '50%',
+              background: confirmDialog.danger ? 'rgba(239, 68, 68, 0.12)' : 'rgba(201, 168, 76, 0.12)',
+              border: `1px solid ${confirmDialog.danger ? 'rgba(239, 68, 68, 0.3)' : 'rgba(201, 168, 76, 0.3)'}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px',
+              color: confirmDialog.danger ? '#ef4444' : 'var(--gold)'
+            }}>
+              {confirmDialog.danger ? <AlertTriangleIcon size={28} /> : <AlertCircleIcon size={28} />}
+            </div>
+
+            <h3 style={{ color: '#fff', fontSize: '19px', fontWeight: 700, margin: '0 0 8px', fontFamily: 'var(--font-display)' }}>
+              {confirmDialog.title}
+            </h3>
+            
+            <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '13px', lineHeight: 1.6, margin: '0 0 24px' }}>
+              {confirmDialog.message}
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                type="button"
+                className="btn outline small"
+                onClick={() => setConfirmDialog(null)}
+                style={{ flex: 1, padding: '12px', fontSize: '13px', fontWeight: 600 }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirmDialog.onConfirm) confirmDialog.onConfirm();
+                  setConfirmDialog(null);
+                }}
+                style={{
+                  flex: 1, padding: '12px', borderRadius: '8px', border: 'none',
+                  background: confirmDialog.danger ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, var(--gold), #b3924e)',
+                  color: confirmDialog.danger ? '#fff' : '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                  boxShadow: confirmDialog.danger ? '0 4px 14px rgba(239, 68, 68, 0.4)' : '0 4px 14px rgba(201, 168, 76, 0.4)'
+                }}
+              >
+                {confirmDialog.confirmText || 'Confirm'}
               </button>
             </div>
           </div>

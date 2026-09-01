@@ -29,11 +29,13 @@ function AuthPage({ salons = [], onSignup, onLogin, onAdminLogin, isLocked = fal
   };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [authError, setAuthError] = useState('');
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (isLocked) { alert(`Too many attempts. Try again in ${lockCountdown}s.`); return; }
-    if (!loginUser || !loginPass) { alert('Enter username and password.'); return; }
+    setAuthError('');
+    if (isLocked) { setAuthError(`Too many attempts. Try again in ${lockCountdown}s.`); return; }
+    if (!loginUser || !loginPass) { setAuthError('Please enter both your username and password.'); return; }
     setIsSubmitting(true);
     let success = false;
     if (isAdmin) { success = await onAdminLogin(loginUser, loginPass); }
@@ -43,9 +45,10 @@ function AuthPage({ salons = [], onSignup, onLogin, onAdminLogin, isLocked = fal
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    if (!signupName || !signupUser || !signupPass) { alert('Please complete all fields.'); return; }
+    setAuthError('');
+    if (!signupName || !signupUser || !signupPass) { setAuthError('Please complete all registration fields.'); return; }
     const feedback = getPasswordFeedback(signupPass);
-    if (feedback) { alert(feedback); return; }
+    if (feedback) { setAuthError(feedback); return; }
     setIsSubmitting(true);
     const success = await onSignup(signupName, signupUser, signupPass);
     if (!success) { setIsSubmitting(false); }
@@ -109,6 +112,21 @@ function AuthPage({ salons = [], onSignup, onLogin, onAdminLogin, isLocked = fal
               </div>
 
               <form onSubmit={handleLogin}>
+                {authError && (
+                  <div style={{
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    color: '#fca5a5',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    marginBottom: '14px',
+                    fontWeight: 500,
+                    textAlign: 'center'
+                  }}>
+                    {authError}
+                  </div>
+                )}
                 <div className="input-group">
                   <label>Username</label>
                   <input type="text" placeholder="Username"
@@ -206,6 +224,21 @@ function AuthPage({ salons = [], onSignup, onLogin, onAdminLogin, isLocked = fal
               <h2 className="auth-card-title">Create Account</h2>
               <p className="auth-card-subtitle">Join our exclusive salon community</p>
               <form onSubmit={handleSignup}>
+                {authError && (
+                  <div style={{
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    color: '#fca5a5',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    marginBottom: '14px',
+                    fontWeight: 500,
+                    textAlign: 'center'
+                  }}>
+                    {authError}
+                  </div>
+                )}
                 <div className="input-group">
                   <label>Full Name</label>
                   <input type="text" placeholder="Your full name" value={signupName} onChange={(e) => setSignupName(e.target.value)} />
