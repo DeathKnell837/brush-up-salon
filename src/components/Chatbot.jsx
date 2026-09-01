@@ -11,6 +11,16 @@ const _ak = ['AQ.','Ab8RN6LGjFnp3ZJ','6Vbc6R9dpj2RUE5','mCGgkQFMJrlysGmfj3bA'];
 const GROQ_KEY = process.env.REACT_APP_GROQ_API_KEY || _gk.join('');
 const GEMINI_KEY = process.env.REACT_APP_GEMINI_API_KEY || _ak.join('');
 
+// Helper to strip any reasoning / <think> tags from LLMs
+export const stripThinking = (raw) => {
+  if (!raw) return "";
+  return raw
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<think>[\s\S]*$/gi, '')
+    .replace(/\[THINKING\][\s\S]*?\[\/THINKING\]/gi, '')
+    .trim();
+};
+
 export default function Chatbot({ onOpenModal, currentUser, contextData, onCancelBooking }) {
   const role = currentUser?.role || 'customer';
   const isCustomer = role === 'customer';
@@ -184,15 +194,25 @@ ${salonContext}`;
 
       let responseText = "";
 
-      // 1. Try Gemini 3.5 Flash First (with user API key)
+      // Helper to strip any reasoning / <think> tags from any model
+      const stripThinking = (raw) => {
+        if (!raw) return "";
+        return raw
+          .replace(/<think>[\s\S]*?<\/think>/gi, '')
+          .replace(/<think>[\s\S]*$/gi, '')
+          .replace(/\[THINKING\][\s\S]*?\[\/THINKING\]/gi, '')
+          .trim();
+      };
+
+      // 1. Try Gemini First (with user API key)
       try {
         if (!GEMINI_KEY) throw new Error("No Gemini key");
         const geminiContents = [
-          ...messages.filter(m => m.id !== 1).map(m => ({ role: m.isBot ? "model" : "user", parts: [{ text: m.text }] })),
+          ...messages.filter(m => m.id !== 1).map(m => ({ role: m.isBot ? "model" : "user", parts: [{ text: stripThinking(m.text) }] })),
           { role: "user", parts: [{ text: userText }] }
         ];
         
-        let geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_KEY}`, {
+        let geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -202,7 +222,7 @@ ${salonContext}`;
         });
         
         if (!geminiRes.ok) {
-          geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${GEMINI_KEY}`, {
+          geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -214,36 +234,53 @@ ${salonContext}`;
 
         if (geminiRes.ok) {
           const data = await geminiRes.json();
-          responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't process that request.";
+          responseText = stripThinking(data.candidates?.[0]?.content?.parts?.[0]?.text || "");
         } else {
           throw new Error("Gemini Failed");
         }
       } catch (geminiErr) {
-        // 2. Fallback to Groq
+        // 2. Fallback to Groq (Llama 3.3 70B Versatile / Llama 3.1 8B Instant)
         try {
           if (!GROQ_KEY) throw new Error("No Groq key");
           const groqMessages = [
             { role: "system", content: systemPrompt },
-            ...messages.filter(m => m.id !== 1).map(m => ({ role: m.isBot ? "assistant" : "user", content: m.text })),
+            ...messages.filter(m => m.id !== 1).map(m => ({ role: m.isBot ? "assistant" : "user", content: stripThinking(m.text) })),
             { role: "user", content: userText }
           ];
           
-          const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          let groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
             headers: {
               "Authorization": `Bearer ${GROQ_KEY}`,
               "Content-Type": "application/json"
             },
             body: JSON.stringify({
-              model: "qwen/qwen3.6-27b",
+              model: "llama-3.3-70b-versatile",
               messages: groqMessages,
-              temperature: 0.7
+              temperature: 0.6,
+              max_tokens: 200
             })
           });
           
+          if (!groqRes.ok) {
+            groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${GROQ_KEY}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                model: "llama-3.1-8b-instant",
+                messages: groqMessages,
+                temperature: 0.6,
+                max_tokens: 200
+              })
+            });
+          }
+          
           if (groqRes.ok) {
             const data = await groqRes.json();
-            responseText = data.choices[0].message.content;
+            responseText = stripThinking(data.choices?.[0]?.message?.content || "");
           } else {
             throw new Error("Groq Failed");
           }
@@ -251,6 +288,8 @@ ${salonContext}`;
           responseText = "I'm having trouble connecting to AI services right now. How else can I assist you with your booking or salon inquiries?";
         }
       }
+
+      responseText = stripThinking(responseText);
 
       // Process special commands (Widgets and Broadcasts)
       let widget = null;
@@ -548,7 +587,7 @@ ${salonContext}`;
                           }} style={{ color: 'var(--gold)', textDecoration: 'underline', fontWeight: 600, cursor: 'pointer' }}>{children}</a>
                         )
                       }}>
-                        {msg.text}
+                        {stripThinking(msg.text)}
                       </ReactMarkdown>
                       
                       {/* Widgets */}
