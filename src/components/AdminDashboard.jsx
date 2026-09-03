@@ -2172,19 +2172,22 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     </button>
                   </div>
 
-                  {/* Calendar Availability Modal Trigger */}
-                  <button 
-                    className={`btn small ${selectedCalendarDate ? 'primary' : 'outline'}`} 
-                    onClick={() => setShowCalendarView(true)}
-                    title="Open Calendar Availability & Slot Density"
-                  >
-                    <CalendarIcon size={14} style={{ marginRight: 6 }} /> Calendar {selectedCalendarDate && `(${selectedCalendarDate})`}
-                  </button>
+                  {/* Calendar & Add Walk-in inside Appointments only */}
+                  {bookingsSubView === 'list' && (
+                    <>
+                      <button 
+                        className={`btn small ${selectedCalendarDate ? 'primary' : 'outline'}`} 
+                        onClick={() => setShowCalendarView(true)}
+                        title="Open Calendar Availability & Slot Density"
+                      >
+                        <CalendarIcon size={14} style={{ marginRight: 6 }} /> Calendar {selectedCalendarDate && `(${selectedCalendarDate})`}
+                      </button>
 
-                  {/* Add Walk-In */}
-                  <button className="btn small outline" onClick={handleWalkIn}>
-                    <UserIcon size={14} style={{ marginRight: 6 }} /> Add Walk-in
-                  </button>
+                      <button className="btn small outline" onClick={handleWalkIn}>
+                        <UserIcon size={14} style={{ marginRight: 6 }} /> Add Walk-in
+                      </button>
+                    </>
+                  )}
 
                   {/* Generate Report */}
                   <button className="btn small outline" onClick={() => setShowReportModal(true)}>
