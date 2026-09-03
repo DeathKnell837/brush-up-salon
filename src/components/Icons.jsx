@@ -1,4 +1,5 @@
 import React from 'react';
+import gcashLogoImg from '../assets/gcash-logo.png';
 
 // ─── Reusable SVG wrapper ───
 const Svg = ({ children, size = 20, className = '', style = {}, viewBox = '0 0 24 24' }) => (
@@ -264,38 +265,23 @@ export const SmartphoneIcon = (props) => (
 
 export const GcashIcon = ({ size = 20, style = {}, className = '', white = false }) => {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
+    <img
+      src={gcashLogoImg}
+      alt="GCash"
       width={size}
       height={size}
-      viewBox="0 0 100 100"
       className={className}
-      style={{ flexShrink: 0, display: 'inline-block', verticalAlign: 'middle', ...style }}
-    >
-      <circle cx="50" cy="50" r="48" fill={white ? '#ffffff' : '#007DFE'} />
-      {/* Authentic GCash G */}
-      <path
-        d="M48 24 C33.6 24 22 35.6 22 50 C22 64.4 33.6 76 48 76 C59.8 76 69.8 68.2 73 57.5 L60.8 57.5 C58.2 62.4 53.5 65.5 48 65.5 C39.4 65.5 32.5 58.6 32.5 50 C32.5 41.4 39.4 34.5 48 34.5 C52.8 34.5 57 36.8 59.8 40.5 L69.5 33.5 C64.2 27.6 56.6 24 48 24 Z"
-        fill={white ? '#007DFE' : '#ffffff'}
-      />
-      <rect x="46" y="45.5" width="22" height="9" rx="3" fill={white ? '#007DFE' : '#ffffff'} />
-      {/* GCash Signal Arcs */}
-      <path
-        d="M68 22 C76.5 28.5 82 38.6 82 50"
-        stroke={white ? '#007DFE' : '#ffffff'}
-        strokeWidth="6"
-        strokeLinecap="round"
-        fill="none"
-      />
-      <path
-        d="M77 13 C88.5 21.5 96 34.8 96 50"
-        stroke={white ? '#007DFE' : '#ffffff'}
-        strokeWidth="5.5"
-        strokeLinecap="round"
-        fill="none"
-        opacity="0.85"
-      />
-    </svg>
+      style={{
+        width: size,
+        height: size,
+        objectFit: 'contain',
+        display: 'inline-block',
+        verticalAlign: 'middle',
+        flexShrink: 0,
+        filter: white ? 'brightness(0) invert(1)' : 'none',
+        ...style
+      }}
+    />
   );
 };
 
