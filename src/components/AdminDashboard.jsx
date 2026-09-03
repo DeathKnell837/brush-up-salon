@@ -12,6 +12,7 @@ import BrushUpLogo from './BrushUpLogo';
 import ReactMarkdown from 'react-markdown';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import {
   HourglassIcon, CheckCircleIcon, XCircleIcon, CalendarIcon, ClockIcon, 
   PhoneIcon, ScissorsIcon, UserIcon, ListIcon, SettingsIcon, AlertCircleIcon, 
@@ -440,109 +441,135 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   };
 
   // Report Generation (Excel & PDF)
+  // Report Generation (Excel & PDF)
   const handleExportExcel = () => {
-    const branchName = salonName || 'Salon';
-    const today = new Date().toISOString().split('T')[0];
-    const totalRevenue = bookingsState
-      .filter(b => b.status === 'Approved' || b.status === 'Completed')
-      .reduce((sum, b) => {
-        const match = (b.servicePrice || b.amount || '').toString().replace(/[^0-9]/g, '');
-        return sum + (parseInt(match, 10) || 0);
-      }, 0);
-    const completedCount = bookingsState.filter(b => b.status === 'Approved' || b.status === 'Completed').length;
-    const pendingCount = bookingsState.filter(b => b.status === 'Pending').length;
-    const gcashCount = bookingsState.filter(b => (b.paymentMethod || '').toLowerCase().includes('gcash')).length;
-    const cashCount = bookingsState.filter(b => (b.paymentMethod || '').toLowerCase().includes('cash')).length;
+    try {
+      const branchName = salonName || 'Salon';
+      const today = new Date().toISOString().split('T')[0];
+      const totalRevenue = bookingsState
+        .filter(b => b.status === 'Approved' || b.status === 'Completed')
+        .reduce((sum, b) => {
+          const match = (b.servicePrice || b.amount || '').toString().replace(/[^0-9]/g, '');
+          return sum + (parseInt(match, 10) || 0);
+        }, 0);
+      const completedCount = bookingsState.filter(b => b.status === 'Approved' || b.status === 'Completed').length;
+      const pendingCount = bookingsState.filter(b => b.status === 'Pending').length;
+      const gcashCount = bookingsState.filter(b => (b.paymentMethod || '').toLowerCase().includes('gcash')).length;
+      const cashCount = bookingsState.filter(b => (b.paymentMethod || '').toLowerCase().includes('cash')).length;
 
-    let csv = "";
-    // 1. Executive Brand Header
-    csv += `"BRUSH UP SALON & BEAUTY — OFFICIAL OPERATIONS REPORT"\n`;
-    csv += `"Branch:","${branchName}","Location:","${(salonAddress || 'Midsayap, Cotabato').replace(/"/g, '""')}"\n`;
-    csv += `"Generated Date:","${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}","Authorized Admin:","${(currentUser?.name || currentUser?.user || 'Branch Admin').replace(/"/g, '""')}"\n`;
-    csv += `\n`;
+      const wb = XLSX.utils.book_new();
 
-    // 2. Executive Financial & Operational Summary
-    csv += `"--- EXECUTIVE OPERATIONS SUMMARY ---"\n`;
-    csv += `"Total Bookings","Est. Revenue (PHP)","Completed / Active","Pending Approval","GCash Transactions","Cash Transactions"\n`;
-    csv += `"${bookingsState.length}","${totalRevenue.toLocaleString()}","${completedCount}","${pendingCount}","${gcashCount}","${cashCount}"\n`;
-    csv += `\n`;
+      const wsData = [
+        ['BRUSH UP SALON & BEAUTY — OFFICIAL OPERATIONS REPORT'],
+        [`Branch: ${branchName}`, `Location: ${salonAddress || 'Midsayap, Cotabato'}`, `Generated Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, `Authorized Admin: ${currentUser?.name || currentUser?.user || 'Admin'}`],
+        [],
+        ['--- EXECUTIVE OPERATIONS SUMMARY ---'],
+        ['Total Bookings', 'Est. Revenue (PHP)', 'Completed / Active', 'Pending Approval', 'GCash Transactions', 'Cash Transactions'],
+        [bookingsState.length, totalRevenue, completedCount, pendingCount, gcashCount, cashCount],
+        [],
+        ['--- DETAILED APPOINTMENT RECORDS ---'],
+        ['Booking ID', 'Date', 'Time', 'Customer Name', 'Contact Number', 'Service(s) Availed', 'Assigned Stylist', 'Amount (PHP)', 'Payment Method', 'Booking Status']
+      ];
 
-    // 3. Detailed Records Table
-    csv += `"--- DETAILED APPOINTMENT RECORDS ---"\n`;
-    csv += `"Booking ID","Date","Time","Customer Name","Contact Number","Service(s) Availed","Assigned Stylist","Amount (PHP)","Payment Method","Booking Status"\n`;
+      bookingsState.forEach(b => {
+        const payment = (b.paymentMethod || 'Cash').toUpperCase();
+        const customer = b.customer || 'Guest';
+        const contact = b.contact || 'N/A';
+        const service = b.service || 'General Service';
+        const stylist = b.stylist || 'Assigned Staff';
+        const amtStr = (b.servicePrice || b.amount || '0').toString().replace(/[^0-9]/g, '');
+        const amountNum = parseInt(amtStr, 10) || 0;
+        const timeStr = format12Hour(b.time);
+        
+        wsData.push([
+          `#${b.id}`, // String preserves formatting without scientific notation
+          b.date,
+          timeStr,
+          customer,
+          contact,
+          service,
+          stylist,
+          amountNum,
+          payment,
+          (b.status || 'Pending').toUpperCase()
+        ]);
+      });
 
-    bookingsState.forEach(b => {
-      const payment = (b.paymentMethod || 'Cash').toUpperCase();
-      const customer = (b.customer || 'Guest').replace(/"/g, '""');
-      const contact = (b.contact || 'N/A').replace(/"/g, '""');
-      const service = (b.service || 'General Service').replace(/"/g, '""');
-      const stylist = (b.stylist || 'Assigned Staff').replace(/"/g, '""');
-      const amount = (b.servicePrice || b.amount || '0').toString().replace(/[^0-9]/g, '');
-      const timeStr = format12Hour(b.time);
-      csv += `"#${b.id}","${b.date}","${timeStr}","${customer}","${contact}","${service}","${stylist}","${amount}","${payment}","${(b.status || 'Pending').toUpperCase()}"\n`;
-    });
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-    csv += `\n`;
-    csv += `"Confidential Official Salon Business Record — Brush Up Salon Platform 2026"\n`;
+      // Auto-fit Column Widths so Excel NEVER truncates or shows ##########
+      ws['!cols'] = [
+        { wch: 22 }, // Booking ID
+        { wch: 14 }, // Date
+        { wch: 12 }, // Time
+        { wch: 26 }, // Customer Name
+        { wch: 18 }, // Contact Number
+        { wch: 32 }, // Service(s) Availed
+        { wch: 20 }, // Assigned Stylist
+        { wch: 16 }, // Amount (PHP)
+        { wch: 16 }, // Payment Method
+        { wch: 16 }  // Booking Status
+      ];
 
-    const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const sanitizedName = branchName.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-    a.download = `${sanitizedName}_operations_report_${today}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-    setShowReportModal(false);
-    showToast('Excel report downloaded successfully!');
+      XLSX.utils.book_append_sheet(wb, ws, 'Operations Report');
+      const sanitizedName = branchName.replace(/[^a-zA-Z0-9_-]/g, '_');
+      XLSX.writeFile(wb, `${sanitizedName}_Operations_Report_${today}.xlsx`);
+
+      setShowReportModal(false);
+      showToast('Excel (.xlsx) report downloaded successfully!');
+    } catch (err) {
+      console.error('Excel generation error:', err);
+      showToast('Failed to export Excel: ' + err.message);
+    }
   };
 
   const handleGeneratePDF = () => {
     try {
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      // Landscape A4 provides 297mm width (270mm printable), preventing word wrapping in all columns
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const pageWidth = 297;
+      const pageHeight = 210;
       const branchName = salonName || 'Salon';
       const today = new Date().toISOString().split('T')[0];
       const adminName = currentUser?.name || currentUser?.user || 'Branch Admin';
       const formattedDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-      // 1. Full-width Luxury Header Banner (Brush Up System Identity)
+      // 1. Sleek Compact Luxury Header Banner (26mm height)
       doc.setFillColor(15, 19, 26); // #0f131a
-      doc.rect(0, 0, 210, 42, 'F');
+      doc.rect(0, 0, pageWidth, 26, 'F');
 
-      // Gold emblem circle with "B" logo
-      doc.setFillColor(201, 168, 76); // #c9a84c
-      doc.circle(22, 21, 9, 'F');
+      // Gold circular emblem with "B"
+      doc.setFillColor(201, 168, 76);
+      doc.circle(18, 13, 7.5, 'F');
 
       doc.setTextColor(15, 19, 26);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(13);
-      doc.text('B', 20.3, 25);
+      doc.setFontSize(11);
+      doc.text('B', 16.5, 16.8);
 
       // Brand Title & Subtitle
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(15);
+      doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text('BRUSH UP SALON & BEAUTY', 36, 18);
+      doc.text('BRUSH UP SALON & BEAUTY', 30, 12);
 
       doc.setTextColor(201, 168, 76);
-      doc.setFontSize(8);
+      doc.setFontSize(7.5);
       doc.setFont('helvetica', 'bold');
-      doc.text('EXECUTIVE OPERATIONS & REVENUE REPORT', 36, 25);
+      doc.text('OFFICIAL OPERATIONS & REVENUE REPORT', 30, 18);
 
       // Gold bottom hairline
       doc.setFillColor(201, 168, 76);
-      doc.rect(0, 41, 210, 1.2, 'F');
+      doc.rect(0, 25.2, pageWidth, 0.8, 'F');
 
-      // Top Right Meta Info
+      // Top Right Meta Info (Clean, aligned 2-line layout)
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
+      doc.setFontSize(7.5);
       doc.setTextColor(203, 213, 225);
-      doc.text(`BRANCH: ${branchName}`, 196, 16, { align: 'right' });
-      doc.text(`LOCATION: ${salonAddress || 'Midsayap, Cotabato'}`, 196, 22, { align: 'right' });
-      doc.text(`DATE: ${formattedDate}`, 196, 28, { align: 'right' });
-      doc.text(`ADMIN: ${adminName}`, 196, 34, { align: 'right' });
+      doc.text(`BRANCH: ${branchName}  •  LOCATION: ${salonAddress || 'Midsayap, Cotabato'}`, pageWidth - 14, 12, { align: 'right' });
+      doc.text(`DATE: ${formattedDate}  •  ADMIN: ${adminName}`, pageWidth - 14, 18, { align: 'right' });
 
-      // 2. Executive KPIs Calculation
+      // 2. Executive KPIs Horizontal Strip (11mm height, compact and clean)
       const totalRevenue = bookingsState
         .filter(b => b.status === 'Approved' || b.status === 'Completed')
         .reduce((sum, b) => {
@@ -556,58 +583,35 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       const cashCount = bookingsState.filter(b => (b.paymentMethod || '').toLowerCase().includes('cash')).length;
       const fulfillmentRate = bookingsState.length > 0 ? ((completedCount / bookingsState.length) * 100).toFixed(1) : '100';
 
-      // 4 Luxury KPI Cards
-      const kpis = [
-        { label: 'TOTAL BOOKINGS', val: String(bookingsState.length), sub: 'All-time branch volume' },
-        { label: 'EST. REVENUE', val: `PHP ${totalRevenue.toLocaleString()}`, sub: 'Approved + Completed' },
-        { label: 'ACTIVE / COMPLETED', val: String(completedCount), sub: `${fulfillmentRate}% fulfillment rate` },
-        { label: 'PAYMENT CHANNELS', val: `GCash: ${gcashCount} | Cash: ${cashCount}`, sub: 'Verified collection mix' }
+      const kpisY = 29;
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(14, kpisY, pageWidth - 28, 11, 1.5, 1.5, 'FD');
+
+      const kpiItems = [
+        { label: 'TOTAL BOOKINGS:', val: String(bookingsState.length) },
+        { label: 'EST. REVENUE:', val: `PHP ${totalRevenue.toLocaleString()}` },
+        { label: 'ACTIVE / COMPLETED:', val: `${completedCount} (${fulfillmentRate}%)` },
+        { label: 'PAYMENTS:', val: `GCash: ${gcashCount}  |  Cash: ${cashCount}` }
       ];
 
-      const startY = 47;
-      const cardWidth = 43.5;
-      const cardHeight = 18;
-
-      kpis.forEach((kpi, idx) => {
-        const x = 14 + idx * (cardWidth + 2);
-        doc.setFillColor(248, 250, 252);
-        doc.setDrawColor(226, 232, 240);
-        doc.setLineWidth(0.3);
-        doc.roundedRect(x, startY, cardWidth, cardHeight, 2, 2, 'FD');
-
-        // Gold hairline accent on card
-        doc.setFillColor(201, 168, 76);
-        doc.rect(x + 3, startY, cardWidth - 6, 0.8, 'F');
-
+      const colW = (pageWidth - 28) / 4;
+      kpiItems.forEach((kpi, i) => {
+        const x = 18 + i * colW;
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(6.5);
+        doc.setFontSize(6.8);
         doc.setTextColor(148, 115, 35);
-        doc.text(kpi.label, x + 3.5, startY + 5.5);
+        doc.text(kpi.label, x, kpisY + 7);
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(kpi.val.length > 12 ? 8.5 : 10.5);
+        doc.setFontSize(8);
         doc.setTextColor(15, 23, 42);
-        doc.text(kpi.val, x + 3.5, startY + 11.5);
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(6);
-        doc.setTextColor(100, 116, 139);
-        doc.text(kpi.sub, x + 3.5, startY + 15.5);
+        doc.text(kpi.val, x + doc.getTextWidth(kpi.label) + 2.5, kpisY + 7);
       });
 
-      // Section Title
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(15, 23, 42);
-      doc.text('OFFICIAL APPOINTMENT RECORDS', 14, 71);
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.5);
-      doc.setTextColor(100, 116, 139);
-      doc.text('Real-time synchronization with Brush Up Cloud Platform', 196, 71, { align: 'right' });
-
-      // Appointment Records Table
-      const headers = [['ID', 'Date & Time', 'Customer', 'Contact', 'Service', 'Stylist', 'Amount', 'Payment', 'Status']];
+      // 3. Official Appointment Records Table
+      const headers = [['Booking ID', 'Date & Time', 'Customer Name', 'Contact Number', 'Service Availed', 'Assigned Stylist', 'Amount (PHP)', 'Payment', 'Status']];
       const rows = bookingsState.map(b => {
         const amt = (b.servicePrice || b.amount || '0').toString().replace(/[^0-9]/g, '');
         return [
@@ -627,10 +631,10 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       callAutoTable(doc, {
         head: headers,
         body: rows,
-        startY: 74,
+        startY: 43,
         theme: 'grid',
         headStyles: {
-          fillColor: [18, 24, 33],
+          fillColor: [20, 26, 36],
           textColor: [201, 168, 76],
           fontSize: 7.5,
           fontStyle: 'bold',
@@ -638,7 +642,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           halign: 'left'
         },
         styles: {
-          fontSize: 7.2,
+          fontSize: 7.5,
           cellPadding: 2.4,
           textColor: [51, 65, 85],
           lineColor: [226, 232, 240],
@@ -648,41 +652,38 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           fillColor: [248, 250, 252]
         },
         columnStyles: {
-          0: { cellWidth: 12, fontStyle: 'bold' },
-          1: { cellWidth: 28 },
-          2: { cellWidth: 25, fontStyle: 'bold' },
-          3: { cellWidth: 23 },
-          4: { cellWidth: 34 },
-          5: { cellWidth: 18 },
-          6: { cellWidth: 18, halign: 'right', fontStyle: 'bold' },
-          7: { cellWidth: 12, halign: 'center' },
-          8: { cellWidth: 12, halign: 'center', fontStyle: 'bold' }
+          0: { cellWidth: 26, fontStyle: 'bold' },
+          1: { cellWidth: 32 },
+          2: { cellWidth: 38, fontStyle: 'bold' },
+          3: { cellWidth: 28 },
+          4: { cellWidth: 48 },
+          5: { cellWidth: 26 },
+          6: { cellWidth: 24, halign: 'right', fontStyle: 'bold' },
+          7: { cellWidth: 20, halign: 'center' },
+          8: { cellWidth: 27, halign: 'center', fontStyle: 'bold' }
         },
         didParseCell: (data) => {
           if (data.section === 'body' && data.column.index === 8) {
             const val = (data.cell.raw || '').toUpperCase();
             if (val === 'APPROVED') {
-              data.cell.styles.textColor = [22, 101, 52];
+              data.cell.styles.textColor = [22, 101, 52]; // Rich Green
             } else if (val === 'COMPLETED') {
-              data.cell.styles.textColor = [30, 64, 175];
+              data.cell.styles.textColor = [30, 64, 175]; // Royal Blue
             } else if (val === 'PENDING') {
-              data.cell.styles.textColor = [180, 83, 9];
+              data.cell.styles.textColor = [180, 83, 9]; // Amber Gold
             } else if (val === 'REJECTED' || val === 'CANCELLED') {
-              data.cell.styles.textColor = [185, 28, 28];
+              data.cell.styles.textColor = [185, 28, 28]; // Red
             }
           }
         },
         margin: { left: 14, right: 14 },
         didDrawPage: () => {
-          const pageHeight = doc.internal.pageSize.height || 297;
-          // Gold bottom hairline
           doc.setFillColor(201, 168, 76);
-          doc.rect(14, pageHeight - 14, 182, 0.5, 'F');
-
+          doc.rect(14, pageHeight - 12, pageWidth - 28, 0.4, 'F');
           doc.setFontSize(6.8);
           doc.setTextColor(148, 163, 184);
-          doc.text('Brush Up Salon & Beauty Platform © 2026 — Confidential Official Business Record', 14, pageHeight - 9);
-          doc.text(`Page ${doc.internal.getNumberOfPages()}`, 196, pageHeight - 9, { align: 'right' });
+          doc.text('Brush Up Salon & Beauty Platform © 2026 — Official Branch Management Record — Confidential', 14, pageHeight - 7);
+          doc.text(`Page ${doc.internal.getNumberOfPages()}`, pageWidth - 14, pageHeight - 7, { align: 'right' });
         }
       });
 
@@ -2162,24 +2163,22 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     </button>
                   </div>
 
-                  {/* Appointments-specific tools: Calendar View & Add Walk-in */}
-                  {bookingsSubView === 'list' && (
-                    <>
-                      {/* Calendar Availability Toggle Button */}
-                      <button 
-                        className={`btn small ${showCalendarView ? 'primary' : 'outline'}`} 
-                        onClick={() => setShowCalendarView(!showCalendarView)}
-                        title="Toggle Calendar Availability View"
-                      >
-                        <CalendarIcon size={14} style={{ marginRight: 6 }} /> {showCalendarView ? 'Hide Calendar' : 'Calendar View'}
-                      </button>
+                  {/* Calendar Availability Toggle Button */}
+                  <button 
+                    className={`btn small ${showCalendarView ? 'primary' : 'outline'}`} 
+                    onClick={() => {
+                      if (bookingsSubView !== 'list') setBookingsSubView('list');
+                      setShowCalendarView(!showCalendarView);
+                    }}
+                    title="Toggle Calendar Availability View"
+                  >
+                    <CalendarIcon size={14} style={{ marginRight: 6 }} /> {showCalendarView ? 'Hide Calendar' : 'Calendar View'}
+                  </button>
 
-                      {/* Add Walk-In */}
-                      <button className="btn small outline" onClick={handleWalkIn}>
-                        <UserIcon size={14} style={{ marginRight: 6 }} /> Add Walk-in
-                      </button>
-                    </>
-                  )}
+                  {/* Add Walk-In */}
+                  <button className="btn small outline" onClick={handleWalkIn}>
+                    <UserIcon size={14} style={{ marginRight: 6 }} /> Add Walk-in
+                  </button>
 
                   {/* Generate Report */}
                   <button className="btn small outline" onClick={() => setShowReportModal(true)}>
