@@ -164,7 +164,10 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   // Manage Bookings Sub-View, Search, Pagination, View Mode & Calendar States
   const [bookingsSubView, setBookingsSubView] = useState('list'); // 'list' | 'customers'
   const [showCalendarView, setShowCalendarView] = useState(false);
-  const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
+  const [selectedCalendarDates, setSelectedCalendarDates] = useState([]); // array of 'YYYY-MM-DD'
+  const [calendarSelectionMode, setCalendarSelectionMode] = useState('multiple'); // 'single' | 'multiple' | 'range'
+  const [rangeStart, setRangeStart] = useState(null);
+  const selectedCalendarDate = selectedCalendarDates.length === 1 ? selectedCalendarDates[0] : null;
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [bookingSearch, setBookingSearch] = useState('');
   const [bookingsPage, setBookingsPage] = useState(1);
@@ -903,8 +906,16 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   // Status + Calendar Date + Search Query filtering (Part 2)
   const filtered = React.useMemo(() => {
     return bookingsState.filter(b => {
-      const matchStatus = statusFilter === 'all' || b.status.toLowerCase() === statusFilter.toLowerCase();
-      const matchDate = !selectedCalendarDate || b.date === selectedCalendarDate;
+      let matchStatus = true;
+      if (statusFilter === 'active') {
+        matchStatus = b.status === 'Pending' || b.status === 'Approved';
+      } else if (statusFilter === 'resolved') {
+        matchStatus = b.status === 'Completed' || b.status === 'Rejected';
+      } else if (statusFilter !== 'all') {
+        matchStatus = b.status.toLowerCase() === statusFilter.toLowerCase();
+      }
+
+      const matchDate = selectedCalendarDates.length === 0 || selectedCalendarDates.includes(b.date);
       
       let matchSearch = true;
       if (bookingSearch.trim()) {
@@ -920,7 +931,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       }
       return matchStatus && matchDate && matchSearch;
     });
-  }, [bookingsState, statusFilter, selectedCalendarDate, bookingSearch]);
+  }, [bookingsState, statusFilter, selectedCalendarDates, bookingSearch]);
 
   // Pagination calculations (Part 2)
   const totalBookingsPages = Math.ceil(filtered.length / bookingsPerPage) || 1;
@@ -2246,21 +2257,38 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               {bookingsSubView === 'list' && (
                 <>
                   {/* Active Date Filter Notice Banner */}
-                  {selectedCalendarDate && (
+                  {selectedCalendarDates.length > 0 && (
                     <div className="active-date-filter-banner">
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <CalendarIcon size={15} />
                         <span>
-                          Filtered by Date: <strong>{selectedCalendarDate}</strong> ({filtered.length} matching appointment{filtered.length === 1 ? '' : 's'})
+                          Filtered by {selectedCalendarDates.length === 1 ? 'Date' : `${selectedCalendarDates.length} Dates`}:{' '}
+                          <strong>
+                            {selectedCalendarDates.length === 1 
+                              ? selectedCalendarDates[0] 
+                              : selectedCalendarDates.length <= 3 
+                                ? selectedCalendarDates.join(', ') 
+                                : `${selectedCalendarDates[0]} to ${selectedCalendarDates[selectedCalendarDates.length - 1]} (${selectedCalendarDates.length} days)`}
+                          </strong>{' '}
+                          ({filtered.length} matching appointment{filtered.length === 1 ? '' : 's'})
                         </span>
                       </div>
-                      <button 
-                        className="btn small outline" 
-                        style={{ padding: '4px 10px', fontSize: 11, color: 'var(--gold)', borderColor: 'rgba(201,168,76,0.4)' }}
-                        onClick={() => setSelectedCalendarDate(null)}
-                      >
-                        Clear Date Filter ✕
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <button 
+                          className="btn small outline" 
+                          style={{ padding: '3px 8px', fontSize: 10, color: 'var(--gold)', borderColor: 'rgba(201,168,76,0.4)' }}
+                          onClick={() => setShowCalendarView(true)}
+                        >
+                          Modify Dates
+                        </button>
+                        <button 
+                          className="btn small outline" 
+                          style={{ padding: '3px 8px', fontSize: 10, color: '#f87171', borderColor: 'rgba(239,68,68,0.4)' }}
+                          onClick={() => setSelectedCalendarDates([])}
+                        >
+                          Clear Date Filter ✕
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -2314,7 +2342,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         )}
                       </div>
 
-                      {/* 2. Status Filter Single Dropdown */}
+                      {/* 2. Status Filter Multi-Options Dropdown */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <label style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', display: 'flex', alignItems: 'center', gap: 4 }}>
                           <FilterIcon size={12} /> Status:
@@ -2346,14 +2374,16 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                               padding: '0 32px 0 12px',
                               height: '100%',
                               cursor: 'pointer',
-                              minWidth: '135px'
+                              minWidth: '145px'
                             }}
                           >
                             <option value="pending" style={{ background: '#111', color: '#fff' }}>Pending ({pending})</option>
                             <option value="approved" style={{ background: '#111', color: '#fff' }}>Approved ({approved})</option>
+                            <option value="active" style={{ background: '#111', color: '#fff' }}>Active (Pending + Approved)</option>
                             <option value="completed" style={{ background: '#111', color: '#fff' }}>Completed ({completed})</option>
                             <option value="rejected" style={{ background: '#111', color: '#fff' }}>Rejected ({rejected})</option>
-                            <option value="all" style={{ background: '#111', color: '#fff' }}>All ({total})</option>
+                            <option value="resolved" style={{ background: '#111', color: '#fff' }}>Resolved (Done + Rejected)</option>
+                            <option value="all" style={{ background: '#111', color: '#fff' }}>All Statuses ({total})</option>
                           </select>
                           <ChevronDownIcon size={12} style={{ position: 'absolute', right: 10, pointerEvents: 'none', color: 'var(--gold)' }} />
                         </div>
@@ -2364,12 +2394,32 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: '38px' }}>
                       {/* Calendar Availability Icon Button */}
                       <button 
-                        className={`btn small ${selectedCalendarDate ? 'primary' : 'outline'}`} 
+                        className={`btn small ${selectedCalendarDates.length > 0 ? 'primary' : 'outline'}`} 
                         onClick={() => setShowCalendarView(true)}
-                        title={selectedCalendarDate ? `Calendar Filter: ${selectedCalendarDate}` : "Calendar Availability & Density"}
-                        style={{ height: '34px', width: '38px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8 }}
+                        title={selectedCalendarDates.length > 0 ? `Calendar Filter: ${selectedCalendarDates.length} date(s) selected` : "Calendar Availability & Density"}
+                        style={{ height: '34px', width: '38px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, position: 'relative' }}
                       >
                         <CalendarIcon size={15} />
+                        {selectedCalendarDates.length > 0 && (
+                          <span style={{
+                            position: 'absolute',
+                            top: -4,
+                            right: -4,
+                            background: 'var(--gold)',
+                            color: '#000',
+                            borderRadius: '50%',
+                            fontSize: '9px',
+                            fontWeight: 800,
+                            width: '15px',
+                            height: '15px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 0 8px rgba(201,168,76,0.6)'
+                          }}>
+                            {selectedCalendarDates.length}
+                          </span>
+                        )}
                       </button>
 
                       {/* Add Walk-in Icon Button */}
@@ -5433,21 +5483,52 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
             {/* Modal Body: Legend & Authentic Connected Calendar Sheet */}
             <div style={{ padding: '16px 24px 20px' }}>
-              {/* Legend & Instructions */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8, fontSize: 11 }}>
-                <span style={{ color: 'var(--text-dim)' }}>Click any date cell to filter appointments or inspect slot density</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--gold)', fontWeight: 600 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--gold)' }} />
+              {/* Legend & Filter Mode Switcher */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10, fontSize: 11 }}>
+                {/* Mode Switcher: Single Day | Multi-Select | Date Range */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ color: 'var(--text-dim)', fontWeight: 600 }}>Filter Mode:</span>
+                  <div style={{ display: 'flex', background: 'rgba(255,255,255,0.04)', padding: 2, borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <button
+                      type="button"
+                      className={`btn small ${calendarSelectionMode === 'single' ? 'primary' : 'outline'}`}
+                      style={{ border: 'none', padding: '3px 8px', fontSize: 10, borderRadius: 6 }}
+                      onClick={() => { setCalendarSelectionMode('single'); setRangeStart(null); }}
+                    >
+                      Single Day
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn small ${calendarSelectionMode === 'multiple' ? 'primary' : 'outline'}`}
+                      style={{ border: 'none', padding: '3px 8px', fontSize: 10, borderRadius: 6 }}
+                      onClick={() => { setCalendarSelectionMode('multiple'); setRangeStart(null); }}
+                    >
+                      Multi-Select
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn small ${calendarSelectionMode === 'range' ? 'primary' : 'outline'}`}
+                      style={{ border: 'none', padding: '3px 8px', fontSize: 10, borderRadius: 6 }}
+                      onClick={() => { setCalendarSelectionMode('range'); setRangeStart(null); }}
+                    >
+                      Date Range
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Presets & Status Indicators */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--gold)', fontWeight: 600 }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--gold)' }} />
                     Today
                   </span>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--gold)', fontWeight: 600 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(201,168,76,0.3)', border: '1px solid var(--gold)' }} />
-                    Booked (1-4)
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--gold)', fontWeight: 600 }}>
+                    <span style={{ width: 7, height: 7, borderRadius: 2, background: 'rgba(201,168,76,0.3)', border: '1px solid var(--gold)' }} />
+                    Booked
                   </span>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#f87171', fontWeight: 600 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(239,68,68,0.4)', border: '1px solid #ef4444' }} />
-                    Fully Booked (5+)
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#f87171', fontWeight: 600 }}>
+                    <span style={{ width: 7, height: 7, borderRadius: 2, background: 'rgba(239,68,68,0.4)', border: '1px solid #ef4444' }} />
+                    Full (5+)
                   </span>
                 </div>
               </div>
@@ -5466,14 +5547,48 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 {/* 2. Connected Days Grid (Zero gap, hairline borders between rows and columns) */}
                 <div className="calendar-days-grid-sheet">
                   {calendarDays.map((item) => {
-                    const isSelected = selectedCalendarDate === item.dateStr;
+                    const isSelected = selectedCalendarDates.includes(item.dateStr);
+                    const isRangeStart = calendarSelectionMode === 'range' && rangeStart === item.dateStr;
                     return (
                       <div 
                         key={item.dateStr} 
                         className={`calendar-real-cell ${item.isOtherMonth ? 'is-other-month' : ''} ${item.isWeekend ? 'is-weekend' : ''} ${item.isToday ? 'is-today-cell' : ''} ${isSelected ? 'is-selected' : ''}`}
+                        style={{
+                          boxShadow: isRangeStart ? 'inset 0 0 0 2px #38bdf8' : isSelected ? 'inset 0 0 0 2px var(--gold)' : 'none',
+                          background: isSelected ? 'rgba(201, 168, 76, 0.2)' : isRangeStart ? 'rgba(56,189,248,0.18)' : undefined
+                        }}
                         onClick={() => {
-                          setSelectedCalendarDate(isSelected ? null : item.dateStr);
-                          setShowCalendarView(false);
+                          const dateStr = item.dateStr;
+                          if (calendarSelectionMode === 'single') {
+                            if (selectedCalendarDates.length === 1 && selectedCalendarDates[0] === dateStr) {
+                              setSelectedCalendarDates([]);
+                            } else {
+                              setSelectedCalendarDates([dateStr]);
+                              setShowCalendarView(false);
+                            }
+                          } else if (calendarSelectionMode === 'multiple') {
+                            setSelectedCalendarDates(prev => {
+                              if (prev.includes(dateStr)) return prev.filter(d => d !== dateStr);
+                              return [...prev, dateStr].sort();
+                            });
+                          } else if (calendarSelectionMode === 'range') {
+                            if (!rangeStart) {
+                              setRangeStart(dateStr);
+                              setSelectedCalendarDates([dateStr]);
+                            } else {
+                              const d1 = rangeStart < dateStr ? rangeStart : dateStr;
+                              const d2 = rangeStart < dateStr ? dateStr : rangeStart;
+                              const dates = [];
+                              let curr = new Date(d1);
+                              const endObj = new Date(d2);
+                              while (curr <= endObj) {
+                                dates.push(curr.toISOString().split('T')[0]);
+                                curr.setDate(curr.getDate() + 1);
+                              }
+                              setSelectedCalendarDates(dates);
+                              setRangeStart(null);
+                            }
+                          }
                         }}
                         title={item.count > 0 ? `${item.dateStr}: ${item.count} appointment(s) booked` : `${item.dateStr}: Available`}
                       >
@@ -5492,6 +5607,13 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                             }}>
                               {item.day}
                             </span>
+                          )}
+
+                          {isSelected && (
+                            <span style={{ fontSize: 9, color: 'var(--gold)', fontWeight: 800 }}>✓</span>
+                          )}
+                          {isRangeStart && (
+                            <span style={{ fontSize: 8, color: '#38bdf8', fontWeight: 800 }}>START</span>
                           )}
                         </div>
 
@@ -5528,33 +5650,47 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               gap: 8
             }}>
               <div>
-                {selectedCalendarDate ? (
+                {selectedCalendarDates.length > 0 ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 12, color: 'var(--gold)', fontWeight: 600 }}>
-                      📌 Filter Active: <strong>{selectedCalendarDate}</strong>
+                      📌 {selectedCalendarDates.length} Date{selectedCalendarDates.length === 1 ? '' : 's'} Selected ({filtered.length} matching appointment{filtered.length === 1 ? '' : 's'})
                     </span>
                     <button 
                       className="btn small outline" 
                       style={{ padding: '2px 8px', fontSize: 10, color: '#f87171', borderColor: 'rgba(239,68,68,0.3)' }}
-                      onClick={() => { setSelectedCalendarDate(null); setShowCalendarView(false); }}
+                      onClick={() => { setSelectedCalendarDates([]); setRangeStart(null); }}
                     >
-                      Clear Filter ✕
+                      Clear All ✕
                     </button>
                   </div>
                 ) : (
                   <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-                    Showing all appointments. Select any date to filter table.
+                    {calendarSelectionMode === 'range' 
+                      ? (rangeStart ? `Selected start date: ${rangeStart}. Now click end date.` : 'Click a start date and an end date.')
+                      : calendarSelectionMode === 'multiple'
+                        ? 'Click any dates to select multiple dates.'
+                        : 'Click any date to filter appointments.'}
                   </span>
                 )}
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button 
-                  className="btn small outline" 
-                  style={{ fontSize: 11 }}
-                  onClick={() => { setSelectedCalendarDate(today); setShowCalendarView(false); }}
-                >
-                  Filter Today
-                </button>
+                {selectedCalendarDates.length > 0 ? (
+                  <button 
+                    className="btn small" 
+                    style={{ fontSize: 11, padding: '4px 14px' }}
+                    onClick={() => setShowCalendarView(false)}
+                  >
+                    Apply Filter ({selectedCalendarDates.length})
+                  </button>
+                ) : (
+                  <button 
+                    className="btn small outline" 
+                    style={{ fontSize: 11 }}
+                    onClick={() => { setSelectedCalendarDates([today]); setShowCalendarView(false); }}
+                  >
+                    Filter Today
+                  </button>
+                )}
                 <button 
                   className="btn small outline" 
                   onClick={() => setShowCalendarView(false)}
