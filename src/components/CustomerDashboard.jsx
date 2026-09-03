@@ -331,7 +331,7 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
 }
 
 
-function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, onOpenProfile, syncTick, showToast }) {
+function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, onOpenModal, onOpenProfile, syncTick, showToast }) {
   const [tab, setTab] = useState('salons');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'map'
   const [search, setSearch] = useState('');
@@ -1345,7 +1345,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
         </div>
       )}
 
-      <Chatbot onOpenModal={onSelectSalon} currentUser={currentUser} onCancelBooking={handleCancelBooking} contextData={`User Bookings: ${JSON.stringify(bookings)}`} />
+      <Chatbot onSelectSalon={onSelectSalon} onOpenBookingModal={onOpenModal} onOpenModal={onOpenModal || onSelectSalon} currentUser={currentUser} onCancelBooking={handleCancelBooking} contextData={`User Bookings: ${JSON.stringify(bookings)}`} />
 
       {/* Floating Bottom Navigation for Mobile */}
       <div className="mobile-bottom-nav">

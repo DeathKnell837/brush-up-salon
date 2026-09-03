@@ -19,7 +19,7 @@ import {
   ChartIcon, CloseIcon, StoreIcon, ShieldIcon, ClipboardIcon, SparklesIcon, BellIcon, SearchIcon,
   CashIcon, GcashIcon, MailIcon, AlertTriangleIcon, ChevronDownIcon, ChevronUpIcon, 
   ChevronLeftIcon, ChevronRightIcon, GridIcon,
-  DownloadIcon, FileTextIcon, FilterIcon, GlobeIcon
+  DownloadIcon, FileTextIcon, FilterIcon, GlobeIcon, UserPlusIcon
 } from './Icons';
 
 // Helper: convert file to base64 data URL
@@ -2172,25 +2172,6 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     </button>
                   </div>
 
-                  {/* Calendar & Add Walk-in inside Appointments only */}
-                  {bookingsSubView === 'list' && (
-                    <>
-                      {/* Calendar Availability Icon Button */}
-                      <button 
-                        className={`btn small ${selectedCalendarDate ? 'primary' : 'outline'}`} 
-                        onClick={() => setShowCalendarView(true)}
-                        title={selectedCalendarDate ? `Calendar Filter: ${selectedCalendarDate}` : "Open Calendar Availability View"}
-                        style={{ padding: '7px 10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                      >
-                        <CalendarIcon size={16} />
-                      </button>
-
-                      <button className="btn small outline" onClick={handleWalkIn}>
-                        <UserIcon size={14} style={{ marginRight: 6 }} /> Add Walk-in
-                      </button>
-                    </>
-                  )}
-
                   {/* Generate Report */}
                   <button className="btn small outline" onClick={() => setShowReportModal(true)}>
                     <ClipboardIcon size={14} style={{ marginRight: 6 }} /> Generate Report
@@ -2316,16 +2297,39 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       </div>
                     </div>
 
-                    {/* Right: View Mode Toggle (Single Icon Button) */}
-                    <div className="bookings-view-toggle" style={{ height: '38px', boxSizing: 'border-box', display: 'inline-flex', alignItems: 'center' }}>
-                      <button
-                        className="bookings-view-btn active"
-                        onClick={() => setBookingsViewMode(bookingsViewMode === 'compact' ? 'cards' : 'compact')}
-                        title={bookingsViewMode === 'compact' ? "Switch to Cards View" : "Switch to List View"}
-                        style={{ height: '30px', width: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                    {/* Right: Appointment Actions (Calendar Modal, Add Walk-in, View Mode Toggle) */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: '38px' }}>
+                      {/* Calendar Availability Icon Button */}
+                      <button 
+                        className={`btn small ${selectedCalendarDate ? 'primary' : 'outline'}`} 
+                        onClick={() => setShowCalendarView(true)}
+                        title={selectedCalendarDate ? `Calendar Filter: ${selectedCalendarDate}` : "Calendar Availability & Density"}
+                        style={{ height: '34px', width: '38px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8 }}
                       >
-                        {bookingsViewMode === 'compact' ? <ListIcon size={14} /> : <GridIcon size={14} />}
+                        <CalendarIcon size={15} />
                       </button>
+
+                      {/* Add Walk-in Icon Button */}
+                      <button 
+                        className="btn small outline" 
+                        onClick={handleWalkIn}
+                        title="Add Walk-in Booking"
+                        style={{ height: '34px', width: '38px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8 }}
+                      >
+                        <UserPlusIcon size={15} />
+                      </button>
+
+                      {/* View Mode Toggle */}
+                      <div className="bookings-view-toggle" style={{ height: '34px', boxSizing: 'border-box', display: 'inline-flex', alignItems: 'center' }}>
+                        <button
+                          className="bookings-view-btn active"
+                          onClick={() => setBookingsViewMode(bookingsViewMode === 'compact' ? 'cards' : 'compact')}
+                          title={bookingsViewMode === 'compact' ? "Switch to Cards View" : "Switch to List View"}
+                          style={{ height: '30px', width: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          {bookingsViewMode === 'compact' ? <ListIcon size={14} /> : <GridIcon size={14} />}
+                        </button>
+                      </div>
                     </div>
                   </div>
 

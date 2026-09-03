@@ -327,7 +327,7 @@ function App() {
       )}
       {currentPage === 'customer' && (
         <CustomerDashboard currentUser={currentUser} salons={salons} onLogout={() => setShowLogoutConfirm(true)}
-          onSelectSalon={handleOpenSalonPage} onOpenProfile={() => setShowProfile(true)} syncTick={syncTick} showToast={showToast} />
+          onSelectSalon={handleOpenSalonPage} onOpenModal={handleOpenModal} onOpenProfile={() => setShowProfile(true)} syncTick={syncTick} showToast={showToast} />
       )}
       {currentPage === 'salon-detail' && selectedSalon && (
         <SalonDetailPage

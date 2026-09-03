@@ -11,17 +11,23 @@ const _ak = ['AQ.','Ab8RN6LGjFnp3ZJ','6Vbc6R9dpj2RUE5','mCGgkQFMJrlysGmfj3bA'];
 const GROQ_KEY = process.env.REACT_APP_GROQ_API_KEY || _gk.join('');
 const GEMINI_KEY = process.env.REACT_APP_GEMINI_API_KEY || _ak.join('');
 
-// Helper to strip any reasoning / <think> tags from LLMs
+// Helper to strip any reasoning / <think> tags and auto-correct malformed links
 export const stripThinking = (raw) => {
   if (!raw) return "";
-  return raw
+  let text = raw
     .replace(/<think>[\s\S]*?<\/think>/gi, '')
     .replace(/<think>[\s\S]*$/gi, '')
     .replace(/\[THINKING\][\s\S]*?\[\/THINKING\]/gi, '')
     .trim();
+  // Auto-correct malformed markdown link syntax like ][salon: -> ](salon:
+  text = text.replace(/\]\[(salon:[^\]\n]+)\]/g, ']($1)');
+  text = text.replace(/\]\[(salon:[^)\n]+)$/g, ']($1)');
+  // If unclosed (salon:... at end of string, close it
+  text = text.replace(/(\[[^\]]+\])\((salon:[^)\s]+)$/, '$1($2)');
+  return text;
 };
 
-export default function Chatbot({ onOpenModal, currentUser, contextData, onCancelBooking }) {
+export default function Chatbot({ onOpenModal, onSelectSalon, onOpenBookingModal, currentUser, contextData, onCancelBooking }) {
   const role = currentUser?.role || 'customer';
   const isCustomer = role === 'customer';
   const isSuperAdmin = currentUser?.salonId === 'all' || role === 'superadmin';
@@ -204,42 +210,52 @@ ${salonContext}`;
           .trim();
       };
 
-      // 1. Try Gemini First (with user API key)
+      // 1. Try Gemini with fast 3.5s timeout (prevent hanging on Google spikes)
       try {
         if (!GEMINI_KEY) throw new Error("No Gemini key");
         const geminiContents = [
           ...messages.filter(m => m.id !== 1).map(m => ({ role: m.isBot ? "model" : "user", parts: [{ text: stripThinking(m.text) }] })),
           { role: "user", parts: [{ text: userText }] }
         ];
-        
-        let geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_KEY}`, {
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+        let geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`, {
           method: "POST",
+          signal: controller.signal,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: systemPrompt }] },
             contents: geminiContents
           })
-        });
-        
-        if (!geminiRes.ok) {
-          geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_KEY}`, {
+        }).catch(() => null);
+
+        clearTimeout(timeoutId);
+
+        if (!geminiRes || !geminiRes.ok) {
+          const c2 = new AbortController();
+          const t2 = setTimeout(() => c2.abort(), 3000);
+          geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
             method: "POST",
+            signal: c2.signal,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               systemInstruction: { parts: [{ text: systemPrompt }] },
               contents: geminiContents
             })
-          });
+          }).catch(() => null);
+          clearTimeout(t2);
         }
 
-        if (geminiRes.ok) {
+        if (geminiRes && geminiRes.ok) {
           const data = await geminiRes.json();
           responseText = stripThinking(data.candidates?.[0]?.content?.parts?.[0]?.text || "");
         } else {
-          throw new Error("Gemini Failed");
+          throw new Error("Gemini Unavailable, falling back to Groq");
         }
       } catch (geminiErr) {
-        // 2. Fallback to Groq (openai/gpt-oss-20b / openai/gpt-oss-120b)
+        // 2. Ultra-fast Groq Fallback (0.17s response time)
         try {
           if (!GROQ_KEY) throw new Error("No Groq key");
           const groqMessages = [
@@ -247,7 +263,7 @@ ${salonContext}`;
             ...messages.filter(m => m.id !== 1).map(m => ({ role: m.isBot ? "assistant" : "user", content: stripThinking(m.text) })),
             { role: "user", content: userText }
           ];
-          
+
           let groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -258,10 +274,10 @@ ${salonContext}`;
               model: "openai/gpt-oss-20b",
               messages: groqMessages,
               temperature: 0.6,
-              max_tokens: 200
+              max_tokens: 350
             })
           });
-          
+
           if (!groqRes.ok) {
             groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
               method: "POST",
@@ -273,11 +289,11 @@ ${salonContext}`;
                 model: "openai/gpt-oss-120b",
                 messages: groqMessages,
                 temperature: 0.6,
-                max_tokens: 200
+                max_tokens: 350
               })
             });
           }
-          
+
           if (groqRes.ok) {
             const data = await groqRes.json();
             responseText = stripThinking(data.choices?.[0]?.message?.content || "");
@@ -285,21 +301,37 @@ ${salonContext}`;
             throw new Error("Groq Failed");
           }
         } catch (groqErr) {
-          responseText = "I'm having trouble connecting to AI services right now. How else can I assist you with your booking or salon inquiries?";
+          responseText = "Welcome to Brush Up! I can help you explore our premier partner salons, browse luxury services, or book an appointment right now. Here are our premier locations:";
         }
       }
 
       responseText = stripThinking(responseText);
 
-      // Process special commands (Widgets and Broadcasts)
+      // Process special agent commands & interactive widgets
       let widget = null;
-      if (isCustomer && responseText.toLowerCase().includes('book now')) widget = 'BookButton';
-      if (isCustomer && responseText.toLowerCase().includes('availability')) widget = 'AvailabilityWidget';
-      if (isCustomer && responseText.toLowerCase().includes('cancel')) widget = 'CancelWidget';
-      if (isAdmin && responseText.toLowerCase().includes('schedule')) widget = 'AdminSchedule';
-      if (isSuperAdmin && responseText.toLowerCase().includes('revenue')) widget = 'MasterStats';
-      if (isSuperAdmin && responseText.toLowerCase().includes('performance')) widget = 'ShopStats';
-      
+      let serviceQuery = '';
+      const combined = (userText + ' ' + responseText).toLowerCase();
+
+      if (isCustomer) {
+        if (combined.includes('show me the salon') || combined.includes('show salon') || combined.includes('find salon') || combined.includes('best salon') || combined.includes('list salon') || combined.includes('partner salon') || combined.includes('all salon') || combined.includes('what can you do') || (combined.includes('salon') && !combined.includes('cancel'))) {
+          widget = 'SalonCards';
+        } else if (combined.includes('hair') || combined.includes('cut') || combined.includes('blow') || combined.includes('facial') || combined.includes('rebond') || combined.includes('service') || combined.includes('treatment') || combined.includes('color')) {
+          widget = 'ServiceCards';
+          serviceQuery = userText;
+        } else if (combined.includes('cancel')) {
+          widget = 'CancelWidget';
+        } else if (combined.includes('availability') || combined.includes('slot') || combined.includes('time')) {
+          widget = 'AvailabilityWidget';
+        } else if (combined.includes('book now')) {
+          widget = 'BookButton';
+        }
+      } else if (isAdmin) {
+        if (combined.includes('schedule') || combined.includes('today') || combined.includes('booking')) widget = 'AdminSchedule';
+      } else if (isSuperAdmin) {
+        if (combined.includes('revenue') || combined.includes('financial') || combined.includes('audit')) widget = 'MasterStats';
+        if (combined.includes('performance') || combined.includes('shop') || combined.includes('branch')) widget = 'ShopStats';
+      }
+
       // Parse Broadcasts
       const broadcastRegex = /\[BROADCAST\|(.*?)\|(.*?)\|(.*?)\]/;
       const match = responseText.match(broadcastRegex);
@@ -317,10 +349,14 @@ ${salonContext}`;
       if (fillMatch) {
          const [, sId, svc, d, t] = fillMatch;
          responseText = responseText.replace(fillRegex, '').trim() + "\n\nI have prepared the booking form for you!";
-         setTimeout(() => { setIsOpen(false); if(onOpenModal) onOpenModal(sId.trim(), {service: svc.trim(), date: d.trim(), time: t.trim()}); }, 2000);
+         setTimeout(() => { 
+           setIsOpen(false); 
+           if (onOpenBookingModal) onOpenBookingModal(sId.trim(), {service: svc.trim(), date: d.trim(), time: t.trim()});
+           else if (onOpenModal) onOpenModal(sId.trim(), {service: svc.trim(), date: d.trim(), time: t.trim()}); 
+         }, 1500);
       }
 
-      const botMessage = { id: Date.now() + 1, text: responseText, isBot: true, widget };
+      const botMessage = { id: Date.now() + 1, text: responseText, isBot: true, widget, serviceQuery };
       setMessages(prev => [...prev, botMessage]);
     } catch (err) {
       console.error(err);
@@ -341,6 +377,133 @@ ${salonContext}`;
   };
 
   // ─── Widget Renderers ───
+  const renderSalonCardsWidget = () => {
+    const salons = getSalons();
+    return (
+      <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', letterSpacing: 0.5, textTransform: 'uppercase' }}>
+          ✦ Our Premier Partner Salons
+        </div>
+        <div style={{
+          display: 'flex',
+          gap: 10,
+          overflowX: 'auto',
+          paddingBottom: 8,
+          scrollSnapType: 'x mandatory'
+        }}>
+          {salons.map(s => (
+            <div key={s.id} style={{
+              flex: '0 0 190px',
+              scrollSnapAlign: 'start',
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(201, 168, 76, 0.25)',
+              borderRadius: 12,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 8px 20px rgba(0,0,0,0.45)'
+            }}>
+              <div style={{ position: 'relative', height: '95px', width: '100%', overflow: 'hidden' }}>
+                <img src={s.image} alt={s.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{
+                  position: 'absolute', top: 6, right: 6,
+                  background: 'rgba(10, 10, 15, 0.85)', backdropFilter: 'blur(4px)',
+                  borderRadius: 4, padding: '2px 6px', fontSize: 10, color: 'var(--gold)', fontWeight: 700,
+                  border: '1px solid rgba(201, 168, 76, 0.3)'
+                }}>
+                  ★ {s.rating || '4.9'}
+                </div>
+              </div>
+              <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#f8fafc', fontFamily: 'var(--font-display)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {s.name}
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {s.address || 'Midsayap, Cotabato'}
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--gold)', marginTop: 4, fontWeight: 600 }}>
+                  Starting ₱{s.services?.[0]?.price || '100'}
+                </div>
+                <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                  <button 
+                    className="btn small outline" 
+                    style={{ flex: 1, padding: '4px', fontSize: 10, borderRadius: 6 }}
+                    onClick={() => {
+                      setIsOpen(false);
+                      if (onSelectSalon) onSelectSalon(s.id);
+                    }}
+                  >
+                    View
+                  </button>
+                  <button 
+                    className="btn small" 
+                    style={{ flex: 1, padding: '4px', fontSize: 10, borderRadius: 6 }}
+                    onClick={() => {
+                      setIsOpen(false);
+                      if (onOpenBookingModal) onOpenBookingModal(s.id);
+                      else if (onOpenModal) onOpenModal(s.id);
+                    }}
+                  >
+                    Book
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderServiceCardsWidget = (query = '') => {
+    const salons = getSalons();
+    const queryLower = (query || '').toLowerCase();
+    const matched = [];
+    salons.forEach(s => {
+      (s.services || []).forEach(svc => {
+        if (!queryLower || svc.name.toLowerCase().includes(queryLower) || queryLower.includes('hair') || queryLower.includes('service') || queryLower.includes('cut') || queryLower.includes('price')) {
+          matched.push({ salon: s, service: svc });
+        }
+      });
+    });
+    const list = matched.slice(0, 4);
+    return (
+      <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', letterSpacing: 0.5, textTransform: 'uppercase' }}>
+          ✦ Available Services
+        </div>
+        {list.map((item, idx) => (
+          <div key={idx} style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(201,168,76,0.2)',
+            borderRadius: 10,
+            padding: '8px 10px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-white)' }}>{item.service.name}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>{item.salon.name} · {item.service.duration || '45 mins'}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', marginTop: 2 }}>{item.service.price}</div>
+            </div>
+            <button 
+              className="btn small"
+              style={{ padding: '5px 12px', fontSize: 10, borderRadius: 6 }}
+              onClick={() => {
+                setIsOpen(false);
+                if (onOpenBookingModal) onOpenBookingModal(item.salon.id, { service: item.service.name });
+                else if (onOpenModal) onOpenModal(item.salon.id, item.service.name);
+              }}
+            >
+              Book Now
+            </button>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const renderCancelWidget = () => {
     const bookings = getBookings().filter(b => b.userId === currentUser?.user && (b.status === 'Pending' || b.status === 'Approved'));
     if (bookings.length === 0) return <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 8 }}>You have no active bookings to cancel.</p>;
@@ -571,36 +734,52 @@ ${salonContext}`;
                         li: ({children}) => <li style={{marginBottom: '2px'}}>{children}</li>,
                         strong: ({children}) => <strong style={{color: 'inherit', fontWeight: 'bold'}}>{children}</strong>,
                         a: ({ href, children }) => (
-                          <a href={href} onClick={(e) => {
-                            e.preventDefault();
-                            if (href.startsWith('salon:')) {
-                              let raw = href.replace('salon:', '');
-                              let sId = raw, service = null;
-                              if (raw.includes('?service=')) { [sId, service] = raw.split('?service='); service = decodeURIComponent(service); }
-                              setIsOpen(false);
-                              if(onOpenModal) onOpenModal(sId, service);
-                            } else if (href.startsWith('cancel:')) {
-                              let bId = parseInt(href.replace('cancel:', ''), 10);
-                              setIsOpen(false);
-                              if(onCancelBooking) onCancelBooking(bId);
-                            } else { window.open(href, '_blank'); }
-                          }} style={{ color: 'var(--gold)', textDecoration: 'underline', fontWeight: 600, cursor: 'pointer' }}>{children}</a>
+                          <button 
+                            className="chat-action-btn"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (href && href.startsWith('salon:')) {
+                                let raw = href.replace('salon:', '');
+                                let sId = raw, service = null;
+                                if (raw.includes('?service=')) { [sId, service] = raw.split('?service='); service = decodeURIComponent(service); }
+                                setIsOpen(false);
+                                if (onOpenBookingModal) onOpenBookingModal(sId, { service });
+                                else if (onOpenModal) onOpenModal(sId, service);
+                              } else if (href && href.startsWith('cancel:')) {
+                                let bId = parseInt(href.replace('cancel:', ''), 10);
+                                setIsOpen(false);
+                                if (onCancelBooking) onCancelBooking(bId);
+                              } else { 
+                                window.open(href, '_blank'); 
+                              }
+                            }} 
+                            style={{ 
+                              background: 'rgba(201,168,76,0.18)', border: '1px solid var(--gold)',
+                              color: 'var(--gold)', padding: '3px 8px', borderRadius: 6,
+                              fontSize: 11, fontWeight: 700, cursor: 'pointer', margin: '4px 0',
+                              display: 'inline-flex', alignItems: 'center', gap: 4
+                            }}
+                          >
+                            ⚡ {children}
+                          </button>
                         )
                       }}>
                         {stripThinking(msg.text)}
                       </ReactMarkdown>
                       
                       {/* Widgets */}
+                      {msg.widget === 'SalonCards' && renderSalonCardsWidget()}
+                      {msg.widget === 'ServiceCards' && renderServiceCardsWidget(msg.serviceQuery)}
                       {msg.widget === 'CustomerShortcuts' && (
                         <div style={{ marginTop: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          <button className="btn small outline" style={{ fontSize: 11 }} onClick={() => handleSend(null, "Show me the best salons.")}>Find Salons</button>
+                          <button className="btn small outline" style={{ fontSize: 11 }} onClick={() => handleSend(null, "Show me the partner salons.")}>Find Salons</button>
                           <button className="btn small outline" style={{ fontSize: 11 }} onClick={() => handleSend(null, "I want to book a haircut.")}>Book Haircut</button>
                           <button className="btn small outline" style={{ fontSize: 11 }} onClick={() => handleSend(null, "How do I cancel a booking?")}>Cancel Booking</button>
                         </div>
                       )}
                       {msg.widget === 'BookButton' && (
                         <div style={{ marginTop: 10 }}>
-                          <button className="btn small" style={{ fontSize: 11, width: '100%' }} onClick={() => { setIsOpen(false); if(onOpenModal) onOpenModal(getSalons()[0]?.id); }}>Book Appointment Now</button>
+                          <button className="btn small" style={{ fontSize: 11, width: '100%' }} onClick={() => { setIsOpen(false); if(onOpenBookingModal) onOpenBookingModal(getSalons()[0]?.id); else if(onOpenModal) onOpenModal(getSalons()[0]?.id); }}>Book Appointment Now</button>
                         </div>
                       )}
                       {msg.widget === 'AvailabilityWidget' && renderAvailabilityWidget()}
