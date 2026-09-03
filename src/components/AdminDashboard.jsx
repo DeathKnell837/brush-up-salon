@@ -10,6 +10,8 @@ import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth'
 import BrushUpLogo from './BrushUpLogo';
 // import Chatbot from './Chatbot'; // Chatbot removed from Admin Dashboard
 import ReactMarkdown from 'react-markdown';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
   HourglassIcon, CheckCircleIcon, XCircleIcon, CalendarIcon, ClockIcon, 
   PhoneIcon, ScissorsIcon, UserIcon, ListIcon, SettingsIcon, AlertCircleIcon, 
@@ -459,141 +461,128 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   };
 
   const handleGeneratePDF = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      showToast('Please allow popups to generate PDF report.');
-      return;
+    try {
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const branchName = salonName || 'Salon';
+      const today = new Date().toISOString().split('T')[0];
+
+      // Title & Luxury Header
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.setTextColor(15, 23, 42); // #0f172a
+      doc.text('BRUSH UP SALON & BEAUTY', 14, 18);
+
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(201, 168, 76); // #c9a84c (Gold)
+      doc.text(`${branchName.toUpperCase()} — OPERATIONS REPORT`, 14, 25);
+
+      // Gold divider line
+      doc.setDrawColor(201, 168, 76);
+      doc.setLineWidth(0.8);
+      doc.line(14, 28, 196, 28);
+
+      // Report Meta
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(100, 116, 139); // #64748b
+      doc.text(`Generated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, 14, 34);
+      doc.text(`Branch Location: ${salonAddress || 'Midsayap, Cotabato'}`, 14, 39);
+      doc.text(`Authorized Admin: ${currentUser?.name || currentUser?.user || 'Branch Admin'}`, 14, 44);
+
+      // KPIs calculation
+      const totalRevenue = bookingsState
+        .filter(b => b.status === 'Approved' || b.status === 'Completed')
+        .reduce((sum, b) => {
+          const match = (b.servicePrice || b.amount || '').toString().replace(/[^0-9]/g, '');
+          return sum + (parseInt(match, 10) || 0);
+        }, 0);
+
+      const completedCount = bookingsState.filter(b => b.status === 'Approved' || b.status === 'Completed').length;
+      const pendingCount = bookingsState.filter(b => b.status === 'Pending').length;
+      const gcashCount = bookingsState.filter(b => (b.paymentMethod || '').toLowerCase().includes('gcash')).length;
+      const cashCount = bookingsState.filter(b => (b.paymentMethod || '').toLowerCase().includes('cash')).length;
+
+      // KPI cards (4 side by side)
+      const kpis = [
+        { label: 'TOTAL BOOKINGS', val: String(bookingsState.length) },
+        { label: 'COMPLETED / ACTIVE', val: String(completedCount) },
+        { label: 'PENDING APPROVAL', val: String(pendingCount) },
+        { label: 'PAYMENTS', val: `GCash: ${gcashCount} | Cash: ${cashCount}` }
+      ];
+
+      const startY = 48;
+      const cardWidth = 43;
+      const cardHeight = 15;
+      kpis.forEach((kpi, idx) => {
+        const x = 14 + idx * (cardWidth + 2.5);
+        doc.setFillColor(248, 250, 252);
+        doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(x, startY, cardWidth, cardHeight, 1.5, 1.5, 'FD');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        doc.setTextColor(100, 116, 139);
+        doc.text(kpi.label, x + 3, startY + 5);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(kpi.val.length > 10 ? 8 : 10);
+        doc.setTextColor(15, 23, 42);
+        doc.text(kpi.val, x + 3, startY + 11);
+      });
+
+      // Appointment Records Table
+      const tableHeaders = [['Booking ID', 'Date & Time', 'Customer', 'Contact', 'Service(s)', 'Payment', 'Status']];
+      const tableRows = bookingsState.map(b => [
+        `#${b.id}`,
+        `${b.date} ${format12Hour(b.time)}`,
+        b.customer || 'Guest',
+        b.contact || 'N/A',
+        b.service || 'General Service',
+        (b.paymentMethod || 'Cash').toUpperCase(),
+        (b.status || 'Pending').toUpperCase()
+      ]);
+
+      autoTable(doc, {
+        head: tableHeaders,
+        body: tableRows,
+        startY: 68,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [15, 23, 42],
+          textColor: [255, 255, 255],
+          fontSize: 8,
+          fontStyle: 'bold',
+          cellPadding: 2.5
+        },
+        styles: {
+          fontSize: 8,
+          cellPadding: 2,
+          textColor: [51, 65, 85]
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252]
+        },
+        margin: { left: 14, right: 14 },
+        didDrawPage: () => {
+          const pageHeight = doc.internal.pageSize.height || 297;
+          doc.setFontSize(7.5);
+          doc.setTextColor(148, 163, 184);
+          doc.text('Brush Up Salon Management Platform © 2026 — Confidential Branch Business Record', 14, pageHeight - 8);
+          doc.text(`Page ${doc.internal.getNumberOfPages()}`, 196, pageHeight - 8, { align: 'right' });
+        }
+      });
+
+      const sanitizedName = branchName.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const filename = `${sanitizedName}_Operations_Report_${today}.pdf`;
+      doc.save(filename);
+
+      setShowReportModal(false);
+      showToast('PDF report downloaded successfully!');
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      showToast('Failed to generate PDF: ' + err.message);
     }
-    
-    const totalRevenue = bookingsState
-      .filter(b => b.status === 'Approved' || b.status === 'Completed')
-      .reduce((sum, b) => {
-        const match = (b.servicePrice || b.amount || '').toString().replace(/[^0-9]/g, '');
-        return sum + (parseInt(match, 10) || 0);
-      }, 0);
-
-    const completedCount = bookingsState.filter(b => b.status === 'Approved' || b.status === 'Completed').length;
-    const pendingCount = bookingsState.filter(b => b.status === 'Pending').length;
-    const gcashCount = bookingsState.filter(b => (b.paymentMethod || '').toLowerCase().includes('gcash')).length;
-    const cashCount = bookingsState.filter(b => (b.paymentMethod || '').toLowerCase().includes('cash')).length;
-
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${salonName || 'Salon'} - Operations Report</title>
-          <style>
-            @page { size: A4; margin: 15mm; }
-            body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; color: #1e293b; margin: 0; padding: 24px; background: #fff; }
-            .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #c9a84c; padding-bottom: 16px; margin-bottom: 20px; }
-            .brand-title { font-size: 22px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: 0.5px; }
-            .brand-subtitle { font-size: 13px; color: #c9a84c; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
-            .report-meta { text-align: right; font-size: 11px; color: #64748b; line-height: 1.5; }
-            .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
-            .kpi-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; }
-            .kpi-label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
-            .kpi-val { font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 4px; }
-            table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 12px; }
-            th { background: #0f172a; color: #ffffff; text-align: left; padding: 9px 10px; font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
-            td { padding: 9px 10px; border-bottom: 1px solid #e2e8f0; color: #334155; }
-            tr:nth-child(even) { background: #f8fafc; }
-            .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.3px; }
-            .badge-approved { background: #dcfce7; color: #15803d; }
-            .badge-completed { background: #e0e7ff; color: #4338ca; }
-            .badge-pending { background: #fef3c7; color: #b45309; }
-            .badge-rejected, .badge-cancelled { background: #fee2e2; color: #b91c1c; }
-            .footer { margin-top: 32px; padding-top: 14px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; }
-            @media print {
-              body { padding: 0; }
-              .no-print { display: none; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div>
-              <h1 class="brand-title">BRUSH UP SALON & BEAUTY</h1>
-              <div class="brand-subtitle">${salonName || 'Branch'} - Official Report</div>
-            </div>
-            <div class="report-meta">
-              <div><strong>Generated Date:</strong> ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-              <div><strong>Branch Location:</strong> ${salonAddress || 'Midsayap, Cotabato'}</div>
-              <div><strong>Admin:</strong> ${currentUser?.name || currentUser?.user || 'Branch Admin'}</div>
-            </div>
-          </div>
-
-          <div class="kpi-grid">
-            <div class="kpi-card">
-              <div class="kpi-label">Total Appointments</div>
-              <div class="kpi-val">${bookingsState.length}</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-label">Completed / Active</div>
-              <div class="kpi-val">${completedCount}</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-label">Pending Approval</div>
-              <div class="kpi-val">${pendingCount}</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-label">Payment Breakdown</div>
-              <div class="kpi-val" style="font-size: 12px; line-height: 1.4; margin-top: 2px;">
-                GCash: ${gcashCount} &bull; Cash: ${cashCount}
-              </div>
-            </div>
-          </div>
-
-          <h3 style="font-size: 13px; margin: 0 0 8px; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">Appointment Records</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Booking ID</th>
-                <th>Date & Time</th>
-                <th>Customer</th>
-                <th>Contact</th>
-                <th>Service(s)</th>
-                <th>Payment</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${bookingsState.map(b => `
-                <tr>
-                  <td>#${b.id}</td>
-                  <td>${b.date} ${b.time || ''}</td>
-                  <td><strong>${b.customer || 'Guest'}</strong></td>
-                  <td>${b.contact || 'N/A'}</td>
-                  <td>${b.service || 'General Service'}</td>
-                  <td>${(b.paymentMethod || 'Cash').toUpperCase()}</td>
-                  <td>
-                    <span class="badge badge-${(b.status || 'pending').toLowerCase()}">
-                      ${(b.status || 'Pending').toUpperCase()}
-                    </span>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-
-          <div class="footer">
-            <span>Brush Up Salon Management Platform &copy; 2026</span>
-            <span>Confidential Branch Business Record</span>
-          </div>
-
-          <script>
-            window.onload = function() {
-              window.print();
-            };
-          </script>
-        </body>
-      </html>
-    `;
-
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
-    setShowReportModal(false);
-    showToast('PDF report opened for printing / download!');
   };
 
   // HQ Handlers (from legacy SuperAdminDashboard)
@@ -1338,10 +1327,10 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
       let responseText = "";
 
-      // 1. Try Gemini 3.5 Flash First (with user API key)
+      // 1. Try Gemini 3.6 Flash First (with user API key)
       try {
         if (!GEMINI_KEY) throw new Error("No Gemini Key");
-        let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_KEY}`, {
+        let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_KEY}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1350,9 +1339,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           })
         });
 
-        // Fallback to flash-lite if needed
+        // Fallback to 3.5 if needed
         if (!res.ok) {
-          res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${GEMINI_KEY}`, {
+          res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_KEY}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -1374,14 +1363,14 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
         // 2. Try Groq Fallback
         try {
           if (!GROQ_KEY) throw new Error("No Groq Key");
-          const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          let res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
             headers: {
               "Authorization": `Bearer ${GROQ_KEY}`,
               "Content-Type": "application/json"
             },
             body: JSON.stringify({
-              model: "qwen/qwen3.6-27b",
+              model: "openai/gpt-oss-20b",
               messages: [
                 { role: "system", content: systemPrompt },
                 { role: "user", content: `Here is the current business data: ${dataString}` }
@@ -1389,6 +1378,24 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               temperature: 0.6
             })
           });
+
+          if (!res.ok) {
+            res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${GROQ_KEY}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                model: "openai/gpt-oss-120b",
+                messages: [
+                  { role: "system", content: systemPrompt },
+                  { role: "user", content: `Here is the current business data: ${dataString}` }
+                ],
+                temperature: 0.6
+              })
+            });
+          }
           if (res.ok) {
             const data = await res.json();
             responseText = data.choices[0].message.content;

@@ -212,7 +212,7 @@ ${salonContext}`;
           { role: "user", parts: [{ text: userText }] }
         ];
         
-        let geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`, {
+        let geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_KEY}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -222,7 +222,7 @@ ${salonContext}`;
         });
         
         if (!geminiRes.ok) {
-          geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
+          geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_KEY}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -239,7 +239,7 @@ ${salonContext}`;
           throw new Error("Gemini Failed");
         }
       } catch (geminiErr) {
-        // 2. Fallback to Groq (Llama 3.3 70B Versatile / Llama 3.1 8B Instant)
+        // 2. Fallback to Groq (openai/gpt-oss-20b / openai/gpt-oss-120b)
         try {
           if (!GROQ_KEY) throw new Error("No Groq key");
           const groqMessages = [
@@ -255,7 +255,7 @@ ${salonContext}`;
               "Content-Type": "application/json"
             },
             body: JSON.stringify({
-              model: "llama-3.3-70b-versatile",
+              model: "openai/gpt-oss-20b",
               messages: groqMessages,
               temperature: 0.6,
               max_tokens: 200
@@ -270,7 +270,7 @@ ${salonContext}`;
                 "Content-Type": "application/json"
               },
               body: JSON.stringify({
-                model: "llama-3.1-8b-instant",
+                model: "openai/gpt-oss-120b",
                 messages: groqMessages,
                 temperature: 0.6,
                 max_tokens: 200
