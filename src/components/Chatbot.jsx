@@ -27,7 +27,7 @@ export const stripThinking = (raw) => {
   return text;
 };
 
-export default function Chatbot({ onOpenModal, onSelectSalon, onOpenBookingModal, currentUser, contextData, onCancelBooking }) {
+export default function Chatbot({ onOpenModal, onSelectSalon, onOpenBookingModal, currentUser, contextData, onCancelBooking, onNavigateTab, onOpenProfile }) {
   const role = currentUser?.role || 'customer';
   const isCustomer = role === 'customer';
   const isSuperAdmin = currentUser?.salonId === 'all' || role === 'superadmin';
@@ -61,6 +61,10 @@ export default function Chatbot({ onOpenModal, onSelectSalon, onOpenBookingModal
 
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([{ id: 1, ...getInitialMessage(role), isBot: true }]);
+  const messagesRef = useRef(messages);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
@@ -153,55 +157,90 @@ export default function Chatbot({ onOpenModal, onSelectSalon, onOpenBookingModal
     }
   };
 
-  const getAIResponse = async (userText) => {
+  const getAIResponse = async (userText, currentHistory = messagesRef.current) => {
     setIsTyping(true);
     try {
       const salons = getSalons();
       const salonContext = salons.map(s => `ID: ${s.id}
 Name: ${s.name}
 Description/Vibe: ${s.description || s.desc || 'A premium salon experience.'}
-Visuals/Looks: The salon image (${s.image}) showcases its premium aesthetic fitting its description.
-Location: ${s.address || 'Various locations'}
+Location: ${s.address || 'Midsayap, Cotabato'}
 Contact: ${s.contact || 'Book via app'}
-Hours: ${s.hours || 'Standard operating hours'}
-Services: ${s.services.map(sv => `${sv.name} (${sv.price})`).join(', ')}`).join('\n\n');
+Hours: ${s.hours || '9:00 AM - 9:00 PM'}
+Services: ${s.services.map(sv => `${sv.name} (₱${sv.price})`).join(', ')}`).join('\n\n');
 
       let systemPrompt = "";
       
       if (isAdmin || isSuperAdmin) {
-        systemPrompt = `You are the Cooperative Business Intelligence & Operations AI Assistant for a Brush Up Salon Admin.
+        systemPrompt = `You are the Cooperative Business Intelligence & Operations AI Assistant for Brush Up Salon Management.
 Tone: Highly analytical, professional, supportive, strategic.
-Role: Advise on daily booking scheduling, staff rosters, resolving customer disputes, optimizing menus, upselling treatments, AND overall network performance, multi-shop analytics, cash flow runway, and insolvency turnaround strategies.
+Role: Advise on daily booking scheduling, staff rosters, resolving customer disputes, optimizing menus, upselling treatments, multi-shop analytics, cash flow runway, and insolvency turnaround strategies.
 Rules:
-1. Output max 3 concise sentences.
-2. Address operational, cost-minimizing, and bankruptcy-preventing priorities.
-3. Network context: ${salonContext}. Live branch statistics: ${contextData || 'No specific branch context.'}
-4. BROADCAST COMMAND: If the user asks you to publish an announcement, you MUST include:
-[BROADCAST|type|title|message]
-Where 'type' is one of: info, warning, promo.
-5. If the user asks about financial audits or forecasts, explain you can analyze performance and include 'revenue' or 'performance' in your response.`;
+1. Provide thoughtful, actionable operational advice.
+2. Network context: ${salonContext}. Live branch statistics: ${contextData || 'No specific branch context.'}
+3. BROADCAST COMMAND: If the user asks you to publish an announcement, include:
+[BROADCAST|type|title|message] (type: info, warning, promo)
+4. If asked about financial audits or forecasts, analyze performance and include 'revenue' or 'performance'.`;
       } else {
-        systemPrompt = `You are the exclusive AI Concierge for Brush Up Luxury Salon Network. 
-You are speaking with ${currentUser?.name || 'a guest'}. Be friendly, professional, and speak with a luxurious tone.
-STRICT RULES:
-1. NEVER output more than 2 sentences. Keep it extremely brief and concise.
-2. Do NOT ask follow up questions.
-3. CRITICAL: When you recommend a salon or service, you MUST provide ONE clickable Markdown link in EXACTLY this format: [Book Name of Salon](salon:salon-id?service=ServiceName).
-   Example 1: [Book Haircut at Elegant Salon](salon:elegant?service=Haircut)
-4. Do NOT generate standard http:// or https:// links. ONLY use the salon: format.
-5. If the user provides booking details (service, date, time), you can auto-fill the form using this exact syntax anywhere in your response:
-[BOOK_NOW|salon-id|service|YYYY-MM-DD|HH:MM]
-Example: [BOOK_NOW|elegant|Haircut|2026-05-20|14:00]
-6. If the customer asks about availability, say you can check and include the phrase 'availability'.
+        const allBookings = getBookings();
+        const myBookings = allBookings.filter(b => 
+          (currentUser?.name && b.customer && b.customer.toLowerCase().includes(currentUser.name.toLowerCase())) ||
+          (currentUser?.user && b.userId === currentUser.user) ||
+          (currentUser?.contact && b.contact === currentUser.contact)
+        );
+        const myBookingsText = myBookings.length > 0
+          ? myBookings.map(b => `- Booking #${b.id}: "${b.service}" at ${b.salonName || b.salonId}, Date: ${b.date} at ${b.time} | Status: ${b.status} | Payment: ${b.paymentMethod || 'None'}${b.paymentProof ? ' (Receipt Uploaded)' : ' (Awaiting Payment Proof)'}`).join('\n')
+          : 'None currently scheduled.';
 
-LIVE DATA:
-${salonContext}`;
+        systemPrompt = `You are the exclusive, highly intelligent AI Concierge for Brush Up Luxury Salon Network.
+You are conversing with ${currentUser?.name || 'our esteemed guest'}.
+Tone: Luxurious, perceptive, polite, remarkably knowledgeable, and conversational.
+
+CURRENT GUEST LIVE PROFILE & APPOINTMENTS:
+- Guest Name: ${currentUser?.name || 'Guest'}
+- Current Appointments in System:
+${myBookingsText}
+
+PARTNER SALON NETWORK (7 Locations in Midsayap, Cotabato):
+${salonContext}
+
+YOUR REAL CAPABILITIES & COMMANDS:
+1. BOOKING STATUS & APPOINTMENT MANAGEMENT:
+   - If the user asks about their appointments, bookings, or status, tell them their exact live booking details above!
+   - You can include [WIDGET:BOOKINGS] to display interactive booking cards with one-click view or cancel.
+   - To navigate them directly to their bookings tab, output [NAVIGATE|bookings].
+   - If they want to cancel a specific booking, you can output [CANCEL_BOOKING|bookingId].
+
+2. INSTANT BOOKING ASSISTANCE:
+   - When recommending any salon or service, provide a clickable button link in this exact format:
+     [Book ServiceName at SalonName](salon:salonId?service=ServiceName)
+   - If the user specifies booking details (salon, service, date, time), you can auto-fill their booking modal by outputting:
+     [BOOK_NOW|salon-id|service|YYYY-MM-DD|HH:MM]
+
+3. GCASH & PAYMENT GUIDANCE:
+   - For GCash: Salons verify payments upon receipt upload. Customers have a 15-minute window after approval to scan the salon's GCash QR code and upload proof via the Payments tab.
+   - For Cash: Payment is settled directly at the salon counter upon arrival.
+   - To navigate them to Payments, output [NAVIGATE|payments].
+
+4. SALON BROWSING WIDGET RULES (VERY STRICT):
+   - ONLY include [WIDGET:SALONS] if the user EXPLICITLY asks to SEE, BROWSE, or VIEW the salon list/cards visually.
+   - NEVER include [WIDGET:SALONS] when the user says "what can you do aside from showing salons", "other than salons", "not salons", "no salons", or general chat like "ok", "thanks", "hello".
+   - If they ask for service menus, you can include [WIDGET:SERVICES:keyword].
+   - To navigate to the Salons tab, output [NAVIGATE|salons].
+
+5. HAIR & BEAUTY EXPERTISE:
+   - Provide genuine professional salon advice for hair rebonding care (72hr rule, sulfate-free shampoo), keratin maintenance, color treatment protection, scalp health, nail care, and lash/brow styling.
+
+6. CONVERSATIONAL MEMORY & INTELLIGENCE:
+   - REMEMBER prior user chats and replies in this session.
+   - If the user sends a brief acknowledgment like "ok", "got it", "thanks", "sounds good": reply warmly and politely in 1 friendly sentence without re-explaining or dumping cards.
+   - If the user asks "what can you do aside from showing salons" or "what else can you do", answer clearly by explaining your actual powers (live booking status tracking, 1-click scheduling, GCash payment verification, app tab navigation, hair aftercare advice, and cancellations).`;
       }
 
       let responseText = "";
 
-      // Helper to strip any reasoning / <think> tags from any model
-      const stripThinking = (raw) => {
+      // Clean message text helper
+      const cleanText = (raw) => {
         if (!raw) return "";
         return raw
           .replace(/<think>[\s\S]*?<\/think>/gi, '')
@@ -210,18 +249,43 @@ ${salonContext}`;
           .trim();
       };
 
-      // 1. Try Gemini with fast 3.5s timeout (prevent hanging on Google spikes)
+      // Format conversation history for Gemini (strictly alternating user / model)
+      const geminiContents = [];
+      const historySlice = (currentHistory || []).slice(-16);
+      
+      for (const m of historySlice) {
+        const t = cleanText(m.text || '');
+        if (!t) continue;
+        const role = m.isBot ? 'model' : 'user';
+        
+        if (geminiContents.length === 0) {
+          if (role === 'model') {
+            geminiContents.push({ role: 'user', parts: [{ text: "Hello" }] });
+          }
+          geminiContents.push({ role, parts: [{ text: t }] });
+        } else {
+          const prev = geminiContents[geminiContents.length - 1];
+          if (prev.role === role) {
+            prev.parts[0].text += "\n" + t;
+          } else {
+            geminiContents.push({ role, parts: [{ text: t }] });
+          }
+        }
+      }
+
+      // Ensure last entry is user's message
+      if (geminiContents.length === 0 || geminiContents[geminiContents.length - 1].role !== 'user') {
+        geminiContents.push({ role: 'user', parts: [{ text: userText }] });
+      }
+
+      // 1. Try Gemini 3.6-flash (with 3.5-flash fallback)
       try {
         if (!GEMINI_KEY) throw new Error("No Gemini key");
-        const geminiContents = [
-          ...messages.filter(m => m.id !== 1).map(m => ({ role: m.isBot ? "model" : "user", parts: [{ text: stripThinking(m.text) }] })),
-          { role: "user", parts: [{ text: userText }] }
-        ];
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
 
-        let geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`, {
+        let geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_KEY}`, {
           method: "POST",
           signal: controller.signal,
           headers: { "Content-Type": "application/json" },
@@ -235,8 +299,8 @@ ${salonContext}`;
 
         if (!geminiRes || !geminiRes.ok) {
           const c2 = new AbortController();
-          const t2 = setTimeout(() => c2.abort(), 3000);
-          geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
+          const t2 = setTimeout(() => c2.abort(), 3500);
+          geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_KEY}`, {
             method: "POST",
             signal: c2.signal,
             headers: { "Content-Type": "application/json" },
@@ -250,7 +314,7 @@ ${salonContext}`;
 
         if (geminiRes && geminiRes.ok) {
           const data = await geminiRes.json();
-          responseText = stripThinking(data.candidates?.[0]?.content?.parts?.[0]?.text || "");
+          responseText = cleanText(data.candidates?.[0]?.content?.parts?.[0]?.text || "");
         } else {
           throw new Error("Gemini Unavailable, falling back to Groq");
         }
@@ -260,8 +324,10 @@ ${salonContext}`;
           if (!GROQ_KEY) throw new Error("No Groq key");
           const groqMessages = [
             { role: "system", content: systemPrompt },
-            ...messages.filter(m => m.id !== 1).map(m => ({ role: m.isBot ? "assistant" : "user", content: stripThinking(m.text) })),
-            { role: "user", content: userText }
+            ...(currentHistory || []).slice(-16).map(m => ({
+              role: m.isBot ? "assistant" : "user",
+              content: cleanText(m.text || '')
+            })).filter(m => m.content.length > 0)
           ];
 
           let groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -274,7 +340,7 @@ ${salonContext}`;
               model: "openai/gpt-oss-20b",
               messages: groqMessages,
               temperature: 0.6,
-              max_tokens: 350
+              max_tokens: 450
             })
           });
 
@@ -289,54 +355,51 @@ ${salonContext}`;
                 model: "openai/gpt-oss-120b",
                 messages: groqMessages,
                 temperature: 0.6,
-                max_tokens: 350
+                max_tokens: 450
               })
             });
           }
 
           if (groqRes.ok) {
             const data = await groqRes.json();
-            responseText = stripThinking(data.choices?.[0]?.message?.content || "");
+            responseText = cleanText(data.choices?.[0]?.message?.content || "");
           } else {
             throw new Error("Groq Failed");
           }
         } catch (groqErr) {
-          responseText = "Welcome to Brush Up! I can help you explore our premier partner salons, browse luxury services, or book an appointment right now. Here are our premier locations:";
+          responseText = "Welcome to Brush Up! I can help you check your bookings, explore partner salons, guide you on GCash payments, or book an appointment right now.";
         }
       }
 
-      responseText = stripThinking(responseText);
+      responseText = cleanText(responseText);
 
-      // Process special agent commands & interactive widgets
-      let widget = null;
-      let serviceQuery = '';
-      const combined = (userText + ' ' + responseText).toLowerCase();
-
-      if (isCustomer) {
-        if (combined.includes('show me the salon') || combined.includes('show salon') || combined.includes('find salon') || combined.includes('best salon') || combined.includes('list salon') || combined.includes('partner salon') || combined.includes('all salon') || combined.includes('what can you do') || (combined.includes('salon') && !combined.includes('cancel'))) {
-          widget = 'SalonCards';
-        } else if (combined.includes('hair') || combined.includes('cut') || combined.includes('blow') || combined.includes('facial') || combined.includes('rebond') || combined.includes('service') || combined.includes('treatment') || combined.includes('color')) {
-          widget = 'ServiceCards';
-          serviceQuery = userText;
-        } else if (combined.includes('cancel')) {
-          widget = 'CancelWidget';
-        } else if (combined.includes('availability') || combined.includes('slot') || combined.includes('time')) {
-          widget = 'AvailabilityWidget';
-        } else if (combined.includes('book now')) {
-          widget = 'BookButton';
-        }
-      } else if (isAdmin) {
-        if (combined.includes('schedule') || combined.includes('today') || combined.includes('booking')) widget = 'AdminSchedule';
-      } else if (isSuperAdmin) {
-        if (combined.includes('revenue') || combined.includes('financial') || combined.includes('audit')) widget = 'MasterStats';
-        if (combined.includes('performance') || combined.includes('shop') || combined.includes('branch')) widget = 'ShopStats';
+      // Process Navigation Command
+      const navRegex = /\[NAVIGATE\|(.*?)\]/i;
+      const navMatch = responseText.match(navRegex);
+      if (navMatch) {
+        const dest = navMatch[1].trim().toLowerCase();
+        responseText = responseText.replace(navRegex, '').trim();
+        setTimeout(() => {
+          if (dest === 'profile' && onOpenProfile) onOpenProfile();
+          else if (onNavigateTab) onNavigateTab(dest);
+        }, 600);
       }
 
-      // Parse Broadcasts
+      // Process Cancel Booking Command
+      const cancelRegex = /\[CANCEL_BOOKING\|(.*?)\]/i;
+      const cancelMatch = responseText.match(cancelRegex);
+      if (cancelMatch) {
+        const bId = parseInt(cancelMatch[1].trim(), 10) || cancelMatch[1].trim();
+        responseText = responseText.replace(cancelRegex, '').trim();
+        if (onCancelBooking) onCancelBooking(bId);
+        else handleCancelBooking(bId);
+      }
+
+      // Process Broadcast Command
       const broadcastRegex = /\[BROADCAST\|(.*?)\|(.*?)\|(.*?)\]/;
-      const match = responseText.match(broadcastRegex);
-      if (match) {
-        const [, type, title, message] = match;
+      const broadcastMatch = responseText.match(broadcastRegex);
+      if (broadcastMatch) {
+        const [, type, title, message] = broadcastMatch;
         const currentA = getAnnouncements();
         currentA.unshift({ id: Date.now(), type: type.trim(), title: title.trim(), message: message.trim(), timestamp: new Date().toISOString() });
         setAnnouncements(currentA);
@@ -347,20 +410,77 @@ ${salonContext}`;
       const fillRegex = /\[BOOK_NOW\|(.*?)\|(.*?)\|(.*?)\|(.*?)\]/;
       const fillMatch = responseText.match(fillRegex);
       if (fillMatch) {
-         const [, sId, svc, d, t] = fillMatch;
-         responseText = responseText.replace(fillRegex, '').trim() + "\n\nI have prepared the booking form for you!";
-         setTimeout(() => { 
-           setIsOpen(false); 
-           if (onOpenBookingModal) onOpenBookingModal(sId.trim(), {service: svc.trim(), date: d.trim(), time: t.trim()});
-           else if (onOpenModal) onOpenModal(sId.trim(), {service: svc.trim(), date: d.trim(), time: t.trim()}); 
-         }, 1500);
+        const [, sId, svc, d, t] = fillMatch;
+        responseText = responseText.replace(fillRegex, '').trim() + "\n\n✨ *I have prepared your booking form!*";
+        setTimeout(() => { 
+          setIsOpen(false); 
+          if (onOpenBookingModal) onOpenBookingModal(sId.trim(), {service: svc.trim(), date: d.trim(), time: t.trim()});
+          else if (onOpenModal) onOpenModal(sId.trim(), {service: svc.trim(), date: d.trim(), time: t.trim()}); 
+        }, 1200);
       }
 
+      // Process special agent commands & interactive widgets
+      let widget = null;
+      let serviceQuery = '';
+      const lowerUser = userText.toLowerCase().trim();
+      const isNegative = /aside|other than|don'?t|without|not|no salons?|stop/i.test(lowerUser);
+
+      if (responseText.includes('[WIDGET:SALONS]')) {
+        widget = 'SalonCards';
+      } else if (responseText.includes('[WIDGET:SERVICES')) {
+        widget = 'ServiceCards';
+        const m = responseText.match(/\[WIDGET:SERVICES:?(.*?)\]/i);
+        if (m && m[1]) serviceQuery = m[1].trim();
+      } else if (responseText.includes('[WIDGET:BOOKINGS]')) {
+        widget = 'CustomerBookings';
+      }
+
+      if (!widget && isCustomer) {
+        if (!isNegative && (
+          /\b(show|view|see|browse|list|recommend|display|explore)\b.*\b(salons?|branches?|shops?|places?)\b/i.test(lowerUser) ||
+          /^(show\s*salons?|salons?|our\s*salons?|partner\s*salons?)$/i.test(lowerUser)
+        )) {
+          widget = 'SalonCards';
+        } else if (!isNegative && (
+          /\b(show|view|see|browse|list|prices?|rates?|cost)\b.*\b(services?|treatments?|haircut|blow|rebond|color|spa|nails?|facial)\b/i.test(lowerUser) ||
+          /^(services?|treatments?|pricing|menu)$/i.test(lowerUser)
+        )) {
+          widget = 'ServiceCards';
+          serviceQuery = userText;
+        } else if (/\b(my\s*bookings?|my\s*appointments?|booking\s*status|appointment\s*status)\b/i.test(lowerUser)) {
+          widget = 'CustomerBookings';
+        } else if (/\b(cancel\s*booking|cancel\s*appointment)\b/i.test(lowerUser)) {
+          widget = 'CancelWidget';
+        } else if (/\b(availability|free\s*slots?|available\s*slots?)\b/i.test(lowerUser)) {
+          widget = 'AvailabilityWidget';
+        }
+      } else if (!widget && isAdmin) {
+        if (/\b(schedule|today'?s\s*appointments|bookings?)\b/i.test(lowerUser)) widget = 'AdminSchedule';
+      } else if (!widget && isSuperAdmin) {
+        if (/\b(revenue|financial|audit)\b/i.test(lowerUser)) widget = 'MasterStats';
+        if (/\b(performance|branches?|shops?)\b/i.test(lowerUser)) widget = 'ShopStats';
+      }
+
+      // Strip widget tags from display
+      responseText = responseText
+        .replace(/\[WIDGET:SALONS\]/gi, '')
+        .replace(/\[WIDGET:SERVICES:?.*?\]/gi, '')
+        .replace(/\[WIDGET:BOOKINGS\]/gi, '')
+        .trim();
+
       const botMessage = { id: Date.now() + 1, text: responseText, isBot: true, widget, serviceQuery };
-      setMessages(prev => [...prev, botMessage]);
+      setMessages(prev => {
+        const next = [...prev, botMessage];
+        messagesRef.current = next;
+        return next;
+      });
     } catch (err) {
       console.error(err);
-      setMessages(prev => [...prev, { id: Date.now(), text: "I'm sorry, I'm having trouble connecting. Please try again.", isBot: true }]);
+      setMessages(prev => {
+        const next = [...prev, { id: Date.now(), text: "I'm sorry, I'm having trouble connecting. Please try again.", isBot: true }];
+        messagesRef.current = next;
+        return next;
+      });
     } finally {
       setIsTyping(false);
     }
@@ -371,9 +491,11 @@ ${salonContext}`;
     const txt = overrideText || input;
     if (!txt.trim()) return;
     const userMessage = { id: Date.now(), text: txt, isBot: false };
-    setMessages(prev => [...prev, userMessage]);
+    const nextMessages = [...messagesRef.current, userMessage];
+    setMessages(nextMessages);
+    messagesRef.current = nextMessages;
     if (!overrideText) setInput('');
-    getAIResponse(txt);
+    getAIResponse(txt, nextMessages);
   };
 
   // ─── Widget Renderers ───
@@ -498,6 +620,79 @@ ${salonContext}`;
             >
               Book Now
             </button>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderCustomerBookingsWidget = () => {
+    const allBookings = getBookings();
+    const myBookings = allBookings.filter(b => 
+      (currentUser?.name && b.customer && b.customer.toLowerCase().includes(currentUser.name.toLowerCase())) ||
+      (currentUser?.user && b.userId === currentUser.user) ||
+      (currentUser?.contact && b.contact === currentUser.contact)
+    );
+    if (myBookings.length === 0) {
+      return (
+        <div style={{ marginTop: 10, padding: 10, background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', fontSize: 11, color: 'var(--text-dim)' }}>
+          You have no active bookings right now.
+        </div>
+      );
+    }
+    return (
+      <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--gold)', letterSpacing: 0.5, textTransform: 'uppercase' }}>
+          📅 Your Current Appointments ({myBookings.length})
+        </div>
+        {myBookings.slice(0, 3).map(b => (
+          <div key={b.id} style={{
+            background: 'rgba(255, 255, 255, 0.04)',
+            border: '1px solid rgba(201, 168, 76, 0.3)',
+            borderRadius: 8,
+            padding: '8px 10px',
+            fontSize: 11
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <strong style={{ color: '#fff' }}>{b.service}</strong>
+              <span style={{
+                fontSize: 9,
+                fontWeight: 700,
+                padding: '2px 6px',
+                borderRadius: 4,
+                background: b.status === 'Approved' ? 'rgba(74,222,128,0.15)' : b.status === 'Pending' ? 'rgba(234,179,8,0.15)' : 'rgba(255,255,255,0.1)',
+                color: b.status === 'Approved' ? '#4ade80' : b.status === 'Pending' ? '#facc15' : '#94a3b8'
+              }}>
+                {b.status}
+              </span>
+            </div>
+            <div style={{ color: 'var(--text-dim)', fontSize: 10, marginTop: 2 }}>
+              {b.salonName || b.salonId} · {b.date} {b.time}
+            </div>
+            <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+              <button 
+                className="btn small outline"
+                style={{ padding: '2px 8px', fontSize: 10, borderRadius: 4 }}
+                onClick={() => {
+                  setIsOpen(false);
+                  if (onNavigateTab) onNavigateTab('bookings');
+                }}
+              >
+                View Details
+              </button>
+              {(b.status === 'Pending' || b.status === 'Approved') && (
+                <button 
+                  className="btn small outline danger"
+                  style={{ padding: '2px 8px', fontSize: 10, borderRadius: 4 }}
+                  onClick={() => {
+                    if (onCancelBooking) onCancelBooking(b.id);
+                    else handleCancelBooking(b.id);
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -784,6 +979,7 @@ ${salonContext}`;
                       )}
                       {msg.widget === 'AvailabilityWidget' && renderAvailabilityWidget()}
                       {msg.widget === 'CancelWidget' && renderCancelWidget()}
+                      {msg.widget === 'CustomerBookings' && renderCustomerBookingsWidget()}
                       {msg.widget === 'AdminSchedule' && renderAdminSchedule()}
                       {msg.widget === 'MasterStats' && renderMasterStats()}
                       {msg.widget === 'ShopStats' && renderShopStats()}

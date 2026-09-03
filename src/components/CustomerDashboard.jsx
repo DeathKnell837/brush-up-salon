@@ -1345,7 +1345,16 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
         </div>
       )}
 
-      <Chatbot onSelectSalon={onSelectSalon} onOpenBookingModal={onOpenModal} onOpenModal={onOpenModal || onSelectSalon} currentUser={currentUser} onCancelBooking={handleCancelBooking} contextData={`User Bookings: ${JSON.stringify(bookings)}`} />
+      <Chatbot 
+        onSelectSalon={onSelectSalon} 
+        onOpenBookingModal={onOpenModal} 
+        onOpenModal={onOpenModal || onSelectSalon} 
+        currentUser={currentUser} 
+        onCancelBooking={handleCancelBooking} 
+        onNavigateTab={setTab}
+        onOpenProfile={onOpenProfile}
+        contextData={`User Bookings: ${JSON.stringify(bookings)}`} 
+      />
 
       {/* Floating Bottom Navigation for Mobile */}
       <div className="mobile-bottom-nav">
