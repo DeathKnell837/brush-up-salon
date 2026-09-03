@@ -5199,7 +5199,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             </div>
 
             <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16, lineHeight: 1.5 }}>
-              Rejecting appointment for <strong style={{ color: '#fff' }}>{rejectionModalBooking.customer}</strong> ({rejectionModalBooking.service} on {rejectionModalBooking.date} at {rejectionModalBooking.time}).
+              Rejecting appointment for <strong style={{ color: '#fff' }}>{rejectionModalBooking.customer}</strong> ({rejectionModalBooking.service} on {rejectionModalBooking.date} at {format12Hour(rejectionModalBooking.time)}).
             </p>
 
             <div className="input-group" style={{ marginBottom: 14 }}>

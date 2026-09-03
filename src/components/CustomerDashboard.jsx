@@ -1045,7 +1045,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                                 {/* Cash Payment Badge */}
                                 {(!b.paymentMethod || b.paymentMethod === 'Cash') && (
                                   <div className="cash-payment-badge" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'rgba(74, 222, 128, 0.08)', border: '1px solid rgba(74, 222, 128, 0.2)', borderRadius: 10, fontSize: 12, fontWeight: 600, color: '#4ade80', justifyContent: 'center' }}>
-                                    <CashIcon size={14} /> Cash Payment — Pay at salon
+                                    <CashIcon size={14} /> Cash Payment
                                   </div>
                                 )}
 
