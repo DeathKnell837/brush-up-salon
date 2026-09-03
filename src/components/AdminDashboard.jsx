@@ -984,31 +984,94 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   };
   const today = getLocalDateString();
 
-  // Calendar monthly grid data (Dynamic for any month) (Part 3)
+  // Calendar monthly grid data (Full 35 or 42 slot real calendar grid with leading/trailing days)
   const calendarDays = React.useMemo(() => {
     const year = calendarMonth.getFullYear();
     const month = calendarMonth.getMonth();
-    const firstDayIndex = new Date(year, month, 1).getDay();
+    const firstDayIndex = new Date(year, month, 1).getDay(); // 0 = Sunday
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     
+    // Days in previous month
+    const prevMonthLastDate = new Date(year, month, 0).getDate();
+    
     const days = [];
-    for (let i = 0; i < firstDayIndex; i++) {
-      days.push({ empty: true, key: `pad-${i}` });
+    
+    // 1. Leading days from previous month
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      const dayNum = prevMonthLastDate - i;
+      const prevDate = new Date(year, month - 1, dayNum);
+      const prevY = prevDate.getFullYear();
+      const prevM = String(prevDate.getMonth() + 1).padStart(2, '0');
+      const prevD = String(dayNum).padStart(2, '0');
+      const dateStr = `${prevY}-${prevM}-${prevD}`;
+      const count = bookingsByDate[dateStr] || 0;
+      const dayOfWeek = prevDate.getDay();
+      days.push({
+        day: dayNum,
+        dateStr,
+        count,
+        isFullyBooked: count >= 5,
+        isToday: dateStr === today,
+        isOtherMonth: true,
+        isWeekend: dayOfWeek === 0 || dayOfWeek === 6,
+        monthOffset: -1
+      });
     }
+    
+    // 2. Current month days
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const count = bookingsByDate[dateStr] || 0;
+      const dayOfWeek = new Date(year, month, day).getDay();
       days.push({
-        empty: false,
         day,
         dateStr,
         count,
         isFullyBooked: count >= 5,
-        isToday: dateStr === today
+        isToday: dateStr === today,
+        isOtherMonth: false,
+        isWeekend: dayOfWeek === 0 || dayOfWeek === 6,
+        monthOffset: 0
       });
     }
+    
+    // 3. Trailing days from next month to complete uniform 35 or 42 grid cells
+    const totalSlots = days.length > 35 ? 42 : 35;
+    const remainingSlots = totalSlots - days.length;
+    for (let day = 1; day <= remainingSlots; day++) {
+      const nextDate = new Date(year, month + 1, day);
+      const nextY = nextDate.getFullYear();
+      const nextM = String(nextDate.getMonth() + 1).padStart(2, '0');
+      const nextD = String(day).padStart(2, '0');
+      const dateStr = `${nextY}-${nextM}-${nextD}`;
+      const count = bookingsByDate[dateStr] || 0;
+      const dayOfWeek = nextDate.getDay();
+      days.push({
+        day,
+        dateStr,
+        count,
+        isFullyBooked: count >= 5,
+        isToday: dateStr === today,
+        isOtherMonth: true,
+        isWeekend: dayOfWeek === 0 || dayOfWeek === 6,
+        monthOffset: 1
+      });
+    }
+    
     return days;
   }, [calendarMonth, bookingsByDate, today]);
+
+  // Operational metrics for the active calendar month
+  const calendarMonthSummary = React.useMemo(() => {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+    const monthBookings = bookingsState.filter(b => b.date && b.date.startsWith(prefix));
+    const total = monthBookings.length;
+    const approved = monthBookings.filter(b => b.status === 'Approved' || b.status === 'Completed').length;
+    const pending = monthBookings.filter(b => b.status === 'Pending').length;
+    return { total, approved, pending };
+  }, [calendarMonth, bookingsState]);
 
   /* eslint-disable react-hooks/exhaustive-deps */
   const allCustomers = React.useMemo(() => {
@@ -5302,29 +5365,37 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               animation: 'fadeUp 0.25s ease'
             }}
           >
-            {/* Modal Header with Month Controls */}
+            {/* Modal Header with Month Controls & Operational Intelligence */}
             <div style={{
               padding: '16px 24px',
-              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              borderBottom: '1px solid rgba(255,255,255,0.08)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              background: 'rgba(255,255,255,0.02)'
+              background: 'rgba(255,255,255,0.02)',
+              flexWrap: 'wrap',
+              gap: 12
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{
-                  width: 32, height: 32, borderRadius: 8,
+                  width: 34, height: 34, borderRadius: 8,
                   background: 'rgba(201, 168, 76, 0.15)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--gold)'
+                  color: 'var(--gold)',
+                  border: '1px solid rgba(201, 168, 76, 0.3)'
                 }}>
-                  <CalendarIcon size={16} />
+                  <CalendarIcon size={17} />
                 </div>
                 <div>
-                  <p style={{ margin: 0, fontSize: '10px', color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>
-                    AVAILABILITY & DENSITY
-                  </p>
-                  <h3 style={{ margin: '2px 0 0', fontSize: '16px', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <p style={{ margin: 0, fontSize: '10px', color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>
+                      AVAILABILITY & CAPACITY
+                    </p>
+                    <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 4, color: 'var(--text-dim)' }}>
+                      {calendarMonthSummary.total} Bookings ({calendarMonthSummary.approved} Confirmed)
+                    </span>
+                  </div>
+                  <h3 style={{ margin: '2px 0 0', fontSize: '17px', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
                     Monthly Booking Calendar
                   </h3>
                 </div>
@@ -5336,7 +5407,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   <button className="calendar-nav-btn" onClick={handlePrevMonth} title="Previous Month">
                     <ChevronLeftIcon size={14} />
                   </button>
-                  <span className="calendar-month-title" style={{ minWidth: 120, textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--text-white)' }}>
+                  <span className="calendar-month-title" style={{ minWidth: 130, textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--text-white)' }}>
                     {calendarMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
                   </span>
                   <button className="calendar-nav-btn" onClick={handleNextMonth} title="Next Month">
@@ -5360,113 +5431,138 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               </div>
             </div>
 
-            {/* Modal Body: Legend & Clean Grid */}
-            <div style={{ padding: '18px 24px' }}>
+            {/* Modal Body: Legend & Authentic Connected Calendar Sheet */}
+            <div style={{ padding: '16px 24px 20px' }}>
               {/* Legend & Instructions */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8, fontSize: 11 }}>
-                <span style={{ color: 'var(--text-dim)' }}>Select any date to filter appointments list</span>
+                <span style={{ color: 'var(--text-dim)' }}>Click any date cell to filter appointments or inspect slot density</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--gold)', fontWeight: 600 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--gold)' }} />
+                    Today
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--gold)', fontWeight: 600 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(201,168,76,0.3)', border: '1px solid var(--gold)' }} />
+                    Booked (1-4)
+                  </span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#f87171', fontWeight: 600 }}>
                     <span style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(239,68,68,0.4)', border: '1px solid #ef4444' }} />
                     Fully Booked (5+)
                   </span>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--gold)', fontWeight: 600 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(201,168,76,0.3)', border: '1px solid var(--gold)' }} />
-                    Partially Booked (1-4)
-                  </span>
                 </div>
               </div>
 
-              {/* Days Grid without internal scrollbar */}
-              <div className="calendar-days-grid" style={{ marginTop: 0, gap: '6px' }}>
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                  <div key={d} className="calendar-day-header" style={{ color: 'var(--gold)', fontSize: '11px', fontWeight: 700, paddingBottom: '4px' }}>{d}</div>
-                ))}
-                {calendarDays.map((item) => {
-                  if (item.empty) {
-                    return <div key={item.key} style={{ minHeight: 52, opacity: 0.05 }} />;
-                  }
-                  const isSelected = selectedCalendarDate === item.dateStr;
-                  return (
-                    <div 
-                      key={item.dateStr} 
-                      className={`calendar-day-cell ${item.isFullyBooked ? 'is-fully-booked' : ''} ${isSelected ? 'is-selected' : ''}`}
-                      style={{ 
-                        minHeight: 52, 
-                        padding: '6px 8px', 
-                        cursor: 'pointer', 
-                        borderRadius: 8,
-                        transition: 'all 0.15s ease',
-                        background: isSelected ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.03)',
-                        borderColor: isSelected ? 'var(--gold)' : item.isFullyBooked ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.07)'
-                      }}
-                      onClick={() => {
-                        setSelectedCalendarDate(isSelected ? null : item.dateStr);
-                        setShowCalendarView(false);
-                      }}
-                      title={`Click to filter appointments for ${item.dateStr}`}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        {item.isToday ? (
-                          <span style={{ 
-                            fontSize: 11, 
-                            fontWeight: 700, 
-                            color: 'var(--gold)', 
-                            background: 'rgba(201,168,76,0.2)', 
-                            border: '1px solid rgba(201,168,76,0.4)', 
-                            padding: '1px 5px', 
-                            borderRadius: 4 
-                          }}>
-                            {item.day} (Today)
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: 12, fontWeight: 600, color: '#f1f5f9' }}>
-                            {item.day}
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ marginTop: 4 }}>
-                        {item.isFullyBooked ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)', color: '#f87171', borderRadius: 4, padding: '1px 5px', fontSize: 9, fontWeight: 700 }}>
-                            ● Full ({item.count})
-                          </span>
-                        ) : item.count > 0 ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'rgba(201,168,76,0.2)', border: '1px solid rgba(201,168,76,0.4)', color: 'var(--gold)', borderRadius: 4, padding: '1px 5px', fontSize: 9, fontWeight: 700 }}>
-                            ● {item.count} Booked
-                          </span>
-                        ) : null}
-                      </div>
+              {/* Authentic Real Calendar Sheet with hairline dividers and trailing dates */}
+              <div className="calendar-sheet-container">
+                {/* 1. Weekday Header Row */}
+                <div className="calendar-weekdays-row">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, idx) => (
+                    <div key={d} className="calendar-weekday-col" style={{ color: (idx === 0 || idx === 6) ? '#d4af37' : 'var(--gold)' }}>
+                      {d}
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
+
+                {/* 2. Connected Days Grid (Zero gap, hairline borders between rows and columns) */}
+                <div className="calendar-days-grid-sheet">
+                  {calendarDays.map((item) => {
+                    const isSelected = selectedCalendarDate === item.dateStr;
+                    return (
+                      <div 
+                        key={item.dateStr} 
+                        className={`calendar-real-cell ${item.isOtherMonth ? 'is-other-month' : ''} ${item.isWeekend ? 'is-weekend' : ''} ${item.isToday ? 'is-today-cell' : ''} ${isSelected ? 'is-selected' : ''}`}
+                        onClick={() => {
+                          setSelectedCalendarDate(isSelected ? null : item.dateStr);
+                          setShowCalendarView(false);
+                        }}
+                        title={item.count > 0 ? `${item.dateStr}: ${item.count} appointment(s) booked` : `${item.dateStr}: Available`}
+                      >
+                        {/* Day Number Header */}
+                        <div className="calendar-day-header-meta">
+                          {item.isToday ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span className="calendar-today-pill">{item.day}</span>
+                              <span style={{ fontSize: 8, fontWeight: 800, color: 'var(--gold)', letterSpacing: 0.5 }}>TODAY</span>
+                            </div>
+                          ) : (
+                            <span style={{ 
+                              fontSize: 12, 
+                              fontWeight: item.isOtherMonth ? 500 : 700, 
+                              color: item.isOtherMonth ? 'rgba(255,255,255,0.3)' : item.isWeekend ? '#cbd5e1' : '#f8fafc' 
+                            }}>
+                              {item.day}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Event / Capacity Status Indicator */}
+                        <div style={{ marginTop: 'auto', paddingTop: 4 }}>
+                          {item.isFullyBooked ? (
+                            <div className="calendar-event-badge full">
+                              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444' }} />
+                              <span>Full ({item.count})</span>
+                            </div>
+                          ) : item.count > 0 ? (
+                            <div className="calendar-event-badge booked">
+                              <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--gold)' }} />
+                              <span>{item.count} Booked</span>
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            {/* Modal Footer */}
+            {/* Modal Footer with Status & Quick Actions */}
             <div style={{
               padding: '12px 24px',
               borderTop: '1px solid rgba(255,255,255,0.06)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              background: 'rgba(255,255,255,0.01)'
+              background: 'rgba(255,255,255,0.01)',
+              flexWrap: 'wrap',
+              gap: 8
             }}>
-              {selectedCalendarDate ? (
+              <div>
+                {selectedCalendarDate ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 12, color: 'var(--gold)', fontWeight: 600 }}>
+                      📌 Filter Active: <strong>{selectedCalendarDate}</strong>
+                    </span>
+                    <button 
+                      className="btn small outline" 
+                      style={{ padding: '2px 8px', fontSize: 10, color: '#f87171', borderColor: 'rgba(239,68,68,0.3)' }}
+                      onClick={() => { setSelectedCalendarDate(null); setShowCalendarView(false); }}
+                    >
+                      Clear Filter ✕
+                    </button>
+                  </div>
+                ) : (
+                  <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+                    Showing all appointments. Select any date to filter table.
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
                 <button 
                   className="btn small outline" 
-                  style={{ fontSize: 11, color: '#f87171', borderColor: 'rgba(239,68,68,0.3)' }}
-                  onClick={() => { setSelectedCalendarDate(null); setShowCalendarView(false); }}
+                  style={{ fontSize: 11 }}
+                  onClick={() => { setSelectedCalendarDate(today); setShowCalendarView(false); }}
                 >
-                  Clear Date Filter ({selectedCalendarDate})
+                  Filter Today
                 </button>
-              ) : <div />}
-              <button 
-                className="btn small outline" 
-                onClick={() => setShowCalendarView(false)}
-                style={{ fontSize: 12 }}
-              >
-                Close
-              </button>
+                <button 
+                  className="btn small outline" 
+                  onClick={() => setShowCalendarView(false)}
+                  style={{ fontSize: 11 }}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
