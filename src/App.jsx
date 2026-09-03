@@ -395,9 +395,8 @@ function App() {
                 <line x1="21" y1="12" x2="9" y2="12"></line>
               </svg>
             </div>
-            <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>Log out?</h3>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginBottom: '24px' }}>
-              Are you sure you want to log out of your account?
+            <p style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '24px', lineHeight: '1.4' }}>
+              Are you sure you want to log out?
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button

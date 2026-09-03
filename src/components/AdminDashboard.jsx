@@ -26,6 +26,20 @@ const fileToBase64 = (file) => new Promise((resolve) => {
   reader.readAsDataURL(file);
 });
 
+// Format 24-hour time to 12-hour AM/PM
+const format12Hour = (timeStr) => {
+  if (!timeStr) return '';
+  if (/[ap]m/i.test(timeStr)) return timeStr.toUpperCase();
+  const [h, m] = timeStr.split(':');
+  if (h === undefined || m === undefined) return timeStr;
+  let hours = parseInt(h, 10);
+  const minutes = m.padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  return `${hours}:${minutes} ${ampm}`;
+};
+
 // Preset Rejection Reasons for Salon Bookings
 const PRESET_REJECTION_REASONS = [
   'Customer no longer needs the slot',
@@ -2028,19 +2042,24 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     </button>
                   </div>
 
-                  {/* Calendar Availability Toggle Button */}
-                  <button 
-                    className={`btn small ${showCalendarView ? 'primary' : 'outline'}`} 
-                    onClick={() => setShowCalendarView(!showCalendarView)}
-                    title="Toggle Calendar Availability View"
-                  >
-                    <CalendarIcon size={14} style={{ marginRight: 6 }} /> {showCalendarView ? 'Hide Calendar' : 'Calendar View'}
-                  </button>
+                  {/* Appointments-specific tools: Calendar View & Add Walk-in */}
+                  {bookingsSubView === 'list' && (
+                    <>
+                      {/* Calendar Availability Toggle Button */}
+                      <button 
+                        className={`btn small ${showCalendarView ? 'primary' : 'outline'}`} 
+                        onClick={() => setShowCalendarView(!showCalendarView)}
+                        title="Toggle Calendar Availability View"
+                      >
+                        <CalendarIcon size={14} style={{ marginRight: 6 }} /> {showCalendarView ? 'Hide Calendar' : 'Calendar View'}
+                      </button>
 
-                  {/* Add Walk-In */}
-                  <button className="btn small outline" onClick={handleWalkIn}>
-                    <UserIcon size={14} style={{ marginRight: 6 }} /> Add Walk-in
-                  </button>
+                      {/* Add Walk-In */}
+                      <button className="btn small outline" onClick={handleWalkIn}>
+                        <UserIcon size={14} style={{ marginRight: 6 }} /> Add Walk-in
+                      </button>
+                    </>
+                  )}
 
                   {/* Generate Report */}
                   <button className="btn small outline" onClick={() => setShowReportModal(true)}>
@@ -2253,23 +2272,15 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       </div>
                     </div>
 
-                    {/* Right: View Mode Toggle */}
+                    {/* Right: View Mode Toggle (Single Icon Button) */}
                     <div className="bookings-view-toggle" style={{ height: '38px', boxSizing: 'border-box', display: 'inline-flex', alignItems: 'center' }}>
                       <button
-                        className={`bookings-view-btn ${bookingsViewMode === 'compact' ? 'active' : ''}`}
-                        onClick={() => setBookingsViewMode('compact')}
-                        title="Compact Row Layout"
-                        style={{ height: '30px' }}
+                        className="bookings-view-btn active"
+                        onClick={() => setBookingsViewMode(bookingsViewMode === 'compact' ? 'cards' : 'compact')}
+                        title={bookingsViewMode === 'compact' ? "Switch to Cards View" : "Switch to List View"}
+                        style={{ height: '30px', width: '36px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                       >
-                        <ListIcon size={13} /> Compact
-                      </button>
-                      <button
-                        className={`bookings-view-btn ${bookingsViewMode === 'cards' ? 'active' : ''}`}
-                        onClick={() => setBookingsViewMode('cards')}
-                        title="Detailed Cards Layout"
-                        style={{ height: '30px' }}
-                      >
-                        <GridIcon size={13} /> Cards
+                        {bookingsViewMode === 'compact' ? <ListIcon size={14} /> : <GridIcon size={14} />}
                       </button>
                     </div>
                   </div>
@@ -2390,13 +2401,13 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                     >
                                       <CalendarIcon size={12} style={{ color: 'var(--gold)' }} /> {b.date}
                                     </div>
-                                    <div style={{ fontSize: 11, color: 'var(--gold)', marginTop: 2 }}>{b.time}</div>
+                                    <div style={{ fontSize: 11, color: 'var(--gold)', marginTop: 2 }}>{format12Hour(b.time)}</div>
                                   </td>
 
                                   {/* 4. Payment */}
                                   <td>
-                                    <span className={`pmt-badge pmt-badge-${(b.paymentMethod || 'Cash').toLowerCase()}`} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 6, whiteSpace: 'nowrap' }}>
-                                      {b.paymentMethod === 'GCash' ? 'Paying through GCash' : 'Paying through Cash'}
+                                    <span className={`pmt-badge pmt-badge-${(b.paymentMethod || 'Cash').toLowerCase()}`} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 6, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                      {b.paymentMethod === 'GCash' ? <><GcashIcon size={12} /> GCash</> : <><CashIcon size={12} /> Cash</>}
                                     </span>
                                     {b.paymentReference && (
                                       <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
@@ -2654,7 +2665,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                   >
                                     <CalendarIcon size={12} style={{ color: 'var(--gold)' }} /> {b.date}
                                   </span>
-                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><ClockIcon size={12} /> {b.time}</span>
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><ClockIcon size={12} /> {format12Hour(b.time)}</span>
                                   {b.contact && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><PhoneIcon size={12} /> {b.contact}</span>}
                                 </div>
                               </div>
@@ -2662,7 +2673,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                               {/* Payment info */}
                               <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                                 <span className={`pmt-badge pmt-badge-${(b.paymentMethod || 'Cash').toLowerCase()}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '6px' }}>
-                                  {b.paymentMethod === 'GCash' ? <><GcashIcon size={12} /> Paying through GCash</> : <><CashIcon size={12} /> Paying through Cash</>}
+                                  {b.paymentMethod === 'GCash' ? <><GcashIcon size={12} /> GCash</> : <><CashIcon size={12} /> Cash</>}
                                 </span>
                                 {b.paymentReference && (
                                   <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
@@ -3084,7 +3095,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     padding: '24px 22px',
                     boxShadow: '0 16px 36px rgba(0, 0, 0, 0.3)'
                   }}>
-                    <p style={{ fontSize: '11px', color: 'var(--text-dim)', letterSpacing: '1.5px', margin: 0, fontWeight: '700', textTransform: 'uppercase' }}>OPERATIONAL CASH RUNWAY</p>
+                    <p style={{ fontSize: '11px', color: 'var(--text-dim)', letterSpacing: '1.5px', margin: 0, fontWeight: '700', textTransform: 'uppercase' }}>Operational Cash Summary</p>
                     <h3 style={{ fontSize: '32px', color: netIncome >= 0 ? '#4ade80' : '#f87171', margin: '10px 0 6px 0', fontFamily: 'var(--font-display)', fontWeight: '800', letterSpacing: '-0.5px' }}>
                       {netIncome >= 0 ? 'Indefinite' : `${runwayMonths.toFixed(1)} months`}
                     </h3>
@@ -3439,7 +3450,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     </strong>
                   </div>
                   <div style={{ background: 'rgba(255,255,255,0.02)', padding: '14px 18px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.03)' }}>
-                    <span style={{ fontSize: 9, color: 'var(--text-dim)', letterSpacing: 0.8, display: 'block', textTransform: 'uppercase', fontWeight: '600' }}>INITIAL OPERATING RESERVES</span>
+                    <span style={{ fontSize: 9, color: 'var(--text-dim)', letterSpacing: 0.8, display: 'block', textTransform: 'uppercase', fontWeight: '600' }}>TOTAL RESERVATION</span>
                     <strong style={{ display: 'block', fontSize: 18, color: 'var(--gold)', marginTop: 6, fontFamily: 'var(--font-display)' }}>
                       ₱{operatingCapitalVal.toLocaleString()}
                     </strong>
@@ -4599,7 +4610,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
                         <div>
                           <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-white)' }}>{b.customer}</div>
-                          <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>{b.service} · {b.date} · {b.time}</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>{b.service} · {b.date} · {format12Hour(b.time)}</div>
                           <div style={{ fontSize: 11, color: 'var(--gold)', marginTop: 2 }}>{allSalons.find(s => s.id === b.salonId)?.name || 'Unknown'}</div>
                         </div>
                       </div>
@@ -5217,7 +5228,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
               <button className="btn small outline" onClick={() => setRejectionModalBooking(null)}>Cancel</button>
-              <button className="btn small danger" onClick={handleConfirmRejection}>Confirm Rejection</button>
+              <button className="btn small danger" onClick={handleConfirmRejection}>Confirm</button>
             </div>
           </div>
         </div>

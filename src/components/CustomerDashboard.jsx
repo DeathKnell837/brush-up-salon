@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import QRCode from 'qrcode';
 import { getBookings, setBookings, getAnnouncements, getSalons } from '../utils/storage';
 import BrushUpLogo from './BrushUpLogo';
@@ -8,7 +8,7 @@ import SalonMap from './SalonMap';
 import {
   StoreIcon, ClipboardIcon, SearchIcon, ScissorsIcon,
   CalendarIcon, ClockIcon, HourglassIcon, CheckCircleIcon, XCircleIcon, InboxIcon, BellIcon,
-  AlertCircleIcon, CloseIcon, CreditCardIcon, CashIcon, GcashIcon
+  AlertCircleIcon, CloseIcon, CreditCardIcon, CashIcon, GcashIcon, EyeIcon, EyeOffIcon
 } from './Icons';
 
 function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
@@ -337,14 +337,51 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
   const [search, setSearch] = useState('');
   const [filterLoc, setFilterLoc] = useState('All');
   const [filterSvc, setFilterSvc] = useState('All');
-  const [sortOrder, setSortOrder] = useState('Default');
+  const [sortOrder, setSortOrder] = useState('Top Rated');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [localTick, setLocalTick] = useState(0);
   const [announcements, setAnnouncements] = useState([]);
   const [reviewBooking, setReviewBooking] = useState(null);
   const [paymentBookingId, setPaymentBookingId] = useState(null);
   const [cancelModalBooking, setCancelModalBooking] = useState(null);
-  const [showNotifications, setShowNotifications] = useState(false);
+  const [expandedRejectionIds, setExpandedRejectionIds] = useState({});
+
+  // Surname only for customer greeting
+  const customerSurname = useMemo(() => {
+    const raw = (currentUser?.name || '').trim();
+    if (!raw) return 'Guest';
+    const parts = raw.split(/\s+/);
+    return parts.length > 1 ? parts[parts.length - 1] : parts[0];
+  }, [currentUser?.name]);
+
+  const toggleRejectionReason = (id) => {
+    setExpandedRejectionIds(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // 12-Hour format with AM/PM
+  const format12Hour = (timeStr) => {
+    if (!timeStr) return '';
+    if (/[ap]m/i.test(timeStr)) return timeStr.toUpperCase();
+    const [h, m] = timeStr.split(':');
+    if (h === undefined || m === undefined) return timeStr;
+    let hours = parseInt(h, 10);
+    const minutes = m.padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+    return `${hours}:${minutes} ${ampm}`;
+  };
+
+  // Distinct unique services count
+  const uniqueServicesCount = useMemo(() => {
+    const set = new Set();
+    salons.forEach(s => {
+      (s.services || []).forEach(sv => {
+        if (sv.name) set.add(sv.name.trim().toLowerCase());
+      });
+    });
+    return set.size;
+  }, [salons]);
   const [readIds, setReadIds] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(`read_announcements_${currentUser?.user}`) || '[]');
@@ -589,152 +626,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
       <nav className="navbar">
         <div className="brand"><BrushUpLogo size="small" /></div>
         <div className="navbar-right" style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
-          {/* Notification Bell */}
-          <div style={{ position: 'relative' }}>
-            <button 
-              onClick={() => setShowNotifications(!showNotifications)}
-              style={{
-                background: showNotifications ? 'rgba(255,255,255,0.08)' : 'transparent',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '50%',
-                width: '38px',
-                height: '38px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                color: showNotifications ? 'var(--gold)' : 'var(--text-dim)',
-                transition: 'all 0.2s ease',
-                position: 'relative'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.color = 'var(--gold)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-              onMouseLeave={e => { 
-                if (!showNotifications) {
-                  e.currentTarget.style.color = 'var(--text-dim)'; 
-                  e.currentTarget.style.background = 'transparent'; 
-                }
-              }}
-            >
-              <BellIcon size={18} />
-              {unreadAnnouncements.length > 0 && (
-                <span style={{
-                  position: 'absolute',
-                  top: '-2px',
-                  right: '-2px',
-                  background: 'var(--gold)',
-                  color: '#000',
-                  borderRadius: '50%',
-                  fontSize: '9px',
-                  fontWeight: '800',
-                  width: '16px',
-                  height: '16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 0 10px rgba(201, 168, 76, 0.4)'
-                }}>
-                  {unreadAnnouncements.length}
-                </span>
-              )}
-            </button>
-
-            {/* Notification Popover Dropdown */}
-            {showNotifications && (
-              <div className="glass-panel" style={{
-                position: 'absolute',
-                top: '50px',
-                right: '0',
-                width: '360px',
-                maxHeight: '440px',
-                background: 'linear-gradient(135deg, rgba(25, 25, 25, 0.98), rgba(15, 15, 15, 0.99))',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(201, 168, 76, 0.18)',
-                borderRadius: '12px',
-                boxShadow: '0 20px 40px rgba(0,0,0,0.6), 0 0 30px rgba(201, 168, 76, 0.05)',
-                padding: '16px',
-                zIndex: 9999,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-                overflowY: 'auto'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '8px' }}>
-                  <h3 style={{ margin: 0, fontSize: '14px', color: 'var(--gold)', fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.5px' }}>Broadcasts & Notices</h3>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                    {unreadAnnouncements.length > 0 && (
-                      <button 
-                        onClick={handleMarkAllRead} 
-                        style={{ background: 'none', border: 'none', color: 'var(--gold)', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}
-                        onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
-                        onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
-                      >
-                        Dismiss All
-                      </button>
-                    )}
-                    <button 
-                      onClick={() => setShowNotifications(false)} 
-                      style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}
-                      onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                      onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim)'}
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {unreadAnnouncements.length === 0 ? (
-                    <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-dim)', fontSize: '13px' }}>No active broadcasts.</div>
-                  ) : (
-                    unreadAnnouncements.map(a => (
-                      <div key={a.id} style={{
-                        background: 'rgba(255,255,255,0.02)',
-                        border: '1px solid rgba(255, 255, 255, 0.04)',
-                        borderLeft: `4px solid ${a.type === 'promo' ? 'var(--gold)' : a.type === 'warning' ? '#f87171' : '#38bdf8'}`,
-                        borderRadius: '8px',
-                        padding: '10px 12px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '4px'
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '12px', fontWeight: '700', color: '#fff' }}>{a.title}</span>
-                          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                            <span style={{
-                              fontSize: '7px',
-                              textTransform: 'uppercase',
-                              fontWeight: '800',
-                              letterSpacing: '0.5px',
-                              background: a.type === 'promo' ? 'rgba(201, 168, 76, 0.15)' : a.type === 'warning' ? 'rgba(248, 113, 113, 0.15)' : 'rgba(56, 189, 248, 0.15)',
-                              color: a.type === 'promo' ? 'var(--gold)' : a.type === 'warning' ? '#f87171' : '#38bdf8',
-                              padding: '1px 4px',
-                              borderRadius: '4px',
-                              border: `1px solid ${a.type === 'promo' ? 'rgba(201,168,76,0.1)' : a.type === 'warning' ? 'rgba(248,113,113,0.1)' : 'rgba(56,189,248,0.1)'}`
-                            }}>
-                              {a.type === 'promo' ? 'Promo' : a.type === 'warning' ? 'Notice' : 'Update'}
-                            </span>
-                            <button 
-                              onClick={() => handleDismiss(a.id)}
-                              style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '9px', padding: 0 }}
-                              onMouseEnter={e => e.currentTarget.style.color = '#ff6b6b'}
-                              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim)'}
-                            >
-                              Dismiss
-                            </button>
-                          </div>
-                        </div>
-                        <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.4', whiteSpace: 'normal', wordBreak: 'break-word' }}>{a.message}</p>
-                        <span style={{ fontSize: '8px', color: 'var(--text-dim)', alignSelf: 'flex-end', marginTop: '2px' }}>
-                          {new Date(a.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <span className="pill">Welcome, {currentUser?.name || 'Guest'}</span>
+          <span className="pill">Welcome, {customerSurname}</span>
           <button className="profile-btn" onClick={onOpenProfile}>
             {(currentUser?.name || 'U')[0].toUpperCase()}
           </button>
@@ -743,14 +635,18 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
       </nav>
 
       {/* ─── Notification Banner ─── */}
-      {upcomingBooking && (
-        <div style={{ background: 'var(--gold-dim)', padding: '12px 24px', borderBottom: '1px solid rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-          <CalendarIcon size={16} style={{ color: 'var(--gold)' }} />
-          <span style={{ fontSize: 13, color: 'var(--gold)', fontWeight: 500 }}>
-            Reminder: You have an upcoming appointment at <strong>{salons.find(s => s.id === upcomingBooking.salonId)?.name}</strong> on <strong>{upcomingBooking.date}</strong> at <strong>{upcomingBooking.time}</strong>.
-          </span>
-        </div>
-      )}
+      {upcomingBooking && (() => {
+        const upSalon = salons.find(s => s.id === upcomingBooking.salonId);
+        const salonLoc = upSalon?.address ? ` (${upSalon.address})` : '';
+        return (
+          <div style={{ background: 'var(--gold-dim)', padding: '12px 24px', borderBottom: '1px solid rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+            <CalendarIcon size={16} style={{ color: 'var(--gold)' }} />
+            <span style={{ fontSize: 13, color: 'var(--gold)', fontWeight: 500 }}>
+              Reminder: You have an upcoming appointment at <strong>{upSalon?.name || 'Salon'}{salonLoc}</strong> on <strong>{upcomingBooking.date}</strong> at <strong>{format12Hour(upcomingBooking.time)}</strong>.
+            </span>
+          </div>
+        );
+      })()}
 
       {/* ─── Hero Section ─── */}
       <section className="hero" style={{
@@ -758,9 +654,8 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
         backgroundSize: 'cover', backgroundPosition: 'center'
       }}>
         <div className="hero-content">
-          <p className="hero-label">PREMIUM SALON BOOKING</p>
           <h1 className="hero-title">Discover Your <em>Perfect</em> Salon Experience</h1>
-          <p className="hero-desc">Browse our curated collection of luxury salons and book your next appointment with just a few clicks.</p>
+          <p className="hero-desc" style={{ fontSize: '15px', fontWeight: 600, color: 'var(--gold)', letterSpacing: '0.5px' }}>Book Now</p>
           <div className="hero-stats">
             <div className="hero-stat">
               <strong>{salons.length}</strong>
@@ -768,7 +663,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
             </div>
             <div className="hero-stat-divider" />
             <div className="hero-stat">
-              <strong>{salons.reduce((a, s) => a + s.services.length, 0)}+</strong>
+              <strong>{uniqueServicesCount}+</strong>
               <span>Services</span>
             </div>
             <div className="hero-stat-divider" />
@@ -869,18 +764,13 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
               </button>
             </div>
             <div className={`filter-options-container ${showMobileFilters ? 'show' : ''}`}>
-              <select className="search-input" value={filterLoc} onChange={e => setFilterLoc(e.target.value)}>
-                <option value="All">All Locations</option>
-                {uniqueLocations.filter(l => l !== 'Unknown').map(loc => <option key={loc} value={loc}>{loc}</option>)}
-              </select>
               <select className="search-input" value={filterSvc} onChange={e => setFilterSvc(e.target.value)}>
-                <option value="All">All Services</option>
+                <option value="All">Services Offered</option>
                 {uniqueServices.slice(0, 15).map(svc => <option key={svc} value={svc}>{svc}</option>)}
               </select>
               <select className="search-input" value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
-                <option value="Default">Sort: Default</option>
-                <option value="Top Rated">Sort: Top Rated</option>
-                <option value="Most Reviewed">Sort: Most Reviewed</option>
+                <option value="Top Rated">Top Rated</option>
+                <option value="Most Reviewed">Most Reviewed</option>
               </select>
               <div className="view-mode-toggle">
                 <button 
@@ -928,7 +818,6 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
           {viewMode === 'grid' && !search && filterLoc === 'All' && filterSvc === 'All' && (
             <section className="content-section">
               <div className="section-header">
-                <p className="section-label">CURATED FOR YOU</p>
                 <h2 className="section-heading">Featured Salons</h2>
               </div>
               <div className="featured-grid">
@@ -1019,57 +908,8 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                     <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={favoriteSalonName}>{favoriteSalonName}</span>
                   </div>
                   <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
-                    <span style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>Preferred Service</span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>Availed Services</span>
                     <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={favoriteService}>{favoriteService}</span>
-                  </div>
-                </div>
-
-                {/* Combined Progress Split Bar Graph */}
-                <div style={{ background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.01), rgba(255, 255, 255, 0.02))', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '20px', marginBottom: '32px', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-                    <h3 style={{ fontSize: '12px', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.8px', margin: 0, textTransform: 'uppercase' }}>Your Booking Journey Split</h3>
-                    <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 500 }}>Completed ({completedBookings.length}) · Active ({activeBookings.length}) · Cancelled ({cancelledBookings.length})</span>
-                  </div>
-                  
-                  {/* Glowing progress bar segments */}
-                  <div style={{ height: '10px', borderRadius: '5px', background: 'rgba(255,255,255,0.04)', display: 'flex', overflow: 'hidden', marginBottom: '16px' }}>
-                    {completedBookings.length > 0 && (
-                      <div style={{
-                        width: `${(completedBookings.length / bookings.length) * 100}%`,
-                        background: 'var(--gold)',
-                        boxShadow: '0 0 10px rgba(201, 168, 76, 0.4)'
-                      }} />
-                    )}
-                    {activeBookings.length > 0 && (
-                      <div style={{
-                        width: `${(activeBookings.length / bookings.length) * 100}%`,
-                        background: '#38bdf8',
-                        boxShadow: '0 0 10px rgba(56, 189, 248, 0.4)'
-                      }} />
-                    )}
-                    {cancelledBookings.length > 0 && (
-                      <div style={{
-                        width: `${(cancelledBookings.length / bookings.length) * 100}%`,
-                        background: '#f87171',
-                        boxShadow: '0 0 10px rgba(248, 113, 113, 0.4)'
-                      }} />
-                    )}
-                  </div>
-
-                  {/* Colored Legend Labels */}
-                  <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--gold)', boxShadow: '0 0 6px var(--gold)' }} />
-                      <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 500 }}>Completed ({Math.round((completedBookings.length / bookings.length) * 100) || 0}%)</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 6px #38bdf8' }} />
-                      <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 500 }}>Active & Upcoming ({Math.round((activeBookings.length / bookings.length) * 100) || 0}%)</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f87171', boxShadow: '0 0 6px #f87171' }} />
-                      <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 500 }}>Cancelled & Rejected ({Math.round((cancelledBookings.length / bookings.length) * 100) || 0}%)</span>
-                    </div>
                   </div>
                 </div>
 
@@ -1091,13 +931,57 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                         {/* Title Row with Status Badge */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
                           <div className="history-salon">{salon?.name || 'Unknown Salon'}</div>
-                          <span className={`status ${b.status.toLowerCase()}`} style={{ flexShrink: 0 }}>
-                            {b.status === 'Pending' && <HourglassIcon size={10} />}
-                            {(b.status === 'Approved' || b.status === 'Completed') && <CheckCircleIcon size={10} />}
-                            {b.status === 'Rejected' || b.status === 'Cancelled' ? <XCircleIcon size={10} /> : null}
-                            {b.status}
-                          </span>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                            <span className={`status ${b.status.toLowerCase()}`} style={{ flexShrink: 0 }}>
+                              {b.status === 'Pending' && <HourglassIcon size={10} />}
+                              {(b.status === 'Approved' || b.status === 'Completed') && <CheckCircleIcon size={10} />}
+                              {b.status === 'Rejected' || b.status === 'Cancelled' ? <XCircleIcon size={10} /> : null}
+                              {b.status}
+                            </span>
+                            {b.status === 'Rejected' && (
+                              <button 
+                                type="button"
+                                onClick={() => toggleRejectionReason(b.id)}
+                                title={expandedRejectionIds[b.id] ? "Hide reason" : "View rejection reason"}
+                                style={{
+                                  background: 'rgba(239, 68, 68, 0.1)',
+                                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                                  color: '#f87171',
+                                  borderRadius: '6px',
+                                  padding: '2px 7px',
+                                  fontSize: '10px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  marginTop: 4,
+                                  transition: 'all 0.2s ease'
+                                }}
+                              >
+                                <EyeIcon size={11} />
+                                <span>Reason</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
+
+                        {/* Collapsible Rejection Reason */}
+                        {b.status === 'Rejected' && expandedRejectionIds[b.id] && (
+                          <div style={{
+                            background: 'rgba(239, 68, 68, 0.08)',
+                            border: '1px solid rgba(239, 68, 68, 0.25)',
+                            borderRadius: 8,
+                            padding: '8px 12px',
+                            marginTop: 8,
+                            fontSize: 11,
+                            color: '#fca5a5',
+                            lineHeight: 1.4
+                          }}>
+                            <strong style={{ color: '#fff', display: 'block', marginBottom: 2 }}>Reason for Rejection:</strong>
+                            {b.rejectionReason || 'No specific reason provided by salon.'}
+                          </div>
+                        )}
 
                         {/* Service name (Clamped to 2 lines for uniform height) */}
                         <div className="history-service" style={{ minHeight: '38px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 6, lineHeight: '1.4' }}>
@@ -1108,7 +992,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                         {/* Date and Time Row */}
                         <div className="history-datetime" style={{ marginTop: 6 }}>
                           <span><CalendarIcon size={13} /> {b.date}</span>
-                          <span><ClockIcon size={13} /> {b.time}</span>
+                          <span><ClockIcon size={13} /> {format12Hour(b.time)}</span>
                         </div>
 
                         {/* Amount to Pay (Uniform layout) */}
@@ -1242,8 +1126,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
         <div style={{ animation: 'fadeUp .5s ease' }}>
           <section className="content-section">
             <div className="section-header">
-              <p className="section-label">PAYMENT ACTIONS</p>
-              <h2 className="section-heading">Payments</h2>
+              <h2 className="section-heading">Payment Transaction</h2>
             </div>
 
             {approvedBookings.length === 0 ? (
@@ -1288,7 +1171,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                         {/* Date and Time Row */}
                         <div className="history-datetime" style={{ marginTop: 6 }}>
                           <span><CalendarIcon size={13} /> {b.date}</span>
-                          <span><ClockIcon size={13} /> {b.time}</span>
+                          <span><ClockIcon size={13} /> {format12Hour(b.time)}</span>
                         </div>
 
                         {/* Amount to Pay (Uniform layout) */}
@@ -1326,7 +1209,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                           {/* Cash Payment Badge */}
                           {(!b.paymentMethod || b.paymentMethod === 'Cash') && (
                             <div className="cash-payment-badge" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'rgba(74, 222, 128, 0.08)', border: '1px solid rgba(74, 222, 128, 0.2)', borderRadius: 10, fontSize: 12, fontWeight: 600, color: '#4ade80', justifyContent: 'center' }}>
-                              <CashIcon size={14} /> Cash Payment — Pay at salon
+                              <CashIcon size={14} /> Cash Payment
                             </div>
                           )}
 
@@ -1433,7 +1316,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
             </h3>
             
             <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '13px', lineHeight: 1.6, margin: '0 0 24px' }}>
-              Are you sure you want to cancel your appointment with <strong style={{ color: '#fff' }}>{salons.find(s => s.id === cancelModalBooking.salonId)?.name || cancelModalBooking.salon || 'the salon'}</strong> for <strong style={{ color: 'var(--gold)' }}>{cancelModalBooking.service}</strong> on <strong>{cancelModalBooking.date}</strong> at <strong>{cancelModalBooking.time}</strong>?
+              Are you sure you want to cancel your appointment with <strong style={{ color: '#fff' }}>{salons.find(s => s.id === cancelModalBooking.salonId)?.name || cancelModalBooking.salon || 'the salon'}</strong> for <strong style={{ color: 'var(--gold)' }}>{cancelModalBooking.service}</strong> on <strong>{cancelModalBooking.date}</strong> at <strong>{format12Hour(cancelModalBooking.time)}</strong>?
             </p>
 
             <div style={{ display: 'flex', gap: '12px' }}>
