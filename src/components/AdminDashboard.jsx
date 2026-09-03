@@ -2175,12 +2175,14 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   {/* Calendar & Add Walk-in inside Appointments only */}
                   {bookingsSubView === 'list' && (
                     <>
+                      {/* Calendar Availability Icon Button */}
                       <button 
                         className={`btn small ${selectedCalendarDate ? 'primary' : 'outline'}`} 
                         onClick={() => setShowCalendarView(true)}
-                        title="Open Calendar Availability & Slot Density"
+                        title={selectedCalendarDate ? `Calendar Filter: ${selectedCalendarDate}` : "Open Calendar Availability View"}
+                        style={{ padding: '7px 10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                       >
-                        <CalendarIcon size={14} style={{ marginRight: 6 }} /> Calendar {selectedCalendarDate && `(${selectedCalendarDate})`}
+                        <CalendarIcon size={16} />
                       </button>
 
                       <button className="btn small outline" onClick={handleWalkIn}>
@@ -5283,7 +5285,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             className="modal-content" 
             onClick={e => e.stopPropagation()}
             style={{
-              maxWidth: '680px',
+              maxWidth: '720px',
               width: '95%',
               padding: '0',
               background: '#0e1118',
@@ -5298,7 +5300,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           >
             {/* Modal Header with Month Controls */}
             <div style={{
-              padding: '18px 24px',
+              padding: '16px 24px',
               borderBottom: '1px solid rgba(255,255,255,0.06)',
               display: 'flex',
               justifyContent: 'space-between',
@@ -5315,10 +5317,10 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   <CalendarIcon size={16} />
                 </div>
                 <div>
-                  <p style={{ margin: 0, fontSize: '11px', color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>
+                  <p style={{ margin: 0, fontSize: '10px', color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>
                     AVAILABILITY & DENSITY
                   </p>
-                  <h3 style={{ margin: '2px 0 0', fontSize: '17px', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+                  <h3 style={{ margin: '2px 0 0', fontSize: '16px', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
                     Monthly Booking Calendar
                   </h3>
                 </div>
@@ -5354,42 +5356,46 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               </div>
             </div>
 
-            {/* Modal Body: Legend & Grid */}
-            <div style={{ padding: '20px 24px' }}>
-              {/* Legend */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8, fontSize: 11 }}>
+            {/* Modal Body: Legend & Clean Grid */}
+            <div style={{ padding: '18px 24px' }}>
+              {/* Legend & Instructions */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8, fontSize: 11 }}>
                 <span style={{ color: 'var(--text-dim)' }}>Select any date to filter appointments list</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#f87171' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#f87171', fontWeight: 600 }}>
                     <span style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(239,68,68,0.4)', border: '1px solid #ef4444' }} />
                     Fully Booked (5+)
                   </span>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--gold)' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--gold)', fontWeight: 600 }}>
                     <span style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(201,168,76,0.3)', border: '1px solid var(--gold)' }} />
                     Partially Booked (1-4)
-                  </span>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--text-dim)' }}>
-                    <span style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)' }} />
-                    Available
                   </span>
                 </div>
               </div>
 
-              {/* Days Grid */}
-              <div className="calendar-days-grid" style={{ maxHeight: '340px', overflowY: 'auto' }}>
+              {/* Days Grid without internal scrollbar */}
+              <div className="calendar-days-grid" style={{ marginTop: 0, gap: '6px' }}>
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                  <div key={d} className="calendar-day-header">{d}</div>
+                  <div key={d} className="calendar-day-header" style={{ color: 'var(--gold)', fontSize: '11px', fontWeight: 700, paddingBottom: '4px' }}>{d}</div>
                 ))}
                 {calendarDays.map((item) => {
                   if (item.empty) {
-                    return <div key={item.key} style={{ minHeight: 60, opacity: 0.15 }} />;
+                    return <div key={item.key} style={{ minHeight: 52, opacity: 0.05 }} />;
                   }
                   const isSelected = selectedCalendarDate === item.dateStr;
                   return (
                     <div 
                       key={item.dateStr} 
                       className={`calendar-day-cell ${item.isFullyBooked ? 'is-fully-booked' : ''} ${isSelected ? 'is-selected' : ''}`}
-                      style={{ minHeight: 60, padding: 6, cursor: 'pointer', transition: 'all 0.15s ease' }}
+                      style={{ 
+                        minHeight: 52, 
+                        padding: '6px 8px', 
+                        cursor: 'pointer', 
+                        borderRadius: 8,
+                        transition: 'all 0.15s ease',
+                        background: isSelected ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.03)',
+                        borderColor: isSelected ? 'var(--gold)' : item.isFullyBooked ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.07)'
+                      }}
                       onClick={() => {
                         setSelectedCalendarDate(isSelected ? null : item.dateStr);
                         setShowCalendarView(false);
@@ -5397,17 +5403,35 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       title={`Click to filter appointments for ${item.dateStr}`}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span className="calendar-day-number" style={{ fontSize: 11, color: item.isToday ? 'var(--gold)' : 'var(--text-white)' }}>
-                          {item.day} {item.isToday && <span style={{ fontSize: 8, color: 'var(--gold)' }}>(Today)</span>}
-                        </span>
+                        {item.isToday ? (
+                          <span style={{ 
+                            fontSize: 11, 
+                            fontWeight: 700, 
+                            color: 'var(--gold)', 
+                            background: 'rgba(201,168,76,0.2)', 
+                            border: '1px solid rgba(201,168,76,0.4)', 
+                            padding: '1px 5px', 
+                            borderRadius: 4 
+                          }}>
+                            {item.day} (Today)
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: 12, fontWeight: 600, color: '#f1f5f9' }}>
+                            {item.day}
+                          </span>
+                        )}
                       </div>
-                      {item.isFullyBooked ? (
-                        <span className="calendar-day-badge fully-booked" style={{ fontSize: 9 }}>Fully Booked ({item.count})</span>
-                      ) : item.count > 0 ? (
-                        <span className="calendar-day-badge partially-booked" style={{ fontSize: 9 }}>{item.count} Booked</span>
-                      ) : (
-                        <span className="calendar-day-badge available" style={{ fontSize: 9 }}>Available</span>
-                      )}
+                      <div style={{ marginTop: 4 }}>
+                        {item.isFullyBooked ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)', color: '#f87171', borderRadius: 4, padding: '1px 5px', fontSize: 9, fontWeight: 700 }}>
+                            ● Full ({item.count})
+                          </span>
+                        ) : item.count > 0 ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'rgba(201,168,76,0.2)', border: '1px solid rgba(201,168,76,0.4)', color: 'var(--gold)', borderRadius: 4, padding: '1px 5px', fontSize: 9, fontWeight: 700 }}>
+                            ● {item.count} Booked
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   );
                 })}
@@ -5416,7 +5440,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
             {/* Modal Footer */}
             <div style={{
-              padding: '14px 24px',
+              padding: '12px 24px',
               borderTop: '1px solid rgba(255,255,255,0.06)',
               display: 'flex',
               justifyContent: 'space-between',
