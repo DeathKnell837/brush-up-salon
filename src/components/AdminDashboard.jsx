@@ -2163,16 +2163,13 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     </button>
                   </div>
 
-                  {/* Calendar Availability Toggle Button */}
+                  {/* Calendar Availability Modal Trigger */}
                   <button 
-                    className={`btn small ${showCalendarView ? 'primary' : 'outline'}`} 
-                    onClick={() => {
-                      if (bookingsSubView !== 'list') setBookingsSubView('list');
-                      setShowCalendarView(!showCalendarView);
-                    }}
-                    title="Toggle Calendar Availability View"
+                    className={`btn small ${selectedCalendarDate ? 'primary' : 'outline'}`} 
+                    onClick={() => setShowCalendarView(true)}
+                    title="Open Calendar Availability & Slot Density"
                   >
-                    <CalendarIcon size={14} style={{ marginRight: 6 }} /> {showCalendarView ? 'Hide Calendar' : 'Calendar View'}
+                    <CalendarIcon size={14} style={{ marginRight: 6 }} /> Calendar {selectedCalendarDate && `(${selectedCalendarDate})`}
                   </button>
 
                   {/* Add Walk-In */}
@@ -2186,92 +2183,6 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   </button>
                 </div>
               </div>
-
-              {/* Calendar Availability Grid (When Opened) (Part 3) */}
-              {showCalendarView && (
-                <div className="calendar-grid-container">
-                  {/* Month Navigation & Controls Bar */}
-                  <div className="calendar-nav-bar">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <CalendarIcon size={18} style={{ color: 'var(--gold)' }} />
-                      <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-white)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
-                        Monthly Booking Density & Availability
-                      </h3>
-                    </div>
-
-                    {/* Month/Year Navigation Arrows & Today Button */}
-                    <div className="calendar-nav-controls">
-                      <button className="calendar-nav-btn" onClick={handlePrevMonth} title="Previous Month">
-                        <ChevronLeftIcon size={14} />
-                      </button>
-                      <span className="calendar-month-title">
-                        {calendarMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                      </span>
-                      <button className="calendar-nav-btn" onClick={handleNextMonth} title="Next Month">
-                        <ChevronRightIcon size={14} />
-                      </button>
-                      <button 
-                        className="btn small outline" 
-                        style={{ padding: '4px 10px', fontSize: 11, marginLeft: 4 }}
-                        onClick={handleTodayMonth}
-                        title="Jump to Current Month"
-                      >
-                        Today
-                      </button>
-                    </div>
-
-                    {/* Legend Badges */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11 }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#f87171' }}>
-                        <span style={{ width: 10, height: 10, borderRadius: 2, background: 'rgba(239,68,68,0.3)', border: '1px solid #ef4444' }} />
-                        Fully Booked (5+)
-                      </span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--gold)' }}>
-                        <span style={{ width: 10, height: 10, borderRadius: 2, background: 'rgba(201,168,76,0.2)', border: '1px solid var(--gold)' }} />
-                        Partially Booked (1-4)
-                      </span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--text-dim)' }}>
-                        <span style={{ width: 10, height: 10, borderRadius: 2, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)' }} />
-                        Available
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Day Grid */}
-                  <div className="calendar-days-grid">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                      <div key={d} className="calendar-day-header">{d}</div>
-                    ))}
-                    {calendarDays.map((item, idx) => {
-                      if (item.empty) {
-                        return <div key={item.key} style={{ minHeight: 72, opacity: 0.2 }} />;
-                      }
-                      const isSelected = selectedCalendarDate === item.dateStr;
-                      return (
-                        <div 
-                          key={item.dateStr} 
-                          className={`calendar-day-cell ${item.isFullyBooked ? 'is-fully-booked' : ''} ${isSelected ? 'is-selected' : ''}`}
-                          onClick={() => setSelectedCalendarDate(isSelected ? null : item.dateStr)}
-                          title={`Click to filter appointments for ${item.dateStr}`}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span className="calendar-day-number" style={{ color: item.isToday ? 'var(--gold)' : 'var(--text-white)' }}>
-                              {item.day} {item.isToday && <span style={{ fontSize: 9, color: 'var(--gold)' }}>(Today)</span>}
-                            </span>
-                          </div>
-                          {item.isFullyBooked ? (
-                            <span className="calendar-day-badge fully-booked">Fully Booked ({item.count})</span>
-                          ) : item.count > 0 ? (
-                            <span className="calendar-day-badge partially-booked">{item.count} Booked</span>
-                          ) : (
-                            <span className="calendar-day-badge available">Available</span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
 
               {/* LIST SUBVIEW (Part 2) */}
               {bookingsSubView === 'list' && (
@@ -5348,6 +5259,174 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
               <button className="btn small outline" onClick={() => setRejectionModalBooking(null)}>Cancel</button>
               <button className="btn small danger" onClick={handleConfirmRejection}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Calendar Availability & Density Modal ─── */}
+      {showCalendarView && (
+        <div className="modal" onClick={() => setShowCalendarView(false)}>
+          <div 
+            className="modal-content" 
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: '680px',
+              width: '95%',
+              padding: '0',
+              background: '#0e1118',
+              border: '1px solid rgba(201, 168, 76, 0.3)',
+              borderRadius: '16px',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.85)',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              animation: 'fadeUp 0.25s ease'
+            }}
+          >
+            {/* Modal Header with Month Controls */}
+            <div style={{
+              padding: '18px 24px',
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: 'rgba(255,255,255,0.02)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 32, height: 32, borderRadius: 8,
+                  background: 'rgba(201, 168, 76, 0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'var(--gold)'
+                }}>
+                  <CalendarIcon size={16} />
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontSize: '11px', color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>
+                    AVAILABILITY & DENSITY
+                  </p>
+                  <h3 style={{ margin: '2px 0 0', fontSize: '17px', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+                    Monthly Booking Calendar
+                  </h3>
+                </div>
+              </div>
+
+              {/* Month Navigation */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div className="calendar-nav-controls" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <button className="calendar-nav-btn" onClick={handlePrevMonth} title="Previous Month">
+                    <ChevronLeftIcon size={14} />
+                  </button>
+                  <span className="calendar-month-title" style={{ minWidth: 120, textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--text-white)' }}>
+                    {calendarMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                  </span>
+                  <button className="calendar-nav-btn" onClick={handleNextMonth} title="Next Month">
+                    <ChevronRightIcon size={14} />
+                  </button>
+                  <button 
+                    className="btn small outline" 
+                    style={{ padding: '3px 8px', fontSize: 10, borderRadius: 6 }}
+                    onClick={handleTodayMonth}
+                  >
+                    Today
+                  </button>
+                </div>
+                <button 
+                  className="close-btn" 
+                  onClick={() => setShowCalendarView(false)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', marginLeft: 8 }}
+                >
+                  <CloseIcon size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body: Legend & Grid */}
+            <div style={{ padding: '20px 24px' }}>
+              {/* Legend */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8, fontSize: 11 }}>
+                <span style={{ color: 'var(--text-dim)' }}>Select any date to filter appointments list</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#f87171' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(239,68,68,0.4)', border: '1px solid #ef4444' }} />
+                    Fully Booked (5+)
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--gold)' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(201,168,76,0.3)', border: '1px solid var(--gold)' }} />
+                    Partially Booked (1-4)
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--text-dim)' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)' }} />
+                    Available
+                  </span>
+                </div>
+              </div>
+
+              {/* Days Grid */}
+              <div className="calendar-days-grid" style={{ maxHeight: '340px', overflowY: 'auto' }}>
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                  <div key={d} className="calendar-day-header">{d}</div>
+                ))}
+                {calendarDays.map((item) => {
+                  if (item.empty) {
+                    return <div key={item.key} style={{ minHeight: 60, opacity: 0.15 }} />;
+                  }
+                  const isSelected = selectedCalendarDate === item.dateStr;
+                  return (
+                    <div 
+                      key={item.dateStr} 
+                      className={`calendar-day-cell ${item.isFullyBooked ? 'is-fully-booked' : ''} ${isSelected ? 'is-selected' : ''}`}
+                      style={{ minHeight: 60, padding: 6, cursor: 'pointer', transition: 'all 0.15s ease' }}
+                      onClick={() => {
+                        setSelectedCalendarDate(isSelected ? null : item.dateStr);
+                        setShowCalendarView(false);
+                      }}
+                      title={`Click to filter appointments for ${item.dateStr}`}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span className="calendar-day-number" style={{ fontSize: 11, color: item.isToday ? 'var(--gold)' : 'var(--text-white)' }}>
+                          {item.day} {item.isToday && <span style={{ fontSize: 8, color: 'var(--gold)' }}>(Today)</span>}
+                        </span>
+                      </div>
+                      {item.isFullyBooked ? (
+                        <span className="calendar-day-badge fully-booked" style={{ fontSize: 9 }}>Fully Booked ({item.count})</span>
+                      ) : item.count > 0 ? (
+                        <span className="calendar-day-badge partially-booked" style={{ fontSize: 9 }}>{item.count} Booked</span>
+                      ) : (
+                        <span className="calendar-day-badge available" style={{ fontSize: 9 }}>Available</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{
+              padding: '14px 24px',
+              borderTop: '1px solid rgba(255,255,255,0.06)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: 'rgba(255,255,255,0.01)'
+            }}>
+              {selectedCalendarDate ? (
+                <button 
+                  className="btn small outline" 
+                  style={{ fontSize: 11, color: '#f87171', borderColor: 'rgba(239,68,68,0.3)' }}
+                  onClick={() => { setSelectedCalendarDate(null); setShowCalendarView(false); }}
+                >
+                  Clear Date Filter ({selectedCalendarDate})
+                </button>
+              ) : <div />}
+              <button 
+                className="btn small outline" 
+                onClick={() => setShowCalendarView(false)}
+                style={{ fontSize: 12 }}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
