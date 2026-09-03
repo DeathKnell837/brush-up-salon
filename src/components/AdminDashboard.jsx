@@ -538,25 +538,34 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       doc.setFillColor(15, 19, 26); // #0f131a
       doc.rect(0, 0, pageWidth, 26, 'F');
 
-      // Gold circular emblem with "B"
-      doc.setFillColor(201, 168, 76);
-      doc.circle(18, 13, 7.5, 'F');
+      // Official Circle Monogram (thin gold ring, stroke only, matching official BrushUpLogo)
+      doc.setDrawColor(201, 168, 76);
+      doc.setLineWidth(0.6);
+      doc.circle(20, 13, 7.5, 'S');
 
-      doc.setTextColor(15, 19, 26);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text('B', 16.5, 16.8);
-
-      // Brand Title & Subtitle
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('BRUSH UP SALON & BEAUTY', 30, 12);
-
+      // Italic serif gold "B"
       doc.setTextColor(201, 168, 76);
-      doc.setFontSize(7.5);
+      doc.setFont('times', 'bolditalic');
+      doc.setFontSize(14);
+      doc.text('B', 20, 16.2, { align: 'center' });
+
+      // Official Brand Text: "Brush Up" (Title case, Serif, White)
+      doc.setFont('times', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(241, 245, 249);
+      doc.text('Brush Up', 32, 11);
+
+      // Official Brand Text: "SALON & BEAUTY" (Gold, letter-spaced)
       doc.setFont('helvetica', 'bold');
-      doc.text('OFFICIAL OPERATIONS & REVENUE REPORT', 30, 18);
+      doc.setFontSize(6);
+      doc.setTextColor(201, 168, 76);
+      doc.text('S A L O N   &   B E A U T Y', 32.5, 15.5);
+
+      // Subtitle: "OFFICIAL OPERATIONS & REVENUE REPORT"
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(6);
+      doc.setTextColor(148, 163, 184);
+      doc.text('OFFICIAL OPERATIONS & REVENUE REPORT', 32.5, 20);
 
       // Gold bottom hairline
       doc.setFillColor(201, 168, 76);
