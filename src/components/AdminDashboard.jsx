@@ -4044,7 +4044,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
               <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                  <h2 className="section-heading">Settings</h2>
+                  <h2 className="section-heading">Manage Settings</h2>
                 </div>
               </div>
 
