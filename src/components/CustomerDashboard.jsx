@@ -882,7 +882,6 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
         <div style={{ animation: 'fadeUp .5s ease' }}>
           <section className="content-section">
             <div className="section-header">
-              <p className="section-label">YOUR APPOINTMENTS</p>
               <h2 className="section-heading">Booking History</h2>
             </div>
 

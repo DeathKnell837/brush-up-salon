@@ -2109,7 +2109,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           { id: 'bookings', icon: <ListIcon size={15} />, label: 'Bookings', count: pending > 0 ? pending : null },
           { id: 'analytics', icon: <ChartIcon size={15} />, label: 'Financial Analytics' },
           { id: 'reports', icon: <FileTextIcon size={15} />, label: 'Reports' },
-          { id: 'settings', icon: <SettingsIcon size={15} />, label: 'Manage Settings' }
+          { id: 'settings', icon: <SettingsIcon size={15} />, label: 'Settings' }
         ].map(t => (
           <button key={t.id} className={`tab-btn ${activeTab === t.id ? 'active' : ''}`} onClick={() => setActiveTab(t.id)}>
             {t.icon} {t.label} {t.count > 0 && <span className="tab-count">{t.count}</span>}
@@ -2222,7 +2222,6 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
               <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                  <p className="section-label">MANAGE</p>
                   <h2 className="section-heading">Manage Bookings</h2>
                 </div>
 
@@ -4045,8 +4044,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
               <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                  <p className="section-label">CONFIGURATION</p>
-                  <h2 className="section-heading">Manage Settings</h2>
+                  <h2 className="section-heading">Settings</h2>
                 </div>
               </div>
 
