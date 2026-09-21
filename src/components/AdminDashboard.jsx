@@ -1450,7 +1450,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
   const handleExportFinancialReport = () => {
     const lines = [
-      `BRUSH UP SALON - OPERATIONS PERFORMANCE REPORT`,
+      `BRUSH UP SALON - FINANCIAL ANALYTICS REPORT`,
       `Branch: ${salonName || salon?.name || 'Salon'}`,
       `Export Date: ${new Date().toLocaleString()}`,
       `--------------------------------------------------`,
@@ -1482,7 +1482,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
     a.download = `financial_report_${salon?.id || 'branch'}_${today}.txt`;
     a.click();
     window.URL.revokeObjectURL(url);
-    showToast('Operations Performance report downloaded!');
+    showToast('Financial Analytics report downloaded!');
   };
 
   // Active AI Forecast trigger (Fix 9: Strip all emojis from audit)
@@ -2107,7 +2107,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       <div className="tab-bar">
         {[
           { id: 'bookings', icon: <ListIcon size={15} />, label: 'Bookings', count: pending > 0 ? pending : null },
-          { id: 'analytics', icon: <ChartIcon size={15} />, label: 'Financial Analytics' },
+          { id: 'analytics', icon: <ChartIcon size={15} />, label: 'Analytics' },
           { id: 'reports', icon: <FileTextIcon size={15} />, label: 'Reports' },
           { id: 'settings', icon: <SettingsIcon size={15} />, label: 'Settings' }
         ].map(t => (
@@ -3137,7 +3137,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   <p className="section-label" style={{ color: 'var(--gold)', letterSpacing: 2, fontWeight: 700 }}>
                     {salonName || salon?.name || 'SALON ANALYTICS'}
                   </p>
-                  <h2 className="section-heading" style={{ margin: 0 }}>Operations Performance</h2>
+                  <h2 className="section-heading" style={{ margin: 0 }}>Financial Analytics</h2>
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button className="btn small outline" onClick={() => setShowReportModal(true)}>
@@ -3390,7 +3390,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       }
                     </h3>
                     <p style={{ fontSize: '12px', color: 'var(--text-dim)', margin: 0, lineHeight: 1.5 }}>
-                      Completed customer appointments relative to roster capacity ({staff.length} staff)
+                      Completed customer appointments relative to staff capacity ({staff.length} staff)
                     </p>
 
                     <button 
@@ -4119,7 +4119,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   {/* Staff Management Roster inside Admin Settings */}
                   <div className="settings-panel">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                      <h3 className="settings-panel-title" style={{ margin: 0 }}>Staff Roster ({staff.length})</h3>
+                      <h3 className="settings-panel-title" style={{ margin: 0 }}>Staff List ({staff.length})</h3>
                       <button className="btn small" onClick={() => setShowAddStaff(!showAddStaff)}>
                         {showAddStaff ? 'Cancel' : '+ Add Stylist'}
                       </button>
@@ -4148,7 +4148,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                           const all = getSalons(); const idx = all.findIndex(s => s.id === currentSalonId);
                           if (idx !== -1) { all[idx].staff = arr; setSalons(all); onRefreshSalons(); }
                           setNewStaffName(''); setNewStaffRole('Stylist'); setShowAddStaff(false);
-                          showToast(`${member.name} added to staff roster!`);
+                          showToast(`${member.name} added to staff list!`);
                         }}>Add to Team</button>
                       </div>
                     )}
@@ -4168,7 +4168,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                           <button className="btn small danger" style={{ padding: '4px 10px', fontSize: 10 }} onClick={() => {
                             setConfirmDialog({
                               title: "Remove Staff Member?",
-                              message: `Are you sure you want to remove ${member.name} (${member.role}) from the staff roster?`,
+                              message: `Are you sure you want to remove ${member.name} (${member.role}) from the staff list?`,
                               confirmText: "Yes, Remove",
                               danger: true,
                               onConfirm: () => {
