@@ -4,6 +4,7 @@ import {
   getAnnouncements, setAnnouncements as saveAnnouncements, getAuditLogs, logAuditAction, hashPassword 
 } from '../utils/storage';
 import { db, firebaseConfig } from '../firebase';
+import { compressImageToBase64 } from '../utils/imageUpload';
 import { doc, deleteDoc, setDoc } from 'firebase/firestore';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
@@ -22,12 +23,7 @@ import {
   DownloadIcon, FileTextIcon, FilterIcon, GlobeIcon, UserPlusIcon
 } from './Icons';
 
-// Helper: convert file to base64 data URL
-const fileToBase64 = (file) => new Promise((resolve) => {
-  const reader = new FileReader();
-  reader.onloadend = () => resolve(reader.result);
-  reader.readAsDataURL(file);
-});
+// Image uploads now use Firebase Storage via utils/imageUpload.js
 
 // Format 24-hour time to 12-hour AM/PM
 const format12Hour = (timeStr) => {
@@ -431,16 +427,36 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
     showToast('Settings saved!');
   };
 
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
   const handleGcashQrImage = async (e) => {
     const file = e.target.files[0]; if (!file) return;
-    const b64 = await fileToBase64(file);
-    setSalonGcashQrImage(b64);
+    setIsUploadingImage(true);
+    try {
+      const compressed = await compressImageToBase64(file, { maxWidth: 300, maxHeight: 300, quality: 0.8 });
+      setSalonGcashQrImage(compressed);
+      showToast('QR code image ready!');
+    } catch (err) {
+      console.error('QR image processing failed:', err);
+      showToast(err.message || 'Failed to process QR image.');
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   const handleSettingsImage = async (e) => {
     const file = e.target.files[0]; if (!file) return;
-    const b64 = await fileToBase64(file);
-    setSalonImg(b64);
+    setIsUploadingImage(true);
+    try {
+      const compressed = await compressImageToBase64(file, { maxWidth: 1200, maxHeight: 800, quality: 0.6 });
+      setSalonImg(compressed);
+      showToast('Banner image ready!');
+    } catch (err) {
+      console.error('Banner image processing failed:', err);
+      showToast(err.message || 'Failed to process banner image.');
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   // Report Generation (Excel & PDF)
@@ -4086,9 +4102,10 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       </div>
                     </div>
 
-                    <div className="input-group"><label>Salon Banner Image</label>
-                      <input type="file" accept="image/*" onChange={handleSettingsImage} className="file-input" />
-                      {!salonImg?.startsWith('data:') && <input type="text" placeholder="Or paste URL" style={{ marginTop: 6 }} value={salonImg} onChange={e => setSalonImg(e.target.value)} />}
+                    <div className="input-group"><label>Salon Banner Image {isUploadingImage && <span style={{ color: 'var(--gold)', fontSize: 11, fontWeight: 400 }}>(uploading...)</span>}</label>
+                      <input type="file" accept="image/*" onChange={handleSettingsImage} className="file-input" disabled={isUploadingImage} />
+                      <input type="text" placeholder="Or paste image URL" style={{ marginTop: 6 }} value={salonImg} onChange={e => setSalonImg(e.target.value)} />
+                      {salonImg && <img src={salonImg} alt="Banner preview" style={{ width: '100%', maxHeight: 120, objectFit: 'cover', borderRadius: 6, marginTop: 8, border: '1px solid rgba(255,255,255,0.1)' }} />}
                     </div>
                     <div className="input-group"><label>Address</label><input type="text" placeholder="Address" value={salonAddress} onChange={e => setSalonAddress(e.target.value)} /></div>
                     <div className="input-group"><label>Contact Number</label><input type="text" placeholder="Contact" value={salonContact} onChange={e => setSalonContact(e.target.value)} /></div>
@@ -4103,8 +4120,8 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       <input type="text" placeholder="e.g. 09123456789" value={salonGcashNumber} onChange={e => setSalonGcashNumber(e.target.value)} />
                     </div>
                     <div className="input-group">
-                      <label>GCash QR Code Image</label>
-                      <input type="file" accept="image/*" onChange={handleGcashQrImage} className="file-input" style={{ marginBottom: 6 }} />
+                      <label>GCash QR Code Image {isUploadingImage && <span style={{ color: 'var(--gold)', fontSize: 11, fontWeight: 400 }}>(uploading...)</span>}</label>
+                      <input type="file" accept="image/*" onChange={handleGcashQrImage} className="file-input" style={{ marginBottom: 6 }} disabled={isUploadingImage} />
                       {salonGcashQrImage && (
                         <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
                           <img src={salonGcashQrImage} alt="QR Preview" style={{ width: 80, height: 80, objectFit: 'contain', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, background: '#fff', padding: 2 }} />

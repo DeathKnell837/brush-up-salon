@@ -40,7 +40,7 @@ export const getAnnouncements = () => storage.get('luxuryAnnouncements', []);
 export const setAnnouncements = (data) => {
   storage.set('luxuryAnnouncements', data);
   data.forEach(a => {
-    if (a.id) setDoc(doc(db, 'announcements', String(a.id)), a, { merge: true }).catch(() => {});
+    if (a.id) setDoc(doc(db, 'announcements', String(a.id)), a, { merge: true }).catch((err) => console.error('Failed to sync announcement:', err));
   });
 };
 
@@ -60,7 +60,7 @@ export const logAuditAction = (user, action, details) => {
   logs.push(log);
   if (logs.length > 500) logs.shift();
   storage.set('luxuryAuditLogs', logs);
-  setDoc(doc(db, 'auditLogs', String(log.id)), log, { merge: true }).catch(() => {});
+  setDoc(doc(db, 'auditLogs', String(log.id)), log, { merge: true }).catch((err) => console.error('Failed to sync audit log:', err));
 };
 
 // ─── Password hashing using SHA-256 (Web Crypto API) ───
@@ -78,7 +78,7 @@ export const setUsers = (users) => {
   storage.set('luxuryUsers', users);
   users.forEach(u => {
     const id = u.uid || u.user;
-    if (id) setDoc(doc(db, 'users', id), u, { merge: true }).catch(() => {});
+    if (id) setDoc(doc(db, 'users', id), u, { merge: true }).catch((err) => console.error('Failed to sync user:', err));
   });
 };
 
@@ -86,7 +86,7 @@ export const getBookings = () => storage.get('luxuryBookings', []);
 export const setBookings = (bookings) => {
   storage.set('luxuryBookings', bookings);
   bookings.forEach(b => {
-    if (b.id) setDoc(doc(db, 'bookings', String(b.id)), b, { merge: true }).catch(() => {});
+    if (b.id) setDoc(doc(db, 'bookings', String(b.id)), b, { merge: true }).catch((err) => console.error('Failed to sync booking:', err));
   });
 };
 
@@ -106,7 +106,7 @@ export const getSalons = () => {
 export const setSalons = (salons) => {
   storage.set('luxurySalons', salons);
   salons.forEach(s => {
-    if (s.id) setDoc(doc(db, 'salons', s.id), s, { merge: true }).catch(() => {});
+    if (s.id) setDoc(doc(db, 'salons', s.id), s, { merge: true }).catch((err) => console.error('Failed to sync salon:', err));
   });
 };
 

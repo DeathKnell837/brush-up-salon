@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import QRCode from 'qrcode';
 import { getBookings, setBookings, getAnnouncements, getSalons } from '../utils/storage';
+import { compressImageToBase64 } from '../utils/imageUpload';
 import BrushUpLogo from './BrushUpLogo';
 import Chatbot from './Chatbot';
 import ReviewModal from './ReviewModal';
@@ -11,7 +12,7 @@ import {
   AlertCircleIcon, CloseIcon, CreditCardIcon, CashIcon, GcashIcon, EyeIcon, EyeOffIcon
 } from './Icons';
 
-function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
+function GCashPaymentModal({ booking, salon, onClose, onUpload, isUploading }) {
   const gcashNumber = salon?.gcashNumber;
   const approvedMinutesAgo = booking.approvedAt ? Math.floor((Date.now() - new Date(booking.approvedAt).getTime()) / 60000) : 0;
   const isPaymentOverdue = booking.approvedAt && approvedMinutesAgo >= 30 && !booking.paymentProof;
@@ -299,6 +300,19 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload }) {
                   Change Proof Screenshot
                 </button>
               </div>
+            ) : isUploading ? (
+              <div 
+                className="gcash-upload-zone"
+                style={{ pointerEvents: 'none', opacity: 0.7 }}
+              >
+                <div style={{ 
+                  width: 28, height: 28, border: '3px solid rgba(201,168,76,0.3)', 
+                  borderTopColor: 'var(--gold)', borderRadius: '50%', 
+                  animation: 'spin 0.8s linear infinite', marginBottom: 8 
+                }} />
+                <div style={{ color: 'var(--text-white)', fontSize: 13, fontWeight: 600 }}>Uploading proof...</div>
+                <div style={{ color: 'var(--text-dim)', fontSize: 11, marginTop: 4 }}>Please wait, do not close this window</div>
+              </div>
             ) : (
               <div 
                 className={`gcash-upload-zone ${isDragging ? 'dragging' : ''}`}
@@ -541,23 +555,35 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
   };
 
   // ─── Payment Proof Upload ───
-  const handlePaymentProofUpload = (bookingId, droppedFile = null) => {
-    const processFile = (file) => {
+  const [isUploadingProof, setIsUploadingProof] = useState(false);
+
+  const handlePaymentProofUpload = async (bookingId, droppedFile = null) => {
+    const processFile = async (file) => {
       if (!file) return;
-      if (file.size > 5 * 1024 * 1024) { showToast('File too large. Max 5MB.'); return; }
-      const reader = new FileReader();
-      reader.onloadend = () => {
+
+      setIsUploadingProof(true);
+      try {
+        const compressedBase64 = await compressImageToBase64(file, {
+          maxWidth: 800,
+          maxHeight: 800,
+          quality: 0.6,
+        });
+
         const allBookings = getBookings();
         const idx = allBookings.findIndex(b => b.id === bookingId);
         if (idx !== -1) {
-          allBookings[idx].paymentProof = reader.result;
+          allBookings[idx].paymentProof = compressedBase64;
           allBookings[idx].paymentProofAt = new Date().toISOString();
           setBookings(allBookings);
           setLocalTick(t => t + 1);
           showToast('Payment proof uploaded! The salon will verify your payment.');
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('Payment proof upload failed:', err);
+        showToast(err.message || 'Upload failed. Please try again.');
+      } finally {
+        setIsUploadingProof(false);
+      }
     };
 
     if (droppedFile) {
@@ -1372,6 +1398,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
           salon={salons.find(s => s.id === paymentBooking.salonId)}
           onClose={() => setPaymentBookingId(null)}
           onUpload={handlePaymentProofUpload}
+          isUploading={isUploadingProof}
         />
       )}
 

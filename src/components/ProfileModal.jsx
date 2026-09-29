@@ -3,6 +3,7 @@ import { db, auth } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { getUsers, setUsers, hashPassword } from '../utils/storage';
+import { compressImageToBase64 } from '../utils/imageUpload';
 import { LockIcon, CloseIcon, LogoutIcon } from './Icons';
 
 function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser, onLogout }) {
@@ -58,18 +59,21 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser, onLogou
     }
   };
 
-  const handleAvatarChange = (e) => {
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 2048576) { // 2MB limit
-        onShowToast('Image too large. Please select an image under 2MB.');
-        return;
+      try {
+        const compressed = await compressImageToBase64(file, {
+          maxWidth: 300,
+          maxHeight: 300,
+          quality: 0.7,
+        });
+        setEditAvatarBase64(compressed);
+      } catch (err) {
+        onShowToast(err.message || 'Failed to process image.');
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditAvatarBase64(reader.result);
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -80,8 +84,10 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser, onLogou
       return;
     }
 
+    setIsSaving(true);
     try {
       const uid = currentUser.uid || currentUser.user;
+
       await setDoc(doc(db, 'users', uid), {
         name: editName.trim(),
         phone: editPhone.trim(),
@@ -96,7 +102,9 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser, onLogou
       setIsEditingProfile(false);
     } catch (err) {
       console.error('Profile update error:', err);
-      onShowToast('Failed to update profile.');
+      onShowToast(err.message || 'Failed to update profile.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -179,30 +187,32 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser, onLogou
                 <button 
                   type="submit" 
                   className="btn"
+                  disabled={isSaving}
                   style={{
-                    background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)',
+                    background: isSaving ? 'rgba(201, 168, 76, 0.4)' : 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)',
                     border: 'none',
                     color: '#0e1118',
                     padding: '10px 20px',
                     borderRadius: '10px',
                     fontWeight: '700',
                     fontSize: '13px',
-                    cursor: 'pointer',
+                    cursor: isSaving ? 'wait' : 'pointer',
                     fontFamily: 'var(--font-body)',
                     transition: 'all 0.3s ease',
                     boxShadow: '0 4px 12px rgba(201, 168, 76, 0.15)',
-                    flex: 1
+                    flex: 1,
+                    opacity: isSaving ? 0.7 : 1
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                    e.currentTarget.style.boxShadow = '0 6px 18px rgba(201, 168, 76, 0.3)';
+                    if (!isSaving) e.currentTarget.style.transform = 'translateY(-1px)';
+                    if (!isSaving) e.currentTarget.style.boxShadow = '0 6px 18px rgba(201, 168, 76, 0.3)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
                     e.currentTarget.style.boxShadow = '0 4px 12px rgba(201, 168, 76, 0.15)';
                   }}
                 >
-                  Save Changes
+                  {isSaving ? 'Saving...' : 'Save Changes'}
                 </button>
                 <button 
                   type="button" 
