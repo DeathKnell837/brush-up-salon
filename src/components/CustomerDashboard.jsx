@@ -424,7 +424,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
 
 
   const allBookings = getBookings();
-  const bookings = allBookings.filter(b => b.userId === currentUser?.user);
+  const bookings = allBookings.filter(b => b.userId === currentUser?.user || (currentUser?.uid && b.userId === currentUser?.uid));
   const paymentBooking = bookings.find(b => b.id === paymentBookingId);
 
   // Calculate customer statistics
