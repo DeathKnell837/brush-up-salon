@@ -279,7 +279,7 @@ function AuthPage({ salons = [], onSignup, onLogin, onAdminLogin, isLocked = fal
             <span className="public-label">Our Branches</span>
             <h2 className="public-title">Explore Our <em>Salons</em></h2>
             <p className="public-subtitle">
-              Browse {totalSalons} salon branches offering {totalServices}+ premium services across Midsayap, Cotabato. 
+              Browse {totalSalons} salon branches offering {totalServices} premium services across Midsayap, Cotabato. 
               Create a free account to book your appointment online.
             </p>
           </div>

@@ -26,7 +26,10 @@ function App() {
   const [showProfile, setShowProfile] = useState(false);
   const [toast, setToast] = useState(null);
   const [isReady, setIsReady] = useState(false);
-  const [salons, setSalonsState] = useState([]);
+  const [salons, setSalonsState] = useState(() => {
+    const s = getSalons();
+    return (s && s.length > 0) ? s : SALON_DATA;
+  });
   const [syncTick, setSyncTick] = useState(0);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 

@@ -386,15 +386,9 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
     return `${hours}:${minutes} ${ampm}`;
   };
 
-  // Distinct unique services count
-  const uniqueServicesCount = useMemo(() => {
-    const set = new Set();
-    salons.forEach(s => {
-      (s.services || []).forEach(sv => {
-        if (sv.name) set.add(sv.name.trim().toLowerCase());
-      });
-    });
-    return set.size;
+  // Total services count across all partner salons (matches AuthPage live count)
+  const totalServicesCount = useMemo(() => {
+    return salons.reduce((acc, s) => acc + (s.services?.length || 0), 0);
   }, [salons]);
   const [readIds, setReadIds] = useState(() => {
     try {
@@ -689,7 +683,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
             </div>
             <div className="hero-stat-divider" />
             <div className="hero-stat">
-              <strong>{uniqueServicesCount}+</strong>
+              <strong>{totalServicesCount}</strong>
               <span>Services</span>
             </div>
             <div className="hero-stat-divider" />
