@@ -9,8 +9,8 @@ import { doc, deleteDoc, setDoc } from 'firebase/firestore';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import BrushUpLogo from './BrushUpLogo';
-// import Chatbot from './Chatbot'; // Chatbot removed from Admin Dashboard
 import ReactMarkdown from 'react-markdown';
+import { cleanMarkdownText } from '../utils/markdownUtils';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -1527,6 +1527,15 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
         You are "Brush Up Oracle", a Senior Financial Analyst & Insolvency Turnaround Specialist.
         Your goal is to audit this salon's financial health, predict bankruptcy risks, and write a professional turnaround plan.
         Be thorough, analytical, and highly actionable. Do not use any emojis in your response.
+        
+        CRITICAL FORMATTING INSTRUCTIONS:
+        - Format comparisons, metrics, and data with clean bold bullet points (•) and structured sections.
+        - DO NOT output messy raw pipe tables or compressed tables with ||.
+        - Instead, present metrics cleanly like:
+          • **Operating Capital:** PHP 150,000 (Cash cushion)
+          • **Monthly Net Loss:** PHP -57,600 (Cash outflow exceeds inflow)
+          • **Estimated Runway:** 2.6 months (Immediate intervention required)
+        - If you do use a Markdown table, each row MUST be separated by a real newline.
         
         Write your output in clear Markdown with the following exact headers:
         ### Insolvency & Bankruptcy Risk Assessment
@@ -5310,14 +5319,14 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         <ReactMarkdown
                           components={{
                             h3: ({children}) => <h3 style={{ fontSize: '14px', color: 'var(--gold)', marginTop: '16px', marginBottom: '8px', fontFamily: 'var(--font-display)' }}>{children}</h3>,
-                            p: ({children}) => <p style={{ margin: '0 0 10px 0', fontSize: '13px', lineHeight: '1.6' }}>{children}</p>,
-                            ul: ({children}) => <ul style={{ margin: '0 0 10px 0', paddingLeft: '20px' }}>{children}</ul>,
-                            ol: ({children}) => <ol style={{ margin: '0 0 10px 0', paddingLeft: '20px' }}>{children}</ol>,
-                            li: ({children}) => <li style={{ marginBottom: '4px', fontSize: '13px' }}>{children}</li>,
-                            strong: ({children}) => <strong style={{ color: 'inherit', fontWeight: 'bold' }}>{children}</strong>
+                            p: ({children}) => <p style={{ margin: '0 0 10px 0', fontSize: '13px', lineHeight: '1.6', color: 'var(--text)' }}>{children}</p>,
+                            ul: ({children}) => <ul style={{ margin: '0 0 10px 0', paddingLeft: '20px', color: 'var(--text)' }}>{children}</ul>,
+                            ol: ({children}) => <ol style={{ margin: '0 0 10px 0', paddingLeft: '20px', color: 'var(--text)' }}>{children}</ol>,
+                            li: ({children}) => <li style={{ marginBottom: '6px', fontSize: '13px', lineHeight: '1.5' }}>{children}</li>,
+                            strong: ({children}) => <strong style={{ color: 'var(--text)', fontWeight: 'bold' }}>{children}</strong>
                           }}
                         >
-                          {auditReport}
+                          {cleanMarkdownText(auditReport)}
                         </ReactMarkdown>
                       </div>
                     ) : (

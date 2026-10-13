@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquareIcon, SendIcon, XCircleIcon } from './Icons';
 import { getSalons, getBookings, setBookings, getAnnouncements, setAnnouncements } from '../utils/storage';
 import ReactMarkdown from 'react-markdown';
+import { cleanMarkdownText } from '../utils/markdownUtils';
 
 // API keys: use .env if available, otherwise use built-in defaults
 // Keys are split to avoid triggering automated secret scanners
@@ -11,20 +12,9 @@ const _ak = ['AQ.','Ab8RN6LGjFnp3ZJ','6Vbc6R9dpj2RUE5','mCGgkQFMJrlysGmfj3bA'];
 const GROQ_KEY = process.env.REACT_APP_GROQ_API_KEY || _gk.join('');
 const GEMINI_KEY = process.env.REACT_APP_GEMINI_API_KEY || _ak.join('');
 
-// Helper to strip any reasoning / <think> tags and auto-correct malformed links
+// Helper to strip any reasoning / <think> tags, format messy tables, and clean up formatting
 export const stripThinking = (raw) => {
-  if (!raw) return "";
-  let text = raw
-    .replace(/<think>[\s\S]*?<\/think>/gi, '')
-    .replace(/<think>[\s\S]*$/gi, '')
-    .replace(/\[THINKING\][\s\S]*?\[\/THINKING\]/gi, '')
-    .trim();
-  // Auto-correct malformed markdown link syntax like ][salon: -> ](salon:
-  text = text.replace(/\]\[(salon:[^\]\n]+)\]/g, ']($1)');
-  text = text.replace(/\]\[(salon:[^)\n]+)$/g, ']($1)');
-  // If unclosed (salon:... at end of string, close it
-  text = text.replace(/(\[[^\]]+\])\((salon:[^)\s]+)$/, '$1($2)');
-  return text;
+  return cleanMarkdownText(raw);
 };
 
 export default function Chatbot({ onOpenModal, onSelectSalon, onOpenBookingModal, currentUser, contextData, onCancelBooking, onNavigateTab, onOpenProfile }) {
@@ -234,7 +224,13 @@ YOUR REAL CAPABILITIES & COMMANDS:
 6. CONVERSATIONAL MEMORY & INTELLIGENCE:
    - REMEMBER prior user chats and replies in this session.
    - If the user sends a brief acknowledgment like "ok", "got it", "thanks", "sounds good": reply warmly and politely in 1 friendly sentence without re-explaining or dumping cards.
-   - If the user asks "what can you do aside from showing salons" or "what else can you do", answer clearly by explaining your actual powers (live booking status tracking, 1-click scheduling, GCash payment verification, app tab navigation, hair aftercare advice, and cancellations).`;
+   - If the user asks "what can you do aside from showing salons" or "what else can you do", answer clearly by explaining your actual powers (live booking status tracking, 1-click scheduling, GCash payment verification, app tab navigation, hair aftercare advice, and cancellations).
+
+7. FORMATTING & READABILITY RULES:
+   - Keep answers clean, elegant, and mobile-friendly.
+   - Use bold bullet points and [Book ServiceName at SalonName](salon:...) buttons instead of wide raw markdown tables whenever possible.
+   - NEVER output messy compressed table lines joined by ||.
+   - Never use emojis.`;
       }
 
       let responseText = "";
