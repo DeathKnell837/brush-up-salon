@@ -3,7 +3,8 @@ import BrushUpLogo from './BrushUpLogo';
 import {
   ScissorsIcon, StoreIcon, CalendarIcon, ClockIcon, StarIcon,
   SparklesIcon, UserIcon, ShieldIcon, CheckCircleIcon,
-  CreditCardIcon, PhoneIcon, CloseIcon
+  CreditCardIcon, PhoneIcon, CloseIcon,
+  SunIcon, MoonIcon
 } from './Icons';
 
 function DemoShowcase({
@@ -282,18 +283,13 @@ function DemoShowcase({
             <button 
               className="demo-theme-toggle-btn"
               onClick={onToggleTheme}
-              title={`Switch to ${theme === 'blossom-light' ? 'Cyber Blossom Dark' : 'Blossom Quartz Light'}`}
+              title={theme === 'blossom-light' ? 'Switch to Cyber Dark Mode' : 'Switch to Blossom Light Mode'}
+              aria-label="Toggle theme"
             >
               {theme === 'blossom-light' ? (
-                <>
-                  <span className="theme-dot pink" />
-                  <span>🌸 Blossom Light</span>
-                </>
+                <SunIcon size={18} style={{ color: '#F12A59' }} />
               ) : (
-                <>
-                  <span className="theme-dot neon" />
-                  <span>🔮 BlossomX Cyber</span>
-                </>
+                <MoonIcon size={18} style={{ color: '#FC68BE' }} />
               )}
             </button>
 

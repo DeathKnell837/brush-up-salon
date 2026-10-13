@@ -9,7 +9,8 @@ import SalonMap from './SalonMap';
 import {
   StoreIcon, ClipboardIcon, SearchIcon, ScissorsIcon,
   CalendarIcon, ClockIcon, HourglassIcon, CheckCircleIcon, XCircleIcon, InboxIcon, BellIcon,
-  AlertCircleIcon, CloseIcon, CreditCardIcon, CashIcon, GcashIcon, EyeIcon, EyeOffIcon
+  AlertCircleIcon, CloseIcon, CreditCardIcon, CashIcon, GcashIcon, EyeIcon, EyeOffIcon,
+  SunIcon, MoonIcon
 } from './Icons';
 
 function GCashPaymentModal({ booking, salon, onClose, onUpload, isUploading }) {
@@ -650,35 +651,19 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
       <nav className="navbar">
         <div className="brand" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <BrushUpLogo size="small" />
-          {onBackToDemo && (
-            <button 
-              className="demo-return-pill-btn"
-              onClick={onBackToDemo}
-              style={{ marginLeft: '8px' }}
-              title="Preview Marketing Demo Showcase"
-            >
-              🌸 Preview Demo Showcase
-            </button>
-          )}
         </div>
         <div className="navbar-right" style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
           {onToggleTheme && (
             <button
               className="demo-theme-toggle-btn"
               onClick={onToggleTheme}
-              style={{ padding: '6px 14px', fontSize: '11px' }}
-              title="Toggle Theme"
+              title={theme === 'blossom-light' ? 'Switch to Cyber Dark Mode' : 'Switch to Blossom Light Mode'}
+              aria-label="Toggle theme"
             >
               {theme === 'blossom-light' ? (
-                <>
-                  <span className="theme-dot pink" />
-                  <span>🌸 Light</span>
-                </>
+                <SunIcon size={18} style={{ color: '#F12A59' }} />
               ) : (
-                <>
-                  <span className="theme-dot neon" />
-                  <span>🔮 Cyber</span>
-                </>
+                <MoonIcon size={18} style={{ color: '#FC68BE' }} />
               )}
             </button>
           )}

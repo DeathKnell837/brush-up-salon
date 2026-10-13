@@ -3,7 +3,8 @@ import { getBookings, setBookings } from '../utils/storage';
 import BrushUpLogo from './BrushUpLogo';
 import SalonMap from './SalonMap';
 import {
-  ScissorsIcon, CalendarIcon, CloseIcon, StoreIcon, CashIcon, GcashIcon
+  ScissorsIcon, CalendarIcon, CloseIcon, StoreIcon, CashIcon, GcashIcon,
+  SunIcon, MoonIcon
 } from './Icons';
 
 function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, showToast, onBackToDemo, theme, onToggleTheme }) {
@@ -208,33 +209,19 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
       <nav className="navbar">
         <div className="brand" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }} onClick={onBack}>
           <BrushUpLogo size="small" />
-          {onBackToDemo && (
-            <button 
-              className="demo-return-pill-btn" 
-              onClick={(e) => { e.stopPropagation(); onBackToDemo(); }}
-            >
-              ← 🌸 Demo Showcase
-            </button>
-          )}
         </div>
         <div className="navbar-right">
           {onToggleTheme && (
             <button
               className="demo-theme-toggle-btn"
               onClick={onToggleTheme}
-              style={{ padding: '6px 14px', fontSize: '11px' }}
-              title="Toggle Theme"
+              title={theme === 'blossom-light' ? 'Switch to Cyber Dark Mode' : 'Switch to Blossom Light Mode'}
+              aria-label="Toggle theme"
             >
               {theme === 'blossom-light' ? (
-                <>
-                  <span className="theme-dot pink" />
-                  <span>🌸 Light</span>
-                </>
+                <SunIcon size={18} style={{ color: '#F12A59' }} />
               ) : (
-                <>
-                  <span className="theme-dot neon" />
-                  <span>🔮 Cyber</span>
-                </>
+                <MoonIcon size={18} style={{ color: '#FC68BE' }} />
               )}
             </button>
           )}

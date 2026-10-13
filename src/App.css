@@ -4337,21 +4337,22 @@ html, body {
   background: rgba(241, 42, 89, 0.08);
   border: 1px solid rgba(241, 42, 89, 0.2);
   color: var(--text);
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  font-family: var(--font-body);
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
   transition: all 0.25s ease;
+  flex-shrink: 0;
 }
 
 .demo-theme-toggle-btn:hover {
-  background: rgba(241, 42, 89, 0.15);
-  transform: translateY(-1px);
+  background: rgba(241, 42, 89, 0.16);
+  border-color: var(--pink-primary, #F12A59);
+  transform: translateY(-1px) scale(1.05);
 }
 
 .theme-dot {

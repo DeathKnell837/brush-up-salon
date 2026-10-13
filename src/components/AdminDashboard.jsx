@@ -20,7 +20,8 @@ import {
   ChartIcon, CloseIcon, StoreIcon, ShieldIcon, ClipboardIcon, SparklesIcon, BellIcon, SearchIcon,
   CashIcon, GcashIcon, MailIcon, AlertTriangleIcon, ChevronDownIcon, ChevronUpIcon, 
   ChevronLeftIcon, ChevronRightIcon, GridIcon,
-  DownloadIcon, FileTextIcon, FilterIcon, GlobeIcon, UserPlusIcon
+  DownloadIcon, FileTextIcon, FilterIcon, GlobeIcon, UserPlusIcon,
+  SunIcon, MoonIcon
 } from './Icons';
 
 // Image uploads now use Firebase Storage via utils/imageUpload.js
@@ -1655,14 +1656,6 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
         {/* Left: Brand / Logo */}
         <div className="brand admin-brand" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <BrushUpLogo size="small" />
-          {onBackToDemo && (
-            <button 
-              className="demo-return-pill-btn" 
-              onClick={onBackToDemo}
-            >
-              ← 🌸 Demo Showcase
-            </button>
-          )}
         </div>
 
         {/* Center: Clean space for branch admin */}
@@ -1674,19 +1667,13 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             <button
               className="demo-theme-toggle-btn"
               onClick={onToggleTheme}
-              style={{ padding: '6px 14px', fontSize: '11px' }}
-              title="Toggle Theme"
+              title={theme === 'blossom-light' ? 'Switch to Cyber Dark Mode' : 'Switch to Blossom Light Mode'}
+              aria-label="Toggle theme"
             >
               {theme === 'blossom-light' ? (
-                <>
-                  <span className="theme-dot pink" />
-                  <span>🌸 Light</span>
-                </>
+                <SunIcon size={18} style={{ color: '#F12A59' }} />
               ) : (
-                <>
-                  <span className="theme-dot neon" />
-                  <span>🔮 Cyber</span>
-                </>
+                <MoonIcon size={18} style={{ color: '#FC68BE' }} />
               )}
             </button>
           )}

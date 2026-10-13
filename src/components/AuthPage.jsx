@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { UserIcon, ShieldIcon, LockIcon, ScissorsIcon } from './Icons';
+import { UserIcon, ShieldIcon, LockIcon, ScissorsIcon, SunIcon, MoonIcon } from './Icons';
 import BrushUpLogo from './BrushUpLogo';
 
 function AuthPage({ 
@@ -252,19 +252,13 @@ function AuthPage({
           <button
             className="demo-theme-toggle-btn"
             onClick={onToggleTheme}
-            style={{ padding: '7px 16px', fontSize: '12px' }}
-            title="Toggle Light / Cyber Theme"
+            title={theme === 'blossom-light' ? 'Switch to Cyber Dark Mode' : 'Switch to Blossom Light Mode'}
+            aria-label="Toggle theme"
           >
             {theme === 'blossom-light' ? (
-              <>
-                <span className="theme-dot pink" />
-                <span>🌸 Light</span>
-              </>
+              <SunIcon size={18} style={{ color: '#F12A59' }} />
             ) : (
-              <>
-                <span className="theme-dot neon" />
-                <span>🔮 Cyber</span>
-              </>
+              <MoonIcon size={18} style={{ color: '#FC68BE' }} />
             )}
           </button>
         )}

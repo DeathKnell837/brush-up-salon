@@ -316,8 +316,9 @@ describe('Brush Up Salon — Haute Pink Redesign & Demo Showcase', () => {
     expect(container.textContent).toContain('Featured Salons');
     expect(container.textContent).toContain('All Partner Salons');
 
-    // 5. Unobtrusive preview demo pill in navbar
-    expect(container.textContent).toContain('🌸 Preview Demo Showcase');
+    // 5. Clean navbar with no demo pill clutter
+    expect(container.querySelector('.demo-return-pill-btn')).toBeNull();
+    expect(container.textContent).not.toContain('Preview Demo Showcase');
 
     // 6. Search placeholder
     const searchInput = container.querySelector('.search-inner-input');
@@ -426,29 +427,9 @@ describe('Brush Up Salon — Haute Pink Redesign & Demo Showcase', () => {
     expect(container.textContent).toContain('Featured Salons');
     expect(container.textContent).toContain('All Partner Salons');
 
-    // Click Preview Demo Showcase pill in navbar to switch to Demo
-    const demoPillBtn = container.querySelector('.demo-return-pill-btn');
-    expect(demoPillBtn).not.toBeNull();
-
-    act(() => {
-      demoPillBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    });
-
-    // Now in DemoShowcase
-    expect(container.textContent).toContain('Haute Beauty in');
-    expect(container.textContent).toContain('Sweet Deals & Promotions');
-
-    // Click Live Dashboard button in DemoShowcase to return
-    const returnBtn = Array.from(container.querySelectorAll('.demo-pill-btn'))
-      .find(btn => btn.textContent.includes('Live Dashboard'));
-    expect(returnBtn).not.toBeNull();
-
-    act(() => {
-      returnBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    });
-
-    // Back in CustomerDashboard
-    expect(container.textContent).toContain('Discover Your Perfect Salon Experience');
+    // Verify navbar is clean without demo preview clutter
+    expect(container.querySelector('.demo-return-pill-btn')).toBeNull();
+    expect(container.textContent).not.toContain('Preview Demo Showcase');
   });
 
   test('CustomerDashboard opens GCashPaymentModal with payment details and upload area', () => {
