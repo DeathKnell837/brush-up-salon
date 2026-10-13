@@ -157,6 +157,19 @@ function App() {
     
     // Bind to currentUser or default demo VIP customer 'samantham' so VIP portal immediately shows the newly booked slot
     const bookingUserId = currentUser?.user || 'samantham';
+    const servicePrice = bookingData.servicePrice || 1500;
+    const paymentMethod = bookingData.paymentMethod || 'GCash';
+    const isCash = paymentMethod === 'Cash';
+    const appointmentFee = bookingData.appointmentFee !== undefined
+      ? bookingData.appointmentFee
+      : (isCash ? Math.round(servicePrice * 0.5) : 0);
+    const downpaymentAmount = bookingData.downpaymentAmount !== undefined
+      ? bookingData.downpaymentAmount
+      : appointmentFee;
+    const remainingBalance = bookingData.remainingBalance !== undefined
+      ? bookingData.remainingBalance
+      : (isCash ? (servicePrice - appointmentFee) : 0);
+
     const newBooking = {
       id: Date.now(),
       salonId: targetSalon.id,
@@ -164,13 +177,16 @@ function App() {
       customer: bookingData.name || (bookingUserId === 'samantham' ? 'Samantha Miller' : 'Demo Client'),
       contact: bookingData.contact || '0928-112-3456',
       service: bookingData.service,
-      servicePrice: bookingData.servicePrice || 1500,
-      servicePriceLabel: bookingData.servicePriceLabel || 'PHP 1,500',
+      servicePrice: servicePrice,
+      servicePriceLabel: bookingData.servicePriceLabel || `PHP ${servicePrice.toLocaleString()}`,
       staff: bookingData.staff || 'Any',
       date: bookingData.date,
       time: bookingData.time,
       status: 'Pending',
-      paymentMethod: bookingData.paymentMethod || 'GCash'
+      paymentMethod: paymentMethod,
+      appointmentFee,
+      downpaymentAmount,
+      remainingBalance
     };
     bookings.push(newBooking);
     setBookings(bookings);
@@ -483,17 +499,29 @@ function App() {
       }
     }
 
-    const servicePriceLabel = matchedService ? matchedService.price : 'PHP 0';
-    let servicePrice = 0;
+    let servicePrice = bookingData.servicePrice || 0;
+    let servicePriceLabel = bookingData.servicePriceLabel || (matchedService ? matchedService.price : (servicePrice > 0 ? `PHP ${servicePrice.toLocaleString()}` : 'PHP 0'));
     if (matchedService) {
       if (matchedService.pricingTable) {
         const sortedValues = Object.values(matchedService.pricingTable).map(v => parseFloat(v) || 0).sort((a, b) => a - b);
-        servicePrice = sortedValues[Math.floor(sortedValues.length / 2)] || 0;
+        servicePrice = sortedValues[Math.floor(sortedValues.length / 2)] || servicePrice;
       } else {
-        const cleanPrice = servicePriceLabel.replace(/[^\d.-]/g, '');
-        servicePrice = parseFloat(cleanPrice) || 0;
+        const cleanPrice = (matchedService.price || 'PHP 0').replace(/[^\d.-]/g, '');
+        servicePrice = parseFloat(cleanPrice) || servicePrice;
       }
+      servicePriceLabel = matchedService.price;
     }
+
+    const isCash = (bookingData.paymentMethod || 'Cash') === 'Cash';
+    const appointmentFee = bookingData.appointmentFee !== undefined
+      ? bookingData.appointmentFee
+      : (isCash ? Math.round(servicePrice * 0.5) : 0);
+    const downpaymentAmount = bookingData.downpaymentAmount !== undefined
+      ? bookingData.downpaymentAmount
+      : appointmentFee;
+    const remainingBalance = bookingData.remainingBalance !== undefined
+      ? bookingData.remainingBalance
+      : (isCash ? (servicePrice - appointmentFee) : 0);
 
     bookings.push({
       id: Date.now(), salonId: selectedSalon.id,
@@ -503,7 +531,10 @@ function App() {
       servicePriceLabel: servicePriceLabel,
       staff: bookingData.staff || 'Any',
       date: bookingData.date, time: bookingData.time, status: 'Pending',
-      paymentMethod: bookingData.paymentMethod || 'Cash'
+      paymentMethod: bookingData.paymentMethod || 'Cash',
+      appointmentFee,
+      downpaymentAmount,
+      remainingBalance
     });
     setBookings(bookings);
     showToast('Booking submitted. Await approval.');

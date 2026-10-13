@@ -69,7 +69,7 @@ export const generateInitialBookings = () => {
 
   let idCounter = 1780000000000;
 
-  return [
+  const rawBookings = [
     // ══════════════════════════════════════════════════════
     // 1. ELEGANT SALON (id: 'elegant')
     // ══════════════════════════════════════════════════════
@@ -765,4 +765,18 @@ export const generateInitialBookings = () => {
       gcashRef: 'GC-2233445566'
     }
   ];
+
+  return rawBookings.map(b => {
+    const isCash = (!b.paymentMethod || b.paymentMethod === 'Cash');
+    const servicePrice = b.servicePrice || 0;
+    const appointmentFee = isCash ? Math.round(servicePrice * 0.5) : 0;
+    const downpaymentAmount = appointmentFee;
+    const remainingBalance = isCash ? (servicePrice - appointmentFee) : 0;
+    return {
+      ...b,
+      appointmentFee: b.appointmentFee !== undefined ? b.appointmentFee : appointmentFee,
+      downpaymentAmount: b.downpaymentAmount !== undefined ? b.downpaymentAmount : downpaymentAmount,
+      remainingBalance: b.remainingBalance !== undefined ? b.remainingBalance : remainingBalance
+    };
+  });
 };

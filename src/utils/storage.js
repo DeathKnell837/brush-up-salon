@@ -95,7 +95,26 @@ export const setUsers = (users) => {
   });
 };
 
-export const getBookings = () => storage.get('luxuryBookings', []);
+export const getBookings = () => {
+  const list = storage.get('luxuryBookings', []);
+  return list.map(b => {
+    const isCash = (!b.paymentMethod || b.paymentMethod === 'Cash');
+    if (isCash && (b.appointmentFee === undefined || b.downpaymentAmount === undefined || b.remainingBalance === undefined)) {
+      const rawPrice = b.servicePrice ?? b.amount ?? 0;
+      const price = typeof rawPrice === 'number'
+        ? rawPrice
+        : (parseFloat(String(rawPrice).replace(/[^\d.-]/g, '')) || 0);
+      const fee = Math.round(price * 0.5);
+      return {
+        ...b,
+        appointmentFee: b.appointmentFee !== undefined ? b.appointmentFee : fee,
+        downpaymentAmount: b.downpaymentAmount !== undefined ? b.downpaymentAmount : (b.appointmentFee !== undefined ? b.appointmentFee : fee),
+        remainingBalance: b.remainingBalance !== undefined ? b.remainingBalance : (price - fee)
+      };
+    }
+    return b;
+  });
+};
 export const setBookings = (bookings) => {
   storage.set('luxuryBookings', bookings);
   bookings.forEach(b => {

@@ -64,6 +64,8 @@ import DemoShowcase from './components/DemoShowcase';
 import CustomerDashboard from './components/CustomerDashboard';
 import ReviewModal from './components/ReviewModal';
 import AuthPage from './components/AuthPage';
+import BookingModal from './components/BookingModal';
+import AdminDashboard from './components/AdminDashboard';
 import { SALON_DATA } from './constants/salonData';
 import { getBookings, setBookings, DEFAULT_ADMINS, findAdminAccount } from './utils/storage';
 
@@ -1051,6 +1053,170 @@ describe('Brush Up Salon — Haute Pink Redesign & Demo Showcase', () => {
 
     expect(mockSelectSalon).not.toHaveBeenCalled();
     expect(container.querySelector('.netflix-modal-backdrop')).not.toBeNull();
+  });
+
+  test('BookingModal calculates and renders 50% appointment fee downpayment for Cash bookings and submits breakdown fields', () => {
+    const mockSubmit = jest.fn();
+    const mockClose = jest.fn();
+    const testSalon = {
+      id: 'test-salon',
+      name: 'Bella Rosa Salon',
+      description: 'Chic beauty salon',
+      image: 'https://example.com/salon.jpg',
+      services: [
+        { name: 'Balayage Color', price: 'PHP 3,000' }
+      ]
+    };
+
+    act(() => {
+      root.render(
+        <BookingModal
+          salon={testSalon}
+          initialDetails={{ date: '2026-11-15', time: '10:00' }}
+          onClose={mockClose}
+          onSubmit={mockSubmit}
+          currentUser={{ name: 'Maria Clara' }}
+        />
+      );
+    });
+
+    // Verify 50% breakdown text is visible for Cash
+    expect(container.textContent).toContain('50% Appointment Fee / Downpayment');
+    expect(container.textContent).toContain('₱1,500');
+    expect(container.textContent).toContain('50% Balance Due at Salon');
+    expect(container.textContent).toContain('A 50% Appointment Fee (downpayment) of ₱1,500 is required to secure your booking');
+
+    // Fill form and submit
+    const contactInput = container.querySelector('input[placeholder="Phone number"]');
+    const form = container.querySelector('form');
+
+    act(() => {
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+      setter.call(contactInput, '09123456789');
+      contactInput.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    act(() => {
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+
+    expect(mockSubmit).toHaveBeenCalledTimes(1);
+    const submittedData = mockSubmit.mock.calls[0][0];
+    expect(submittedData.paymentMethod).toBe('Cash');
+    expect(submittedData.appointmentFee).toBe(1500);
+    expect(submittedData.downpaymentAmount).toBe(1500);
+    expect(submittedData.remainingBalance).toBe(1500);
+  });
+
+  test('CustomerDashboard renders 50% downpayment badge for cash booking and opens GCashPaymentModal with downpayment fee', () => {
+    const testBookings = [
+      {
+        id: 7771,
+        salonId: 'elegant',
+        userId: 'samantham',
+        customer: 'Samantha Miller',
+        service: 'Classic Blowout',
+        servicePrice: 2000,
+        appointmentFee: 1000,
+        downpaymentAmount: 1000,
+        remainingBalance: 1000,
+        status: 'Approved',
+        paymentMethod: 'Cash',
+        date: '2026-11-20',
+        time: '11:00'
+      }
+    ];
+    setBookings(testBookings);
+
+    act(() => {
+      root.render(
+        <CustomerDashboard
+          currentUser={{ user: 'samantham', name: 'Samantha Miller', role: 'customer' }}
+          salons={SALON_DATA}
+          onLogout={jest.fn()}
+        />
+      );
+    });
+
+    // Go to My Bookings tab
+    const bookingsTab = Array.from(container.querySelectorAll('.tab-btn'))
+      .find(btn => btn.textContent.includes('My Bookings'));
+    expect(bookingsTab).not.toBeNull();
+
+    act(() => {
+      bookingsTab.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    // Verify 50% badge and pay fee button
+    expect(container.textContent).toContain('Appointment Fee: ₱1,000 (50% Downpayment)');
+    expect(container.textContent).toContain('Balance at Salon: ₱1,000 (50%)');
+
+    const payFeeBtn = Array.from(container.querySelectorAll('button'))
+      .find(btn => btn.textContent.includes('Pay ₱1,000 Fee'));
+    expect(payFeeBtn).not.toBeNull();
+
+    act(() => {
+      payFeeBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    // Modal displays 50% downpayment amount
+    expect(container.textContent).toContain('50% Appointment Fee / Downpayment');
+    expect(container.textContent).toContain('₱1,000');
+    expect(container.textContent).toContain('50% Balance Due at Salon');
+  });
+
+  test('AdminDashboard displays 50% Downpayment and Balance in Bookings table, drawer, and walk-in modal', () => {
+    const testBookings = [
+      {
+        id: 9992,
+        salonId: 'elegant',
+        userId: 'samantham',
+        customer: 'Samantha Miller',
+        service: 'Hair Rebonding',
+        servicePrice: 4000,
+        appointmentFee: 2000,
+        remainingBalance: 2000,
+        status: 'Pending',
+        paymentMethod: 'Cash',
+        date: '2026-11-20',
+        time: '13:00'
+      }
+    ];
+    setBookings(testBookings);
+
+    act(() => {
+      root.render(
+        <AdminDashboard
+          currentUser={{ user: 'elegantadmin', name: 'Elegant Admin', role: 'admin', salonId: 'elegant' }}
+          salons={SALON_DATA}
+          onLogout={jest.fn()}
+        />
+      );
+    });
+
+    // Check compact table fee and balance display
+    expect(container.textContent).toContain('Fee: ₱2,000');
+    expect(container.textContent).toContain('Bal: ₱2,000');
+
+    // Click row to open Drawer
+    const bookingRow = container.querySelector('.compact-row');
+    if (bookingRow) {
+      act(() => {
+        bookingRow.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      });
+      expect(container.textContent).toContain('50% Downpayment: ₱2,000');
+      expect(container.textContent).toContain('50% Balance at Salon: ₱2,000');
+    }
+
+    // Open Walk-in modal
+    const walkInBtn = container.querySelector('button[title="Add Walk-in Booking"]');
+    expect(walkInBtn).not.toBeNull();
+
+    act(() => {
+      walkInBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(container.textContent).toContain('Add Walk-in Booking');
   });
 });
 

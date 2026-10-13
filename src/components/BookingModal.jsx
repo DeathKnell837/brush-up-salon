@@ -7,9 +7,10 @@ function BookingModal({ salon, initialDetails, onClose, onSubmit, currentUser })
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [bookContact, setBookContact] = useState('');
   
+  const salonServices = salon?.services || [];
   const initService = initialDetails?.service || (typeof initialDetails === 'string' ? initialDetails : '');
-  const matchedService = salon.services.find(s => s.name.toLowerCase() === initService?.toLowerCase());
-  const defaultService = matchedService ? matchedService.name : (salon.services[0]?.name || '');
+  const matchedService = salonServices.find(s => s.name.toLowerCase() === initService?.toLowerCase());
+  const defaultService = matchedService ? matchedService.name : (salonServices[0]?.name || '');
   
   const [bookService, setBookService] = useState(defaultService);
   const [bookDate, setBookDate] = useState(initialDetails?.date || '');
@@ -23,6 +24,21 @@ function BookingModal({ salon, initialDetails, onClose, onSubmit, currentUser })
 
   const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 
+  const selectedServiceObj = salonServices.find(s => s.name.toLowerCase() === bookService?.toLowerCase());
+  const getServicePrice = (service) => {
+    if (!service) return (initialDetails?.servicePrice || 0);
+    if (service.pricingTable) {
+      const sortedValues = Object.values(service.pricingTable).map(v => parseFloat(v) || 0).sort((a, b) => a - b);
+      return sortedValues[Math.floor(sortedValues.length / 2)] || 0;
+    }
+    const cleanPrice = (service.price || 'PHP 0').replace(/[^\d.-]/g, '');
+    return parseFloat(cleanPrice) || (initialDetails?.servicePrice || 0);
+  };
+  const servicePrice = getServicePrice(selectedServiceObj);
+  const appointmentFee = paymentMethod === 'Cash' ? Math.round(servicePrice * 0.5) : 0;
+  const downpaymentAmount = appointmentFee;
+  const remainingBalance = paymentMethod === 'Cash' ? (servicePrice - appointmentFee) : 0;
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setFormError('');
@@ -35,7 +51,19 @@ function BookingModal({ salon, initialDetails, onClose, onSubmit, currentUser })
       setFormError('Please enter a valid phone number (7-15 digits).');
       return;
     }
-    onSubmit({ name: bookName, contact: bookContact, service: bookService, date: bookDate, time: bookTime, paymentMethod });
+    onSubmit({
+      name: bookName,
+      contact: bookContact,
+      service: bookService,
+      servicePrice,
+      servicePriceLabel: selectedServiceObj?.price || `PHP ${servicePrice.toLocaleString()}`,
+      date: bookDate,
+      time: bookTime,
+      paymentMethod,
+      appointmentFee,
+      downpaymentAmount,
+      remainingBalance
+    });
   };
 
   return (
@@ -133,6 +161,45 @@ function BookingModal({ salon, initialDetails, onClose, onSubmit, currentUser })
                 </button>
               </div>
             </div>
+
+            {paymentMethod === 'Cash' && (
+              <div className="appointment-fee-breakdown" style={{
+                background: 'rgba(241, 42, 89, 0.06)',
+                border: '1px solid rgba(241, 42, 89, 0.22)',
+                borderRadius: '10px',
+                padding: '12px 14px',
+                marginBottom: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-dim)' }}>
+                  <span>Total Service Price:</span>
+                  <strong style={{ color: 'var(--text)' }}>₱{servicePrice.toLocaleString()}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--pink-primary, #F12A59)' }}>
+                  <span>50% Appointment Fee / Downpayment:</span>
+                  <strong>₱{appointmentFee.toLocaleString()}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-dim)', paddingTop: '6px', borderTop: '1px dashed var(--border)' }}>
+                  <span>50% Balance Due at Salon:</span>
+                  <strong style={{ color: 'var(--text)' }}>₱{remainingBalance.toLocaleString()}</strong>
+                </div>
+                <div style={{
+                  fontSize: '11px',
+                  color: 'var(--text-dim)',
+                  lineHeight: 1.45,
+                  background: 'rgba(241, 42, 89, 0.04)',
+                  padding: '8px 10px',
+                  borderRadius: '6px',
+                  marginTop: '2px',
+                  borderLeft: '3px solid var(--pink-primary, #F12A59)'
+                }}>
+                  💡 A 50% Appointment Fee (downpayment) of ₱{appointmentFee.toLocaleString()} is required to secure your booking. The remaining 50% balance of ₱{remainingBalance.toLocaleString()} is payable in cash upon arrival at the salon.
+                </div>
+              </div>
+            )}
+
             <button type="submit" className="btn">Book</button>
           </form>
         </div>

@@ -365,6 +365,10 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       }
     }
 
+    const appointmentFee = Math.round((servicePrice || 0) * 0.5);
+    const downpaymentAmount = appointmentFee;
+    const remainingBalance = (servicePrice || 0) - appointmentFee;
+
     const newBooking = {
       id: Date.now(),
       salonId: currentSalonId,
@@ -375,6 +379,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       service: walkInService,
       servicePrice: servicePrice,
       servicePriceLabel: servicePriceLabel,
+      appointmentFee: appointmentFee,
+      downpaymentAmount: downpaymentAmount,
+      remainingBalance: remainingBalance,
       staff: walkInStaff || 'Any',
       date: walkInDate,
       time: walkInTime,
@@ -489,7 +496,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
         [bookingsState.length, totalRevenue, completedCount, pendingCount, gcashCount, cashCount],
         [],
         ['--- DETAILED APPOINTMENT RECORDS ---'],
-        ['Booking ID', 'Date', 'Time', 'Customer Name', 'Contact Number', 'Service(s) Availed', 'Assigned Stylist', 'Amount (PHP)', 'Payment Method', 'Booking Status']
+        ['Booking ID', 'Date', 'Time', 'Customer Name', 'Contact Number', 'Service(s) Availed', 'Assigned Stylist', 'Total Price (PHP)', 'Fee / Downpayment (PHP)', 'Remaining Balance (PHP)', 'Payment Method', 'Booking Status']
       ];
 
       bookingsState.forEach(b => {
@@ -500,6 +507,8 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
         const stylist = b.stylist || 'Assigned Staff';
         const amtStr = (b.servicePrice || b.amount || '0').toString().replace(/[^0-9]/g, '');
         const amountNum = parseInt(amtStr, 10) || 0;
+        const apptFee = b.appointmentFee !== undefined ? b.appointmentFee : (b.paymentMethod === 'GCash' ? amountNum : Math.round(amountNum * 0.5));
+        const remBal = b.remainingBalance !== undefined ? b.remainingBalance : (amountNum - apptFee);
         const timeStr = format12Hour(b.time);
         
         wsData.push([
@@ -511,6 +520,8 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           service,
           stylist,
           amountNum,
+          apptFee,
+          remBal,
           payment,
           (b.status || 'Pending').toUpperCase()
         ]);
@@ -527,7 +538,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
         { wch: 18 }, // Contact Number
         { wch: 32 }, // Service(s) Availed
         { wch: 20 }, // Assigned Stylist
-        { wch: 16 }, // Amount (PHP)
+        { wch: 16 }, // Total Price (PHP)
+        { wch: 22 }, // Fee / Downpayment (PHP)
+        { wch: 24 }, // Remaining Balance (PHP)
         { wch: 16 }, // Payment Method
         { wch: 16 }  // Booking Status
       ];
@@ -641,9 +654,12 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       });
 
       // 3. Official Appointment Records Table
-      const headers = [['Booking ID', 'Date & Time', 'Customer Name', 'Contact Number', 'Service Availed', 'Assigned Stylist', 'Amount (PHP)', 'Payment', 'Status']];
+      const headers = [['Booking ID', 'Date & Time', 'Customer Name', 'Contact Number', 'Service Availed', 'Assigned Stylist', 'Total (PHP)', 'Deposit (PHP)', 'Balance (PHP)', 'Payment', 'Status']];
       const rows = bookingsState.map(b => {
-        const amt = (b.servicePrice || b.amount || '0').toString().replace(/[^0-9]/g, '');
+        const amtStr = (b.servicePrice || b.amount || '0').toString().replace(/[^0-9]/g, '');
+        const amountNum = parseInt(amtStr, 10) || 0;
+        const apptFee = b.appointmentFee !== undefined ? b.appointmentFee : (b.paymentMethod === 'GCash' ? amountNum : Math.round(amountNum * 0.5));
+        const remBal = b.remainingBalance !== undefined ? b.remainingBalance : (amountNum - apptFee);
         return [
           `#${b.id}`,
           `${b.date} ${format12Hour(b.time)}`,
@@ -651,7 +667,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           b.contact || 'N/A',
           b.service || 'General Service',
           b.stylist || 'Assigned Staff',
-          `PHP ${amt ? parseInt(amt, 10).toLocaleString() : '0'}`,
+          `PHP ${amountNum.toLocaleString()}`,
+          `PHP ${apptFee.toLocaleString()}`,
+          `PHP ${remBal.toLocaleString()}`,
           (b.paymentMethod || 'Cash').toUpperCase(),
           (b.status || 'Pending').toUpperCase()
         ];
@@ -666,14 +684,14 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
         headStyles: {
           fillColor: [20, 26, 36],
           textColor: [241, 42, 89],
-          fontSize: 7.5,
+          fontSize: 7,
           fontStyle: 'bold',
-          cellPadding: 2.8,
+          cellPadding: 2.5,
           halign: 'left'
         },
         styles: {
-          fontSize: 7.5,
-          cellPadding: 2.4,
+          fontSize: 7,
+          cellPadding: 2.2,
           textColor: [51, 65, 85],
           lineColor: [226, 232, 240],
           lineWidth: 0.2
@@ -682,18 +700,20 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           fillColor: [248, 250, 252]
         },
         columnStyles: {
-          0: { cellWidth: 26, fontStyle: 'bold' },
-          1: { cellWidth: 32 },
-          2: { cellWidth: 38, fontStyle: 'bold' },
-          3: { cellWidth: 28 },
-          4: { cellWidth: 48 },
-          5: { cellWidth: 26 },
-          6: { cellWidth: 24, halign: 'right', fontStyle: 'bold' },
-          7: { cellWidth: 20, halign: 'center' },
-          8: { cellWidth: 27, halign: 'center', fontStyle: 'bold' }
+          0: { cellWidth: 22, fontStyle: 'bold' },
+          1: { cellWidth: 26 },
+          2: { cellWidth: 32, fontStyle: 'bold' },
+          3: { cellWidth: 24 },
+          4: { cellWidth: 40 },
+          5: { cellWidth: 22 },
+          6: { cellWidth: 22, halign: 'right', fontStyle: 'bold' },
+          7: { cellWidth: 22, halign: 'right' },
+          8: { cellWidth: 22, halign: 'right' },
+          9: { cellWidth: 18, halign: 'center' },
+          10: { cellWidth: 19, halign: 'center', fontStyle: 'bold' }
         },
         didParseCell: (data) => {
-          if (data.section === 'body' && data.column.index === 8) {
+          if (data.section === 'body' && data.column.index === 10) {
             const val = (data.cell.raw || '').toUpperCase();
             if (val === 'APPROVED') {
               data.cell.styles.textColor = [22, 101, 52]; // Rich Green
@@ -2634,6 +2654,18 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                     <strong style={{ color: 'var(--gold)', fontFamily: 'var(--font-display)', fontSize: 14 }}>
                                       {b.servicePriceLabel || (services.find(s => s.name === b.service)?.price || 'PHP 0')}
                                     </strong>
+                                    {(!b.paymentMethod || b.paymentMethod === 'Cash') && (() => {
+                                      const svcPrice = b.servicePrice || 0;
+                                      const apptFee = b.appointmentFee !== undefined ? b.appointmentFee : Math.round(svcPrice * 0.5);
+                                      const remBal = b.remainingBalance !== undefined ? b.remainingBalance : (svcPrice - apptFee);
+                                      return (
+                                        <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2, whiteSpace: 'nowrap' }}>
+                                          <span style={{ color: 'var(--pink-primary, #F12A59)', fontWeight: 600 }}>Fee: ₱{apptFee.toLocaleString()}</span>
+                                          <span style={{ margin: '0 3px', opacity: 0.5 }}>•</span>
+                                          <span>Bal: ₱{remBal.toLocaleString()}</span>
+                                        </div>
+                                      );
+                                    })()}
                                   </td>
 
                                   {/* 6. Status */}
@@ -2726,6 +2758,17 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                             </div>
                                             <div style={{ fontSize: 12, color: 'var(--text)', lineHeight: 1.6 }}>
                                               <div><strong>Method:</strong> {b.paymentMethod || 'Cash'}</div>
+                                              {(!b.paymentMethod || b.paymentMethod === 'Cash') && (() => {
+                                                const svcPrice = b.servicePrice || 0;
+                                                const apptFee = b.appointmentFee !== undefined ? b.appointmentFee : Math.round(svcPrice * 0.5);
+                                                const remBal = b.remainingBalance !== undefined ? b.remainingBalance : (svcPrice - apptFee);
+                                                return (
+                                                  <>
+                                                    <div><strong>50% Downpayment:</strong> ₱{apptFee.toLocaleString()}</div>
+                                                    <div><strong>50% Balance at Salon:</strong> ₱{remBal.toLocaleString()}</div>
+                                                  </>
+                                                );
+                                              })()}
                                               {b.paymentReference && <div><strong>Reference:</strong> {b.paymentReference}</div>}
                                               {b.paymentProof && (
                                                 <div style={{ marginTop: 6 }}>
@@ -2896,7 +2939,22 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                               </div>
 
                               {/* Payment proof indicator */}
-                              {b.status === 'Approved' && b.paymentMethod === 'GCash' && (
+                              {/* Cash Downpayment breakdown */}
+                              {(!b.paymentMethod || b.paymentMethod === 'Cash') && (() => {
+                                const svcPrice = b.servicePrice || 0;
+                                const apptFee = b.appointmentFee !== undefined ? b.appointmentFee : Math.round(svcPrice * 0.5);
+                                const remBal = b.remainingBalance !== undefined ? b.remainingBalance : (svcPrice - apptFee);
+                                return (
+                                  <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ color: 'var(--pink-primary, #F12A59)', fontWeight: 600 }}>Downpayment: ₱{apptFee.toLocaleString()}</span>
+                                    <span>•</span>
+                                    <span>Balance: ₱{remBal.toLocaleString()}</span>
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Payment proof indicator */}
+                              {b.status === 'Approved' && (
                                 <div style={{ marginTop: 8 }}>
                                   {b.paymentProof ? (
                                     <div className="payment-proof-admin" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px', background: 'rgba(74,222,128,0.06)', borderRadius: 6, border: '1px solid rgba(74,222,128,0.2)' }}>
@@ -2904,12 +2962,12 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                       <span style={{ color: '#4ade80', fontSize: 11, fontWeight: 600 }}>Proof Uploaded</span>
                                       <img src={b.paymentProof} alt="Payment proof" className="payment-proof-thumb" onClick={() => window.open(b.paymentProof, '_blank')} style={{ width: 24, height: 24, objectFit: 'cover', borderRadius: 4, cursor: 'pointer', marginLeft: 'auto' }} />
                                     </div>
-                                  ) : (
+                                  ) : b.paymentMethod === 'GCash' ? (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', background: 'rgba(245,158,11,0.06)', borderRadius: 6, border: '1px solid rgba(245,158,11,0.2)' }}>
                                       <HourglassIcon size={12} style={{ color: '#f59e0b' }} />
                                       <span style={{ color: '#f59e0b', fontSize: 11, fontWeight: 600 }}>Awaiting Proof</span>
                                     </div>
-                                  )}
+                                  ) : null}
                                 </div>
                               )}
 
@@ -5124,6 +5182,37 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   {services.map(s => <option key={s.name} value={s.name}>{s.name} — {s.price}</option>)}
                 </select>
               </div>
+              {walkInService && (() => {
+                const matchedSvc = services.find(s => s.name === walkInService);
+                const svcPriceNum = matchedSvc ? (parseInt(matchedSvc.price.replace(/[^0-9]/g, ''), 10) || 0) : 0;
+                const apptFee = Math.round(svcPriceNum * 0.5);
+                const remBal = svcPriceNum - apptFee;
+                return (
+                  <div className="walk-in-fee-breakdown" style={{
+                    background: 'rgba(241, 42, 89, 0.06)',
+                    border: '1px solid rgba(241, 42, 89, 0.2)',
+                    borderRadius: '8px',
+                    padding: '10px 12px',
+                    marginBottom: '14px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                      <span style={{ color: 'var(--text-dim)' }}>Total Service Price:</span>
+                      <strong style={{ color: 'var(--text)' }}>₱{svcPriceNum.toLocaleString()}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                      <span style={{ color: 'var(--pink-primary, #F12A59)', fontWeight: 600 }}>50% Downpayment Fee:</span>
+                      <strong style={{ color: 'var(--pink-primary, #F12A59)' }}>₱{apptFee.toLocaleString()}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                      <span style={{ color: 'var(--text-dim)' }}>50% Balance Due:</span>
+                      <strong style={{ color: 'var(--text)' }}>₱{remBal.toLocaleString()}</strong>
+                    </div>
+                  </div>
+                );
+              })()}
               <div className="input-group">
                 <label>Preferred Staff</label>
                 <select value={walkInStaff} onChange={e => setWalkInStaff(e.target.value)}>
