@@ -413,7 +413,7 @@ describe('Brush Up Salon — Haute Pink Redesign & Demo Showcase', () => {
     expect(container.textContent).toContain('Featured Salons');
   });
 
-  test('App renders CustomerDashboard by default as primary entry point', async () => {
+  test('App locks unauthenticated visitors to AuthPage by default before allowing access to customer or admin pages', async () => {
     await act(async () => {
       root.render(<App />);
     });
@@ -421,15 +421,59 @@ describe('Brush Up Salon — Haute Pink Redesign & Demo Showcase', () => {
       await new Promise(resolve => setTimeout(resolve, 100));
     });
 
-    // Default unauthenticated view must be CustomerDashboard with capstone headline
+    // Unauthenticated visitors are locked to AuthPage
+    expect(container.textContent).toContain('Welcome Back');
+    expect(container.textContent).toContain('Sign in to continue');
+    expect(container.textContent).toContain('HAUTE PARTNER NETWORK');
+    expect(container.textContent).toContain('Explore Our Partner Salons');
+    expect(container.textContent).not.toContain('Discover Your Perfect Salon Experience');
+
+    // Verify unauthenticated visitors cannot access customer dashboard without logging in
+    expect(container.querySelector('.customer-shell')).toBeNull();
+  });
+
+  test('App unlocks and renders CustomerDashboard when an active customer session exists in storage', async () => {
+    const { setSession } = require('./utils/storage');
+    setSession({
+      uid: 'samantham',
+      user: 'samantham',
+      name: 'Samantha Miller',
+      role: 'customer'
+    });
+
+    await act(async () => {
+      root.render(<App />);
+    });
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+
+    // Customer dashboard renders for authenticated customer
     expect(container.textContent).toContain('Discover Your Perfect Salon Experience');
     expect(container.textContent).toContain('Book Now');
     expect(container.textContent).toContain('Featured Salons');
-    expect(container.textContent).toContain('All Partner Salons');
+  });
 
-    // Verify navbar is clean without demo preview clutter
-    expect(container.querySelector('.demo-return-pill-btn')).toBeNull();
-    expect(container.textContent).not.toContain('Preview Demo Showcase');
+  test('App unlocks and renders AdminDashboard when an active admin session exists in storage', async () => {
+    const { setSession } = require('./utils/storage');
+    setSession({
+      uid: 'elegantadmin',
+      user: 'elegantadmin',
+      name: 'Elegant Admin',
+      role: 'admin',
+      salonId: 'elegant'
+    });
+
+    await act(async () => {
+      root.render(<App />);
+    });
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+
+    // Admin dashboard renders for authenticated admin
+    expect(container.textContent).toContain('Admin');
+    expect(container.textContent).toContain('Elegant Salon');
   });
 
   test('CustomerDashboard opens GCashPaymentModal with payment details and upload area', () => {
@@ -716,16 +760,7 @@ describe('Brush Up Salon — Haute Pink Redesign & Demo Showcase', () => {
       await new Promise(resolve => setTimeout(resolve, 50));
     });
 
-    // Find and click Sign In button in navbar
-    const signInBtn = Array.from(container.querySelectorAll('button'))
-      .find(btn => btn.textContent.trim() === 'Sign In');
-    expect(signInBtn).not.toBeNull();
-
-    act(() => {
-      signInBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    });
-
-    // Now on AuthPage
+    // Unauthenticated App lands directly on AuthPage
     expect(container.textContent).toContain('Welcome Back');
 
     // Switch to Admin tab
@@ -925,16 +960,7 @@ describe('Brush Up Salon — Haute Pink Redesign & Demo Showcase', () => {
       await new Promise(resolve => setTimeout(resolve, 50));
     });
 
-    // Navigate to AuthPage from CustomerDashboard
-    const signInBtn = Array.from(container.querySelectorAll('button'))
-      .find(btn => btn.textContent.trim() === 'Sign In');
-    expect(signInBtn).not.toBeNull();
-
-    act(() => {
-      signInBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    });
-
-    // Now on AuthPage
+    // Unauthenticated App lands directly on AuthPage
     expect(container.textContent).toContain('Welcome Back');
     expect(container.textContent).toContain('HAUTE PARTNER NETWORK');
 

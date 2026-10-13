@@ -20,7 +20,7 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { initFirebaseSync } from './utils/firebaseSync';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('customer');
+  const [currentPage, setCurrentPage] = useState('auth');
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedSalon, setSelectedSalon] = useState(null);
   const [initialDetails, setInitialDetails] = useState(null);
@@ -104,7 +104,7 @@ function App() {
         if (session.role === 'admin' || session.role === 'superadmin') setCurrentPage('admin');
         else setCurrentPage('customer');
       } else {
-        setCurrentPage('customer');
+        setCurrentPage('auth');
       }
       
       setIsReady(true);
@@ -381,7 +381,7 @@ function App() {
     // Brief smooth transition delay for feedback
     await new Promise(r => setTimeout(r, 450));
     setCurrentUser(null);
-    setCurrentPage('customer');
+    setCurrentPage('auth');
     clearSession();
     setShowModal(false);
     setShowProfile(false);
@@ -426,6 +426,10 @@ function App() {
   };
 
   const handleOpenSalonPage = (salonId) => {
+    if (!currentUser) {
+      setCurrentPage('auth');
+      return;
+    }
     const salon = salons.find(s => s.id === salonId);
     if (salon) {
       setSelectedSalon(salon);
@@ -438,6 +442,11 @@ function App() {
 
   // eslint-disable-next-line no-unused-vars
   const handleOpenModal = (salonId, details = null) => {
+    if (!currentUser) {
+      setCurrentPage('auth');
+      showToast('Please sign in or create an account to book an appointment.');
+      return;
+    }
     const salon = salons.find(s => s.id === salonId);
     setInitialDetails(typeof details === 'string' ? { service: details } : details);
     setSelectedSalon(salon); setShowModal(true);
@@ -551,37 +560,87 @@ function App() {
         />
       )}
       {currentPage === 'customer' && (
-        <CustomerDashboard 
-          currentUser={currentUser} 
-          salons={salons} 
-          onLogout={() => currentUser ? setShowLogoutConfirm(true) : setCurrentPage('auth')}
-          onSelectSalon={handleOpenSalonPage} 
-          onOpenModal={handleOpenModal} 
-          onOpenProfile={() => setShowProfile(true)} 
-          syncTick={syncTick} 
-          showToast={showToast} 
-          onBackToDemo={() => setCurrentPage('demo')}
-          onOpenAuth={() => setCurrentPage('auth')}
-          theme={theme}
-          onToggleTheme={handleToggleTheme}
-        />
+        !currentUser ? (
+          <AuthPage 
+            salons={salons} 
+            onSignup={handleSignup} 
+            onLogin={handleLogin} 
+            onAdminLogin={handleAdminLogin} 
+            isLocked={isLocked} 
+            lockCountdown={lockCountdown} 
+            onResetLockout={handleResetLockout}
+            onSocialLogin={handleSocialLogin} 
+            socialLoading={socialLoading} 
+            theme={theme}
+            onToggleTheme={handleToggleTheme}
+          />
+        ) : (
+          <CustomerDashboard 
+            currentUser={currentUser} 
+            salons={salons} 
+            onLogout={() => setShowLogoutConfirm(true)}
+            onSelectSalon={handleOpenSalonPage} 
+            onOpenModal={handleOpenModal} 
+            onOpenProfile={() => setShowProfile(true)} 
+            syncTick={syncTick} 
+            showToast={showToast} 
+            onBackToDemo={() => setCurrentPage('demo')}
+            onOpenAuth={() => setCurrentPage('auth')}
+            theme={theme}
+            onToggleTheme={handleToggleTheme}
+          />
+        )
       )}
       {currentPage === 'salon-detail' && selectedSalon && (
-        <SalonDetailPage
-          salon={selectedSalon}
-          currentUser={currentUser}
-          onBack={() => setCurrentPage(currentUser ? 'customer' : (lastVisitedPage || 'auth'))}
-          onLogout={() => setShowLogoutConfirm(true)}
-          onOpenProfile={() => setShowProfile(true)}
-          showToast={showToast}
-          onBackToDemo={() => setCurrentPage('demo')}
-          theme={theme}
-          onToggleTheme={handleToggleTheme}
-        />
+        !currentUser ? (
+          <AuthPage 
+            salons={salons} 
+            onSignup={handleSignup} 
+            onLogin={handleLogin} 
+            onAdminLogin={handleAdminLogin} 
+            isLocked={isLocked} 
+            lockCountdown={lockCountdown} 
+            onResetLockout={handleResetLockout}
+            onSocialLogin={handleSocialLogin} 
+            socialLoading={socialLoading} 
+            theme={theme}
+            onToggleTheme={handleToggleTheme}
+          />
+        ) : (
+          <SalonDetailPage
+            salon={selectedSalon}
+            currentUser={currentUser}
+            onBack={() => setCurrentPage(currentUser ? 'customer' : 'auth')}
+            onLogout={() => setShowLogoutConfirm(true)}
+            onOpenProfile={() => setShowProfile(true)}
+            showToast={showToast}
+            onBackToDemo={() => setCurrentPage('demo')}
+            theme={theme}
+            onToggleTheme={handleToggleTheme}
+          />
+        )
       )}
       {currentPage === 'admin' && (
         (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'superadmin')) 
-          ? <ForbiddenPage onBack={() => setCurrentPage('customer')} />
+          ? (
+            !currentUser ? (
+              <AuthPage 
+                salons={salons} 
+                onSignup={handleSignup} 
+                onLogin={handleLogin} 
+                onAdminLogin={handleAdminLogin} 
+                isLocked={isLocked} 
+                lockCountdown={lockCountdown} 
+                onResetLockout={handleResetLockout}
+                onSocialLogin={handleSocialLogin} 
+                socialLoading={socialLoading} 
+                theme={theme}
+                onToggleTheme={handleToggleTheme}
+              />
+            ) : (
+              <ForbiddenPage onBack={() => setCurrentPage('customer')} />
+            )
+          )
           : <AdminDashboard 
               currentUser={currentUser} 
               salons={salons} 
