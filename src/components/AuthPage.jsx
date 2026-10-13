@@ -285,9 +285,9 @@ function AuthPage({
         {/* Left — Image + branding */}
         <div className="auth-side-text">
           <div className="auth-image-showcase">
-            <img src="/images/login-art.webp" alt="Brush Up Salon" />
+            <img src={theme === 'cyber-pink' ? '/images/login-art.webp' : '/images/pink-salon-interior.jpg'} alt="Brush Up Salon" />
             <div className="auth-image-overlay">
-              <BrushUpLogo size="default" />
+              <BrushUpLogo size="default" tone="light" />
               <h1>Elegance <em>Redefined</em></h1>
               <p>Premium salon experiences, curated just for you.</p>
               <div className="auth-features">

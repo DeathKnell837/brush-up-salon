@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="brushupPinkFavicon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F12A59" />
+      <stop offset="100%" stop-color="#FC68BE" />
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#brushupPinkFavicon)" />
+  <rect x="3.5" y="3.5" width="57" height="57" rx="14.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.25" stroke-width="1.5" />
+  <text x="32" y="45" text-anchor="middle" font-family="'Playfair Display', Georgia, serif" font-weight="700" font-size="38" font-style="italic" fill="#FFFFFF">B</text>
+</svg>

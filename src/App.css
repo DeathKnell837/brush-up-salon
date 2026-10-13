@@ -136,15 +136,18 @@ body{min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--f
 .auth-side-text{position:relative;z-index:1;width:420px;flex-shrink:0;animation:fadeRight .8s ease}
 @keyframes fadeRight{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:translateX(0)}}
 .auth-image-showcase{position:relative;width:100%;height:480px;border-radius:var(--rl);overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow-lg)}
-.auth-image-showcase img{width:100%;height:100%;object-fit:cover;filter:brightness(0.65);transition:transform 8s ease;animation:slowZoom 20s ease infinite alternate}
+.auth-image-showcase img{width:100%;height:100%;object-fit:cover;filter:brightness(0.92);transition:transform 8s ease;animation:slowZoom 20s ease infinite alternate}
+[data-theme="cyber-pink"] .auth-image-showcase img{filter:brightness(0.70)}
 @keyframes slowZoom{from{transform:scale(1)}to{transform:scale(1.1)}}
-.auth-image-overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:36px;
-  background:linear-gradient(to top,rgba(20,10,16,0.92) 0%,rgba(20,10,16,0.35) 45%,transparent 70%)}
-.auth-image-overlay h1{font-family:var(--font-display);font-size:34px;font-weight:600;color:#ffffff;line-height:1.15;margin:20px 0 10px}
+.auth-image-overlay{
+  position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:36px;
+  background:linear-gradient(to top, rgba(18, 5, 14, 0.95) 0%, rgba(18, 5, 14, 0.65) 45%, rgba(18, 5, 14, 0.35) 80%, rgba(18, 5, 14, 0.20) 100%);
+}
+.auth-image-overlay h1{font-family:var(--font-display);font-size:34px;font-weight:600;color:#ffffff;line-height:1.15;margin:20px 0 10px;text-shadow:0 2px 12px rgba(0,0,0,0.6)}
 .auth-image-overlay h1 em{font-style:italic;color:var(--pink-accent)}
-.auth-image-overlay>p{font-size:14px;color:rgba(255,255,255,0.85);font-weight:400;line-height:1.6;margin-bottom:24px}
+.auth-image-overlay>p{font-size:14px;color:rgba(255,255,255,0.92);font-weight:400;line-height:1.6;margin-bottom:24px;text-shadow:0 1px 8px rgba(0,0,0,0.6)}
 .auth-features{display:flex;flex-direction:column;gap:10px}
-.auth-feature{display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,0.92);font-weight:500}
+.auth-feature{display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,0.95);font-weight:500;text-shadow:0 1px 6px rgba(0,0,0,0.6)}
 .auth-feature-dot{width:7px;height:7px;border-radius:50%;background:var(--pink-primary);box-shadow:0 0 8px rgba(241,42,89,0.6);flex-shrink:0}
 
 /* Auth card */
