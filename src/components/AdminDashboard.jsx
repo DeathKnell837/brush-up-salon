@@ -67,7 +67,7 @@ const getCustomerTrustLevel = (userId, allBookings) => {
     return { level: 'suspicious', label: 'Suspicious', icon: '⚠', color: '#f59e0b', tooltip: '2+ cancelled/rejected bookings or missing contact info' };
   }
   if (completed.length >= 2 && hasReview && cancelled.length === 0) {
-    return { level: 'verified', label: 'Verified', icon: '★', color: '#c9a84c', tooltip: '2+ completed bookings with reviews and no cancellations' };
+    return { level: 'verified', label: 'Verified', icon: '★', color: '#F59E0B', tooltip: '2+ completed bookings with reviews and no cancellations' };
   }
   return { level: 'new', label: 'New', icon: '●', color: '#6b7280', tooltip: 'First-time or new customer' };
 };
@@ -82,7 +82,7 @@ const TrustBadge = ({ userId, allBookings }) => {
   );
 };
 
-function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, showToast, syncTick, onOpenProfile }) {
+function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, showToast, syncTick, onOpenProfile, onBackToDemo, theme, onToggleTheme }) {
   const allSalons = getSalons();
   const isSuperAdmin = false;
   
@@ -164,6 +164,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const [calendarSelectionMode, setCalendarSelectionMode] = useState('multiple'); // 'single' | 'multiple' | 'range'
   const [rangeStart, setRangeStart] = useState(null);
   const selectedCalendarDate = selectedCalendarDates.length === 1 ? selectedCalendarDates[0] : null;
+  const setSelectedCalendarDate = (date) => setSelectedCalendarDates(date ? [date] : []);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [bookingSearch, setBookingSearch] = useState('');
   const [bookingsPage, setBookingsPage] = useState(1);
@@ -558,12 +559,12 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       doc.rect(0, 0, pageWidth, 26, 'F');
 
       // Official Circle Monogram (thin gold ring, stroke only, matching official BrushUpLogo)
-      doc.setDrawColor(201, 168, 76);
+      doc.setDrawColor(241, 42, 89);
       doc.setLineWidth(0.6);
       doc.circle(20, 13, 7.5, 'S');
 
       // Italic serif gold "B"
-      doc.setTextColor(201, 168, 76);
+      doc.setTextColor(241, 42, 89);
       doc.setFont('times', 'bolditalic');
       doc.setFontSize(14);
       doc.text('B', 20, 16.2, { align: 'center' });
@@ -577,7 +578,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       // Official Brand Text: "SALON & BEAUTY" (Gold, letter-spaced)
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(6);
-      doc.setTextColor(201, 168, 76);
+      doc.setTextColor(241, 42, 89);
       doc.text('S A L O N   &   B E A U T Y', 32.5, 15.5);
 
       // Subtitle: "OFFICIAL OPERATIONS & REVENUE REPORT"
@@ -587,7 +588,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       doc.text('OFFICIAL OPERATIONS & REVENUE REPORT', 32.5, 20);
 
       // Gold bottom hairline
-      doc.setFillColor(201, 168, 76);
+      doc.setFillColor(241, 42, 89);
       doc.rect(0, 25.2, pageWidth, 0.8, 'F');
 
       // Top Right Meta Info (Clean, aligned 2-line layout)
@@ -663,7 +664,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
         theme: 'grid',
         headStyles: {
           fillColor: [20, 26, 36],
-          textColor: [201, 168, 76],
+          textColor: [241, 42, 89],
           fontSize: 7.5,
           fontStyle: 'bold',
           cellPadding: 2.8,
@@ -706,7 +707,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
         },
         margin: { left: 14, right: 14 },
         didDrawPage: () => {
-          doc.setFillColor(201, 168, 76);
+          doc.setFillColor(241, 42, 89);
           doc.rect(14, pageHeight - 12, pageWidth - 28, 0.4, 'F');
           doc.setFontSize(6.8);
           doc.setTextColor(148, 163, 184);
@@ -1635,16 +1636,24 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
   const adminContextData = `Active Salon: ${salonName}, Fixed Overhead: PHP ${monthlyOverheadVal}, Operating Cash: PHP ${operatingCapitalVal}, Monthly Income: PHP ${monthlyRevenue}, Risk Profile: ${riskLabel}`;
 
   // Glass panel styles
-  const glassCard = { background: 'linear-gradient(135deg, rgba(201,168,76,0.06), rgba(25,25,25,0.9))', backdropFilter: 'blur(12px)', border: '1px solid rgba(201,168,76,0.12)', borderRadius: 16, padding: '28px 24px', textAlign: 'center' };
-  const panelCard = { background: 'rgba(25,25,25,0.7)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 24 };
+  const glassCard = { background: 'var(--bg-card)', backdropFilter: 'blur(12px)', border: '1px solid var(--border)', borderRadius: 16, padding: '28px 24px', textAlign: 'center', boxShadow: 'var(--shadow)' };
+  const panelCard = { background: 'var(--bg-card)', backdropFilter: 'blur(8px)', border: '1px solid var(--border)', borderRadius: 16, padding: 24, boxShadow: 'var(--shadow)' };
 
   return (
     <div className="app-shell admin-shell">
       {/* Navigation Header */}
-      <nav className="navbar admin-navbar" style={{ position: 'sticky', top: 0, borderBottom: '1px solid var(--border)', background: 'rgba(10, 10, 10, 0.98)', backdropFilter: 'blur(16px)', zIndex: 1000 }}>
+      <nav className="navbar admin-navbar" style={{ position: 'sticky', top: 0, borderBottom: '1px solid var(--border)', background: 'var(--bg-card)', backdropFilter: 'blur(16px)', zIndex: 1000 }}>
         {/* Left: Brand / Logo */}
-        <div className="brand admin-brand" style={{ display: 'flex', alignItems: 'center' }}>
+        <div className="brand admin-brand" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <BrushUpLogo size="small" />
+          {onBackToDemo && (
+            <button 
+              className="demo-return-pill-btn" 
+              onClick={onBackToDemo}
+            >
+              ← 🌸 Demo Showcase
+            </button>
+          )}
         </div>
 
         {/* Center: Clean space for branch admin */}
@@ -1652,6 +1661,26 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
         {/* Right: Dual Notifications (Messages & Alerts) + Welcome Admin + Profile icon + Logout */}
         <div className="navbar-right" style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
+          {onToggleTheme && (
+            <button
+              className="demo-theme-toggle-btn"
+              onClick={onToggleTheme}
+              style={{ padding: '6px 14px', fontSize: '11px' }}
+              title="Toggle Theme"
+            >
+              {theme === 'blossom-light' ? (
+                <>
+                  <span className="theme-dot pink" />
+                  <span>🌸 Light</span>
+                </>
+              ) : (
+                <>
+                  <span className="theme-dot neon" />
+                  <span>🔮 Cyber</span>
+                </>
+              )}
+            </button>
+          )}
           
           {/* 1. Messages / Broadcasts Icon */}
           <div style={{ position: 'relative' }}>
@@ -1696,7 +1725,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 0 10px rgba(201, 168, 76, 0.4)'
+                  boxShadow: '0 0 10px rgba(241, 42, 89, 0.4)'
                 }}>
                   {unreadAnnouncements.length}
                 </span>
@@ -1711,11 +1740,11 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 right: '0',
                 width: '360px',
                 maxHeight: '440px',
-                background: 'linear-gradient(135deg, rgba(25, 25, 25, 0.98), rgba(15, 15, 15, 0.99))',
+                background: 'var(--bg-card)',
                 backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(201, 168, 76, 0.18)',
+                border: '1px solid var(--border-light)',
                 borderRadius: '12px',
-                boxShadow: '0 20px 40px rgba(0,0,0,0.6), 0 0 30px rgba(201, 168, 76, 0.05)',
+                boxShadow: 'var(--shadow-lg)',
                 padding: '16px',
                 zIndex: 9999,
                 display: 'flex',
@@ -1723,19 +1752,19 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 gap: '12px',
                 overflowY: 'auto'
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '8px' }}>
-                  <h3 style={{ margin: 0, fontSize: '14px', color: 'var(--gold)', fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
+                  <h3 style={{ margin: 0, fontSize: '14px', color: 'var(--pink-primary)', fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <MailIcon size={16} /> Broadcasts & Messages
                   </h3>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <button 
                       onClick={() => setShowComposeMessage(!showComposeMessage)}
                       style={{
-                        background: showComposeMessage ? 'var(--gold)' : 'rgba(201,168,76,0.15)',
-                        color: showComposeMessage ? '#000' : 'var(--gold)',
-                        border: '1px solid var(--gold)',
+                        background: showComposeMessage ? 'linear-gradient(135deg, var(--pink-primary), var(--pink-accent))' : 'rgba(241,42,89,0.1)',
+                        color: showComposeMessage ? '#fff' : 'var(--pink-primary)',
+                        border: '1px solid var(--border-light)',
                         borderRadius: '6px',
-                        padding: '2px 8px',
+                        padding: '3px 10px',
                         fontSize: '11px',
                         fontWeight: '700',
                         cursor: 'pointer',
@@ -1768,8 +1797,8 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 {/* Inline Message Composer Form */}
                 {showComposeMessage && (
                   <form onSubmit={handleSendQuickMessage} style={{
-                    background: 'rgba(0,0,0,0.35)',
-                    border: '1px solid rgba(201,168,76,0.3)',
+                    background: 'var(--bg, rgba(241, 42, 89, 0.05))',
+                    border: '1px solid var(--border)',
                     borderRadius: '8px',
                     padding: '10px',
                     display: 'flex',
@@ -1792,9 +1821,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                               fontWeight: 700,
                               padding: '2px 6px',
                               borderRadius: '4px',
-                              border: composeMsgType === t ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.1)',
+                              border: composeMsgType === t ? '1px solid var(--gold)' : '1px solid var(--border)',
                               background: composeMsgType === t ? 'var(--gold)' : 'transparent',
-                              color: composeMsgType === t ? '#000' : 'var(--text-dim)',
+                              color: composeMsgType === t ? '#fff' : 'var(--text-dim)',
                               cursor: 'pointer'
                             }}
                           >
@@ -1809,7 +1838,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       placeholder="Title or subject..."
                       value={composeMsgTitle}
                       onChange={e => setComposeMsgTitle(e.target.value)}
-                      style={{ fontSize: '12px', padding: '6px 10px', background: 'rgba(255,255,255,0.05)' }}
+                      style={{ fontSize: '12px', padding: '6px 10px', background: 'var(--bg-card)', color: 'var(--text)', border: '1px solid var(--border)' }}
                       required
                     />
                     <textarea
@@ -1818,7 +1847,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       rows={3}
                       value={composeMsgBody}
                       onChange={e => setComposeMsgBody(e.target.value)}
-                      style={{ fontSize: '12px', padding: '6px 10px', resize: 'none', background: 'rgba(255,255,255,0.05)' }}
+                      style={{ fontSize: '12px', padding: '6px 10px', resize: 'none', background: 'var(--bg-card)', color: 'var(--text)', border: '1px solid var(--border)' }}
                       required
                     />
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
@@ -1846,8 +1875,8 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   ) : (
                     unreadAnnouncements.map(a => (
                       <div key={a.id} style={{
-                        background: 'rgba(255,255,255,0.02)',
-                        border: '1px solid rgba(255, 255, 255, 0.04)',
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border)',
                         borderLeft: `4px solid ${a.type === 'promo' ? 'var(--gold)' : a.type === 'warning' ? '#f87171' : '#38bdf8'}`,
                         borderRadius: '8px',
                         padding: '10px 12px',
@@ -1856,18 +1885,18 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         gap: '4px'
                       }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '12px', fontWeight: '700', color: '#fff' }}>{a.title}</span>
+                          <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text)' }}>{a.title}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span style={{
                               fontSize: '7px',
                               textTransform: 'uppercase',
                               fontWeight: '800',
                               letterSpacing: '0.5px',
-                              background: a.type === 'promo' ? 'rgba(201, 168, 76, 0.15)' : a.type === 'warning' ? 'rgba(248, 113, 113, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+                              background: a.type === 'promo' ? 'rgba(241, 42, 89, 0.15)' : a.type === 'warning' ? 'rgba(248, 113, 113, 0.15)' : 'rgba(56, 189, 248, 0.15)',
                               color: a.type === 'promo' ? 'var(--gold)' : a.type === 'warning' ? '#f87171' : '#38bdf8',
                               padding: '1px 4px',
                               borderRadius: '4px',
-                              border: `1px solid ${a.type === 'promo' ? 'rgba(201,168,76,0.1)' : a.type === 'warning' ? 'rgba(248,113,113,0.1)' : 'rgba(56,189,248,0.1)'}`
+                              border: `1px solid ${a.type === 'promo' ? 'rgba(241, 42, 89,0.1)' : a.type === 'warning' ? 'rgba(248,113,113,0.1)' : 'rgba(56,189,248,0.1)'}`
                             }}>
                               {a.type === 'promo' ? 'Promo' : a.type === 'warning' ? 'Notice' : 'Update'}
                             </span>
@@ -1881,7 +1910,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                             </button>
                           </div>
                         </div>
-                        <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.4', whiteSpace: 'normal', wordBreak: 'break-word' }}>{a.message}</p>
+                        <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-dim)', lineHeight: '1.4', whiteSpace: 'normal', wordBreak: 'break-word' }}>{a.message}</p>
                         <span style={{ fontSize: '8px', color: 'var(--text-dim)', alignSelf: 'flex-end', marginTop: '2px' }}>
                           {new Date(a.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                         </span>
@@ -1950,11 +1979,11 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 right: '0',
                 width: '380px',
                 maxHeight: '480px',
-                background: 'linear-gradient(135deg, rgba(25, 20, 20, 0.98), rgba(15, 12, 12, 0.99))',
+                background: 'var(--bg-card)',
                 backdropFilter: 'blur(20px)',
                 border: '1px solid rgba(239, 68, 68, 0.3)',
                 borderRadius: '12px',
-                boxShadow: '0 20px 40px rgba(0,0,0,0.7), 0 0 30px rgba(239, 68, 68, 0.1)',
+                boxShadow: 'var(--shadow-lg)',
                 padding: '16px',
                 zIndex: 9999,
                 display: 'flex',
@@ -1962,7 +1991,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 gap: '12px',
                 overflowY: 'auto'
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
                   <h3 style={{ margin: 0, fontSize: '14px', color: '#f87171', fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <AlertTriangleIcon size={16} /> Alerts & Security Warnings
                   </h3>
@@ -1991,9 +2020,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
                         {branchFraudAlerts.map((fa, fIdx) => (
-                          <div key={fIdx} style={{ background: 'rgba(0,0,0,0.3)', padding: '6px 8px', borderRadius: 4, fontSize: 11 }}>
-                            <div style={{ color: '#fff', fontWeight: 600 }}>{fa.title}</div>
-                            <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 10, marginTop: 2 }}>{fa.detail}</div>
+                          <div key={fIdx} style={{ background: 'var(--bg-input, rgba(241, 42, 89, 0.05))', padding: '6px 8px', borderRadius: 4, fontSize: 11, border: '1px solid var(--border)' }}>
+                            <div style={{ color: 'var(--text)', fontWeight: 600 }}>{fa.title}</div>
+                            <div style={{ color: 'var(--text-dim)', fontSize: 10, marginTop: 2 }}>{fa.detail}</div>
                           </div>
                         ))}
                       </div>
@@ -2016,7 +2045,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         <div style={{ fontSize: '12px', fontWeight: '700', color: '#f87171' }}>
                           {pending} Pending Booking{pending > 1 ? 's' : ''}
                         </div>
-                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: 2 }}>
                           Awaiting your confirmation or rejection.
                         </div>
                       </div>
@@ -2043,13 +2072,13 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {rejectionAlerts.slice(0, 5).map((rej, idx) => (
                           <div key={idx} style={{
-                            background: 'rgba(255,255,255,0.02)',
-                            border: '1px solid rgba(255, 255, 255, 0.05)',
+                            background: 'var(--bg-card)',
+                            border: '1px solid var(--border)',
                             borderRadius: 6,
                             padding: '8px 10px',
                             fontSize: 11
                           }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fff', fontWeight: 600 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text)', fontWeight: 600 }}>
                               <span>{rej.customer}</span>
                               <span style={{ color: 'var(--text-dim)', fontSize: 10 }}>{rej.date}</span>
                             </div>
@@ -2066,8 +2095,8 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   {/* GCash Verification alerts */}
                   {unverifiedGcashBookings.length > 0 && (
                     <div style={{
-                      background: 'rgba(201, 168, 76, 0.08)',
-                      border: '1px solid rgba(201, 168, 76, 0.25)',
+                      background: 'rgba(241, 42, 89, 0.08)',
+                      border: '1px solid rgba(241, 42, 89, 0.25)',
                       borderLeft: '4px solid var(--gold)',
                       borderRadius: '8px',
                       padding: '10px 12px'
@@ -2075,7 +2104,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--gold)' }}>
                         {unverifiedGcashBookings.length} GCash Payment{unverifiedGcashBookings.length > 1 ? 's' : ''} Pending
                       </div>
-                      <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
+                      <div style={{ fontSize: '11px', color: 'var(--text-dim)', marginTop: 2 }}>
                         Approved bookings awaiting customer GCash receipt upload.
                       </div>
                     </div>
@@ -2101,18 +2130,30 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
       {/* Section Hero Banner */}
       <section className="hero" style={{
-        backgroundImage: `linear-gradient(180deg, rgba(15,15,15,0.2) 0%, rgba(15,15,15,0.7) 65%, rgba(15,15,15,0.98) 100%), linear-gradient(to right, rgba(15,15,15,0.92) 0%, rgba(15,15,15,0.55) 100%), url(${salonImg || salon?.image})`,
+        backgroundImage: theme === 'cyber-pink'
+          ? `linear-gradient(180deg, rgba(15,15,15,0.2) 0%, rgba(15,15,15,0.7) 65%, rgba(15,15,15,0.98) 100%), linear-gradient(to right, rgba(15,15,15,0.92) 0%, rgba(15,15,15,0.55) 100%), url(${salonImg || salon?.image})`
+          : `linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(254,240,243,0.88) 65%, #FEF0F3 100%), linear-gradient(to right, rgba(254,240,243,0.95) 0%, rgba(255,245,247,0.78) 55%, rgba(255,245,247,0.45) 100%), url(${salonImg || salon?.image})`,
         backgroundSize: 'cover',
         backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center'
+        backgroundPosition: 'center',
+        borderBottom: theme === 'cyber-pink' ? '1px solid rgba(241,42,89,0.2)' : 'none'
       }}>
         <div className="hero-content">
-          <h1 className="hero-title" style={{ fontSize: '36px', marginBottom: 12 }}>{salonName || salon?.name}</h1>
+          <h1 className="hero-title" style={{ 
+            fontSize: '36px', 
+            marginBottom: 12,
+            color: theme === 'cyber-pink' ? '#FFFFFF' : 'var(--text, #25191B)'
+          }}>
+            {salonName || salon?.name}
+          </h1>
           <div className="hero-stats">
             {[{ v: pending, l: 'Pending' }, { v: approved, l: 'Approved' }, { v: completed, l: 'Completed' }, { v: total, l: 'Total' }].map((s, i) => (
               <React.Fragment key={i}>
-                {i > 0 && <div className="hero-stat-divider" />}
-                <div className="hero-stat"><strong>{s.v}</strong><span>{s.l}</span></div>
+                {i > 0 && <div className="hero-stat-divider" style={{ background: theme === 'cyber-pink' ? 'rgba(255,255,255,0.1)' : 'rgba(241,42,89,0.18)' }} />}
+                <div className="hero-stat">
+                  <strong style={{ color: theme === 'cyber-pink' ? '#FFFFFF' : 'var(--pink-primary, #F12A59)' }}>{s.v}</strong>
+                  <span style={{ color: theme === 'cyber-pink' ? 'var(--text-dim)' : 'var(--text-dim, #7A5B64)' }}>{s.l}</span>
+                </div>
               </React.Fragment>
             ))}
           </div>
@@ -2148,7 +2189,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       {/* Mobile Manage Tab Panel */}
       {activeTab === 'manage' && (
         <div style={{ padding: '24px 20px 40px', animation: 'fadeUp 0.3s ease' }}>
-          <h2 style={{ fontSize: 18, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+          <h2 style={{ fontSize: 18, color: 'var(--text)', marginBottom: 16, fontFamily: 'var(--font-display)', fontWeight: 600 }}>
             Management Panel
           </h2>
 
@@ -2158,35 +2199,35 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               <>
                 <button 
                   onClick={() => setActiveTab('services')}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
                 >
                   <ScissorsIcon size={20} style={{ color: 'var(--gold)' }} />
                   <span style={{ fontSize: 12, fontWeight: 600 }}>Services</span>
                 </button>
                 <button 
                   onClick={() => setActiveTab('staff')}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
                 >
                   <UserIcon size={20} style={{ color: 'var(--gold)' }} />
                   <span style={{ fontSize: 12, fontWeight: 600 }}>Staff</span>
                 </button>
                 <button 
                   onClick={() => setActiveTab('customers')}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
                 >
                   <UserIcon size={20} style={{ color: 'var(--gold)' }} />
                   <span style={{ fontSize: 12, fontWeight: 600 }}>Customers</span>
                 </button>
                 <button 
                   onClick={() => setActiveTab('reports')}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
                 >
                   <ChartIcon size={20} style={{ color: 'var(--gold)' }} />
                   <span style={{ fontSize: 12, fontWeight: 600 }}>Reports</span>
                 </button>
                 <button 
                   onClick={() => setActiveTab('settings')}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer', gridColumn: 'span 2' }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer', gridColumn: 'span 2' }}
                 >
                   <SettingsIcon size={20} style={{ color: 'var(--gold)' }} />
                   <span style={{ fontSize: 12, fontWeight: 600 }}>Settings</span>
@@ -2196,7 +2237,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               <>
                 <button 
                   onClick={() => setActiveTab('network-salons')}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
                 >
                   <StoreIcon size={20} style={{ color: 'var(--gold)' }} />
                   <span style={{ fontSize: 12, fontWeight: 600 }}>Salons</span>
@@ -2204,7 +2245,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 {(currentUser.role === 'superadmin' || currentUser.salonId === 'all') && (
                   <button 
                     onClick={() => setActiveTab('network-admins')}
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
                   >
                     <ShieldIcon size={20} style={{ color: 'var(--gold)' }} />
                     <span style={{ fontSize: 12, fontWeight: 600 }}>Admins</span>
@@ -2212,14 +2253,14 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 )}
                 <button 
                   onClick={() => setActiveTab('network-broadcasts')}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
                 >
                   <AlertCircleIcon size={20} style={{ color: 'var(--gold)' }} />
                   <span style={{ fontSize: 12, fontWeight: 600 }}>Broadcasts</span>
                 </button>
                 <button 
                   onClick={() => setActiveTab('network-audit')}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '20px 10px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text)', cursor: 'pointer' }}
                 >
                   <ClipboardIcon size={20} style={{ color: 'var(--gold)' }} />
                   <span style={{ fontSize: 12, fontWeight: 600 }}>Audit Log</span>
@@ -2291,7 +2332,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <button 
                           className="btn small outline" 
-                          style={{ padding: '3px 8px', fontSize: 10, color: 'var(--gold)', borderColor: 'rgba(201,168,76,0.4)' }}
+                          style={{ padding: '3px 8px', fontSize: 10, color: 'var(--gold)', borderColor: 'rgba(241, 42, 89,0.4)' }}
                           onClick={() => setShowCalendarView(true)}
                         >
                           Modify Dates
@@ -2337,7 +2378,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                             background: 'transparent',
                             border: 'none',
                             outline: 'none',
-                            color: 'var(--text-white)',
+                            color: 'var(--text)',
                             fontSize: '13px',
                             fontFamily: 'var(--font-body)',
                             padding: 0,
@@ -2382,7 +2423,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                               background: 'transparent',
                               border: 'none',
                               outline: 'none',
-                              color: '#fff',
+                              color: 'var(--text)',
                               fontSize: '12px',
                               fontFamily: 'var(--font-body)',
                               fontWeight: 600,
@@ -2392,13 +2433,13 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                               minWidth: '145px'
                             }}
                           >
-                            <option value="pending" style={{ background: '#111', color: '#fff' }}>Pending ({pending})</option>
-                            <option value="approved" style={{ background: '#111', color: '#fff' }}>Approved ({approved})</option>
-                            <option value="active" style={{ background: '#111', color: '#fff' }}>Active (Pending + Approved)</option>
-                            <option value="completed" style={{ background: '#111', color: '#fff' }}>Completed ({completed})</option>
-                            <option value="rejected" style={{ background: '#111', color: '#fff' }}>Rejected ({rejected})</option>
-                            <option value="resolved" style={{ background: '#111', color: '#fff' }}>Resolved (Done + Rejected)</option>
-                            <option value="all" style={{ background: '#111', color: '#fff' }}>All Statuses ({total})</option>
+                            <option value="pending" style={{ background: 'var(--bg-card)', color: 'var(--text)' }}>Pending ({pending})</option>
+                            <option value="approved" style={{ background: 'var(--bg-card)', color: 'var(--text)' }}>Approved ({approved})</option>
+                            <option value="active" style={{ background: 'var(--bg-card)', color: 'var(--text)' }}>Active (Pending + Approved)</option>
+                            <option value="completed" style={{ background: 'var(--bg-card)', color: 'var(--text)' }}>Completed ({completed})</option>
+                            <option value="rejected" style={{ background: 'var(--bg-card)', color: 'var(--text)' }}>Rejected ({rejected})</option>
+                            <option value="resolved" style={{ background: 'var(--bg-card)', color: 'var(--text)' }}>Resolved (Done + Rejected)</option>
+                            <option value="all" style={{ background: 'var(--bg-card)', color: 'var(--text)' }}>All Statuses ({total})</option>
                           </select>
                           <ChevronDownIcon size={12} style={{ position: 'absolute', right: 10, pointerEvents: 'none', color: 'var(--gold)' }} />
                         </div>
@@ -2430,7 +2471,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            boxShadow: '0 0 8px rgba(201,168,76,0.6)'
+                            boxShadow: '0 0 8px rgba(241, 42, 89,0.6)'
                           }}>
                             {selectedCalendarDates.length}
                           </span>
@@ -2500,12 +2541,12 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                         width: 32, height: 32, borderRadius: '50%',
                                         background: 'var(--gold-dim)', color: 'var(--gold)',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        fontWeight: 700, fontSize: 13, flexShrink: 0, border: '1px solid rgba(201,168,76,0.3)'
+                                        fontWeight: 700, fontSize: 13, flexShrink: 0, border: '1px solid rgba(241, 42, 89,0.3)'
                                       }}>
                                         {(b.customer || 'U').charAt(0).toUpperCase()}
                                       </div>
                                       <div>
-                                        <div style={{ fontWeight: 600, color: 'var(--text-white)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
                                           {b.customer}
                                           <span style={{
                                             fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5,
@@ -2540,7 +2581,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
                                   {/* 2. Service & Stylist */}
                                   <td>
-                                    <div style={{ fontWeight: 500, color: 'var(--text-white)' }}>{b.service}</div>
+                                    <div style={{ fontWeight: 500, color: 'var(--text)' }}>{b.service}</div>
                                     <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{b.staff || 'Any Stylist'}</div>
                                   </td>
 
@@ -2548,7 +2589,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                   <td>
                                     <div 
                                       style={{ 
-                                        color: (showCalendarView && selectedCalendarDate === b.date) ? 'var(--gold)' : 'var(--text-white)', 
+                                        color: (showCalendarView && selectedCalendarDate === b.date) ? 'var(--gold)' : 'var(--text)', 
                                         fontWeight: 500,
                                         display: 'inline-flex',
                                         alignItems: 'center',
@@ -2556,7 +2597,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                         cursor: 'pointer',
                                         padding: '2px 6px',
                                         borderRadius: 4,
-                                        background: (showCalendarView && selectedCalendarDate === b.date) ? 'rgba(201,168,76,0.18)' : 'transparent',
+                                        background: (showCalendarView && selectedCalendarDate === b.date) ? 'rgba(241, 42, 89,0.18)' : 'transparent',
                                         border: (showCalendarView && selectedCalendarDate === b.date) ? '1px solid var(--gold)' : '1px solid transparent'
                                       }}
                                       onClick={(e) => {
@@ -2674,7 +2715,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                             <div style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 700, marginBottom: 6 }}>
                                               Booking Info
                                             </div>
-                                            <div style={{ fontSize: 12, color: 'var(--text-white)', lineHeight: 1.6 }}>
+                                            <div style={{ fontSize: 12, color: 'var(--text)', lineHeight: 1.6 }}>
                                               <div><strong>Service:</strong> {b.service}</div>
                                               <div><strong>Stylist:</strong> {b.staff || 'Any available'}</div>
                                               <div><strong>Created:</strong> {b.createdAt ? new Date(b.createdAt).toLocaleString() : 'N/A'}</div>
@@ -2687,7 +2728,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                             <div style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 700, marginBottom: 6 }}>
                                               Payment Information
                                             </div>
-                                            <div style={{ fontSize: 12, color: 'var(--text-white)', lineHeight: 1.6 }}>
+                                            <div style={{ fontSize: 12, color: 'var(--text)', lineHeight: 1.6 }}>
                                               <div><strong>Method:</strong> {b.paymentMethod || 'Cash'}</div>
                                               {b.paymentReference && <div><strong>Reference:</strong> {b.paymentReference}</div>}
                                               {b.paymentProof && (
@@ -2719,7 +2760,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                               </div>
                                             )}
                                             {b.review && (
-                                              <div style={{ padding: 10, borderRadius: 8, background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.2)' }}>
+                                              <div style={{ padding: 10, borderRadius: 8, background: 'rgba(241, 42, 89,0.06)', border: '1px solid rgba(241, 42, 89,0.2)' }}>
                                                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', marginBottom: 2 }}>
                                                   Customer Review: {'★'.repeat(b.rating || 5)}
                                                 </div>
@@ -2751,7 +2792,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         const isWalkIn = b.userId === 'walk-in' || b.isWalkIn;
                         return (
                           <div key={b.id} style={{
-                            background: 'rgba(25, 25, 25, 0.7)',
+                            background: 'var(--bg-card)',
                             backdropFilter: 'blur(10px)',
                             border: '1px solid var(--border)',
                             borderRadius: '14px',
@@ -2761,13 +2802,13 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                             justifyContent: 'space-between',
                             gap: '12px',
                             transition: 'all 0.2s ease',
-                            boxShadow: '0 4px 16px rgba(0,0,0,0.2)'
+                            boxShadow: 'var(--shadow)'
                           }}>
                             {/* Card Header & Content */}
                             <div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                                  <strong style={{ fontSize: '14px', color: 'var(--text-white)' }}>{b.customer}</strong>
+                                  <strong style={{ fontSize: '14px', color: 'var(--text)' }}>{b.customer}</strong>
                                   <span style={{
                                     background: isWalkIn ? 'rgba(56,189,248,0.12)' : 'rgba(74,222,128,0.12)',
                                     color: isWalkIn ? '#38bdf8' : '#4ade80',
@@ -2805,7 +2846,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
                               {/* Service + Date + Contact */}
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: '12px', color: 'var(--text-dim)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-white)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text)' }}>
                                   <ScissorsIcon size={13} style={{ color: 'var(--gold)' }} />
                                   <span>{b.service}</span>
                                 </div>
@@ -2818,9 +2859,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                       cursor: 'pointer',
                                       padding: '2px 6px',
                                       borderRadius: 4,
-                                      background: (showCalendarView && selectedCalendarDate === b.date) ? 'rgba(201,168,76,0.18)' : 'rgba(255,255,255,0.03)',
-                                      border: `1px solid ${(showCalendarView && selectedCalendarDate === b.date) ? 'var(--gold)' : 'rgba(255,255,255,0.08)'}`,
-                                      color: (showCalendarView && selectedCalendarDate === b.date) ? 'var(--gold)' : 'var(--text-white)',
+                                      background: (showCalendarView && selectedCalendarDate === b.date) ? 'rgba(241, 42, 89,0.18)' : 'transparent',
+                                      border: `1px solid ${(showCalendarView && selectedCalendarDate === b.date) ? 'var(--gold)' : 'var(--border)'}`,
+                                      color: (showCalendarView && selectedCalendarDate === b.date) ? 'var(--gold)' : 'var(--text)',
                                       transition: 'all 0.2s ease'
                                     }}
                                     onClick={(e) => {
@@ -3030,16 +3071,16 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 });
 
                 return (
-                  <div className="ci-chart-card" style={{ marginBottom: 0, background: 'rgba(25,25,25,0.7)', border: '1px solid var(--border)', borderRadius: 16, padding: 24 }}>
+                  <div className="ci-chart-card" style={{ marginBottom: 0, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 24, boxShadow: 'var(--shadow)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-                      <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-white)', fontFamily: 'var(--font-display)' }}>
+                      <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text)', fontFamily: 'var(--font-display)' }}>
                         Registered Customer Directory ({sortedCusts.length})
                       </h3>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                         <div style={{
                           display: 'flex',
                           alignItems: 'center',
-                          background: 'rgba(255, 255, 255, 0.04)',
+                          background: 'var(--bg-input, rgba(0,0,0,0.03))',
                           border: '1px solid var(--border)',
                           borderRadius: '8px',
                           padding: '0 10px',
@@ -3058,7 +3099,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                               background: 'transparent',
                               border: 'none',
                               outline: 'none',
-                              color: 'var(--text-white)',
+                              color: 'var(--text)',
                               fontSize: '12px',
                               fontFamily: 'var(--font-body)',
                               padding: 0,
@@ -3103,7 +3144,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                                       <span className="ci-table-avatar">{(c.name || '?')[0].toUpperCase()}</span>
                                       <div>
-                                        <div className="ci-table-name" style={{ fontWeight: 600, color: '#fff' }}>{c.name}</div>
+                                        <div className="ci-table-name" style={{ fontWeight: 600, color: 'var(--text)' }}>{c.name}</div>
                                         <div className="ci-table-user" style={{ fontSize: 11, color: 'var(--text-dim)' }}>@{c.user}</div>
                                       </div>
                                     </div>
@@ -3116,13 +3157,13 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                 </tr>
                                 {isExpanded && (
                                   <tr className="ci-expand">
-                                    <td colSpan="6" style={{ background: 'rgba(0,0,0,0.3)', padding: 16 }}>
+                                    <td colSpan="6" style={{ background: 'var(--bg, rgba(241, 42, 89, 0.04))', padding: 16 }}>
                                       <div style={{ marginBottom: 8, fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Recent Booking History</div>
                                       <div className="ci-expand-grid">
                                         {c.bookingsList.slice(-6).reverse().map((b, bi) => (
-                                          <div key={bi} className="ci-expand-item" style={{ background: 'rgba(255,255,255,0.03)', padding: '8px 12px', borderRadius: 8, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+                                          <div key={bi} className="ci-expand-item" style={{ background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 8, marginBottom: 4, display: 'flex', justifyContent: 'space-between', border: '1px solid var(--border)' }}>
                                             <span>{b.date} · {b.service}</span>
-                                            <span style={{ color: b.status === 'Completed' ? '#4ade80' : b.status === 'Pending' ? '#c9a84c' : b.status === 'Approved' ? '#60a5fa' : '#f87171', fontWeight: 600 }}>
+                                            <span style={{ color: b.status === 'Completed' ? '#4ade80' : b.status === 'Pending' ? '#F59E0B' : b.status === 'Approved' ? '#60a5fa' : '#f87171', fontWeight: 600 }}>
                                               {b.status} {b.paidAmount ? `· ₱${b.paidAmount.toLocaleString()}` : ''}
                                             </span>
                                           </div>
@@ -3162,7 +3203,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   <button 
                     className="btn small primary" 
                     onClick={runAIFinancialAudit}
-                    style={{ background: 'linear-gradient(135deg, var(--gold), #b3924e)', color: '#000', fontWeight: 700 }}
+                    style={{ background: 'linear-gradient(135deg, var(--gold), #FC68BE)', color: '#000', fontWeight: 700 }}
                   >
                     <SparklesIcon size={14} style={{ color: '#000', marginRight: 6 }} /> AI Forecast Audit
                   </button>
@@ -3173,9 +3214,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               <div className="analytics-core-grid">
                 {/* Glowing Risk Circle Gauge */}
                 <div style={{ 
-                  background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.55), rgba(15, 15, 15, 0.75))',
+                  background: 'var(--bg-card)',
                   backdropFilter: 'blur(24px)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  border: '1px solid var(--border)',
                   borderRadius: 20,
                   padding: '36px 28px',
                   textAlign: 'center',
@@ -3183,7 +3224,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   flexDirection: 'column', 
                   alignItems: 'center', 
                   justifyContent: 'center',
-                  boxShadow: `0 20px 50px rgba(0,0,0,0.4), 0 0 40px ${riskColor}15`
+                  boxShadow: 'var(--shadow-md)'
                 }}>
                   <div style={{ position: 'relative', width: 180, height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
                     <svg width="180" height="180" viewBox="0 0 200 200" style={{ transform: 'rotate(-90deg)', overflow: 'visible' }}>
@@ -3193,7 +3234,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                           <stop offset="100%" stopColor={riskColor === '#4ade80' ? '#10b981' : riskColor === '#f59e0b' ? '#d97706' : '#ef4444'} />
                         </linearGradient>
                       </defs>
-                      <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(255, 255, 255, 0.03)" strokeWidth="10" />
+                      <circle cx="100" cy="100" r="85" fill="none" stroke="var(--border)" strokeWidth="10" />
                       <circle
                         cx="100"
                         cy="100"
@@ -3208,7 +3249,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       />
                     </svg>
                     <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <span style={{ fontSize: '38px', fontWeight: '900', color: '#fff', fontFamily: 'var(--font-display)', letterSpacing: '-1px' }}>
+                      <span style={{ fontSize: '38px', fontWeight: '900', color: 'var(--text)', fontFamily: 'var(--font-display)', letterSpacing: '-1px' }}>
                         {riskPercentage}%
                       </span>
                       <span style={{ fontSize: '9px', color: 'var(--text-dim)', letterSpacing: '2px', fontWeight: '800', textTransform: 'uppercase', marginTop: -4 }}>
@@ -3263,13 +3304,13 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   
                   {/* Card 1: Operational Cash Runway */}
                   <div style={{ 
-                    background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.45), rgba(15, 15, 15, 0.65))',
+                    background: 'var(--bg-card)',
                     backdropFilter: 'blur(24px)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    border: '1px solid var(--border)',
                     borderLeft: `5px solid ${netIncome >= 0 ? '#4ade80' : '#f87171'}`,
                     borderRadius: 20,
                     padding: '24px 22px',
-                    boxShadow: '0 16px 36px rgba(0, 0, 0, 0.3)'
+                    boxShadow: 'var(--shadow-md)'
                   }}>
                     <p style={{ fontSize: '11px', color: 'var(--text-dim)', letterSpacing: '1.5px', margin: 0, fontWeight: '700', textTransform: 'uppercase' }}>Operational Cash Summary</p>
                     <h3 style={{ fontSize: '32px', color: netIncome >= 0 ? '#4ade80' : '#f87171', margin: '10px 0 6px 0', fontFamily: 'var(--font-display)', fontWeight: '800', letterSpacing: '-0.5px' }}>
@@ -3305,13 +3346,13 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
                   {/* Card 2: Monthly Net Surplus/Deficit */}
                   <div style={{ 
-                    background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.45), rgba(15, 15, 15, 0.65))',
+                    background: 'var(--bg-card)',
                     backdropFilter: 'blur(24px)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    border: '1px solid var(--border)',
                     borderLeft: `5px solid ${netIncome >= 0 ? '#4ade80' : '#f87171'}`,
                     borderRadius: 20,
                     padding: '24px 22px',
-                    boxShadow: '0 16px 36px rgba(0, 0, 0, 0.3)'
+                    boxShadow: 'var(--shadow-md)'
                   }}>
                     <p style={{ fontSize: '11px', color: 'var(--text-dim)', letterSpacing: '1.5px', margin: 0, fontWeight: '700', textTransform: 'uppercase' }}>MONTHLY NET SURPLUS/DEFICIT</p>
                     <h3 style={{ 
@@ -3351,16 +3392,16 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
                   {/* Card 3: Break-Even Target */}
                   <div style={{ 
-                    background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.45), rgba(15, 15, 15, 0.65))',
+                    background: 'var(--bg-card)',
                     backdropFilter: 'blur(24px)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    border: '1px solid var(--border)',
                     borderLeft: '5px solid var(--gold)',
                     borderRadius: 20,
                     padding: '24px 22px',
-                    boxShadow: '0 16px 36px rgba(0, 0, 0, 0.3)'
+                    boxShadow: 'var(--shadow-md)'
                   }}>
                     <p style={{ fontSize: '11px', color: 'var(--text-dim)', letterSpacing: '1.5px', margin: 0, fontWeight: '700', textTransform: 'uppercase' }}>BREAK-EVEN TARGET</p>
-                    <h3 style={{ fontSize: '32px', color: '#ffffff', margin: '10px 0 6px 0', fontFamily: 'var(--font-display)', fontWeight: '800', letterSpacing: '-0.5px' }}>
+                    <h3 style={{ fontSize: '32px', color: 'var(--text)', margin: '10px 0 6px 0', fontFamily: 'var(--font-display)', fontWeight: '800', letterSpacing: '-0.5px' }}>
                       ₱{monthlyOverheadVal.toLocaleString()}
                     </h3>
                     <p style={{ fontSize: '12px', color: 'var(--text-dim)', margin: 0, lineHeight: 1.5 }}>
@@ -3390,16 +3431,16 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
                   {/* Card 4: Staff Utilization Rate */}
                   <div style={{ 
-                    background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.45), rgba(15, 15, 15, 0.65))',
+                    background: 'var(--bg-card)',
                     backdropFilter: 'blur(24px)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    border: '1px solid var(--border)',
                     borderLeft: '5px solid var(--gold)',
                     borderRadius: 20,
                     padding: '24px 22px',
-                    boxShadow: '0 16px 36px rgba(0, 0, 0, 0.3)'
+                    boxShadow: 'var(--shadow-md)'
                   }}>
                     <p style={{ fontSize: '11px', color: 'var(--text-dim)', letterSpacing: '1.5px', margin: 0, fontWeight: '700', textTransform: 'uppercase' }}>STAFF UTILIZATION RATE</p>
-                    <h3 style={{ fontSize: '32px', color: '#ffffff', margin: '10px 0 6px 0', fontFamily: 'var(--font-display)', fontWeight: '800', letterSpacing: '-0.5px' }}>
+                    <h3 style={{ fontSize: '32px', color: 'var(--text)', margin: '10px 0 6px 0', fontFamily: 'var(--font-display)', fontWeight: '800', letterSpacing: '-0.5px' }}>
                       {staff.length > 0 
                         ? `${Math.round((completed / (staff.length * 20)) * 100)}%` 
                         : '0%'
@@ -3437,16 +3478,16 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 
                 {/* 1. Cash Reserves 6-Month Projection Chart */}
                 <div style={{
-                  background: 'linear-gradient(135deg, rgba(25, 25, 25, 0.7), rgba(15, 15, 15, 0.85))',
+                  background: 'var(--bg-card)',
                   backdropFilter: 'blur(16px)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  border: '1px solid var(--border)',
                   borderRadius: 16,
                   padding: '24px 26px',
-                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)'
+                  boxShadow: 'var(--shadow-md)'
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <div>
-                      <h4 style={{ margin: 0, fontSize: 14, color: 'var(--text-white)', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <h4 style={{ margin: 0, fontSize: 14, color: 'var(--text)', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: 8 }}>
                         <ChartIcon size={15} style={{ color: 'var(--gold)' }} /> 6-Month Cash Reserves Trajectory
                       </h4>
                       <p style={{ margin: '4px 0 0 0', fontSize: 11, color: 'var(--text-dim)' }}>
@@ -3500,7 +3541,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                               y1={padY + chartH * pct}
                               x2={padX + chartW}
                               y2={padY + chartH * pct}
-                              stroke="rgba(255,255,255,0.06)"
+                              stroke="var(--border)"
                               strokeDasharray="4 4"
                             />
                           ))}
@@ -3512,8 +3553,8 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                           {/* Data Nodes & Values */}
                           {coords.map((pt, i) => (
                             <g key={i}>
-                              <circle cx={pt.x} cy={pt.y} r="4" fill={netIncome >= 0 ? '#4ade80' : 'var(--gold)'} stroke="#0e1118" strokeWidth="2" />
-                              <text x={pt.x} y={pt.y - 8} textAnchor="middle" fontSize="9px" fontWeight="700" fill="var(--text-white)">
+                              <circle cx={pt.x} cy={pt.y} r="4" fill={netIncome >= 0 ? '#4ade80' : 'var(--gold)'} stroke="var(--bg-card)" strokeWidth="2" />
+                              <text x={pt.x} y={pt.y - 8} textAnchor="middle" fontSize="9px" fontWeight="700" fill="var(--text)">
                                 ₱{Math.round(pt.val / 1000)}k
                               </text>
                               <text x={pt.x} y={padY + chartH + 16} textAnchor="middle" fontSize="9px" fontWeight="600" fill="var(--text-dim)">
@@ -3529,18 +3570,18 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
                 {/* 2. Break-Even Benchmark & Staff Capacity Bars */}
                 <div style={{
-                  background: 'linear-gradient(135deg, rgba(25, 25, 25, 0.7), rgba(15, 15, 15, 0.85))',
+                  background: 'var(--bg-card)',
                   backdropFilter: 'blur(16px)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  border: '1px solid var(--border)',
                   borderRadius: 16,
                   padding: '24px 26px',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)'
+                  boxShadow: 'var(--shadow-md)'
                 }}>
                   <div>
-                    <h4 style={{ margin: 0, fontSize: 14, color: 'var(--text-white)', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <h4 style={{ margin: 0, fontSize: 14, color: 'var(--text)', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: 8 }}>
                       <ScissorsIcon size={15} style={{ color: 'var(--gold)' }} /> Revenue vs Break-Even Benchmark
                     </h4>
                     <p style={{ margin: '4px 0 16px 0', fontSize: 11, color: 'var(--text-dim)' }}>
@@ -3556,7 +3597,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                             <span style={{ color: 'var(--gold)', fontWeight: 700 }}>{breakEvenPct}% of Target Covered</span>
                             <span style={{ color: 'var(--text-dim)' }}>Target: ₱{monthlyOverheadVal.toLocaleString()}</span>
                           </div>
-                          <div style={{ height: 10, borderRadius: 5, background: 'rgba(255,255,255,0.06)', overflow: 'hidden', position: 'relative' }}>
+                          <div style={{ height: 10, borderRadius: 5, background: 'var(--border)', overflow: 'hidden', position: 'relative' }}>
                             <div style={{
                               width: `${breakEvenPct}%`,
                               height: '100%',
@@ -3570,7 +3611,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     })()}
 
                     {/* Staff Workload Distribution */}
-                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 14 }}>
+                    <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
                       <div style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 }}>
                         Staff Workload Capacity ({staff.length} Active Stylists)
                       </div>
@@ -3581,14 +3622,14 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                           return (
                             <div key={sidx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: 120 }}>
-                                <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(201,168,76,0.15)', color: 'var(--gold)', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(241, 42, 89,0.15)', color: 'var(--gold)', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                   {(st.name || '?')[0]}
                                 </div>
-                                <span style={{ fontSize: 12, color: '#fff', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontSize: 12, color: 'var(--text)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                   {st.name}
                                 </span>
                               </div>
-                              <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                              <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'var(--border)', overflow: 'hidden' }}>
                                 <div style={{ width: `${Math.max(15, staffPct)}%`, height: '100%', background: 'var(--gold)', borderRadius: 3 }} />
                               </div>
                               <span style={{ fontSize: 11, color: 'var(--text-dim)', width: 60, textAlign: 'right' }}>
@@ -3606,18 +3647,18 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
               {/* Active Operational Parameters (Without handle display) */}
               <div style={{
-                background: 'linear-gradient(135deg, rgba(25, 25, 25, 0.6), rgba(15, 15, 15, 0.8))',
+                background: 'var(--bg-card)',
                 backdropFilter: 'blur(12px)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                border: '1px solid var(--border)',
                 borderRadius: 16,
                 padding: '24px 28px',
                 marginTop: 24,
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)'
+                boxShadow: 'var(--shadow-md)'
               }}>
-                <h3 style={{ fontSize: 14, color: 'var(--text-white)', margin: 0, fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.5px' }}>
+                <h3 style={{ fontSize: 14, color: 'var(--text)', margin: 0, fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.5px' }}>
                   <SettingsIcon size={16} style={{ color: 'var(--gold)' }} /> Active Operational Baseline Parameters
                 </h3>
-                <div style={{ height: '1px', background: 'linear-gradient(90deg, rgba(201, 168, 76, 0.5), transparent)', margin: '12px 0 16px 0' }} />
+                <div style={{ height: '1px', background: 'linear-gradient(90deg, rgba(241, 42, 89, 0.5), transparent)', margin: '12px 0 16px 0' }} />
                 <div className="analytics-params-grid">
                   <div style={{ background: 'rgba(255,255,255,0.02)', padding: '14px 18px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.03)' }}>
                     <span style={{ fontSize: 9, color: 'var(--text-dim)', letterSpacing: 0.8, display: 'block', textTransform: 'uppercase', fontWeight: '600' }}>MONTHLY FIXED OVERHEAD</span>
@@ -3657,9 +3698,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     key={tf.id} 
                     onClick={() => setReportTimeframe(tf.id)}
                     style={{
-                      background: reportTimeframe === tf.id ? 'var(--gold)' : 'rgba(255,255,255,0.03)',
-                      border: reportTimeframe === tf.id ? '1px solid var(--gold)' : '1px solid rgba(255,255,255,0.08)',
-                      color: reportTimeframe === tf.id ? '#000' : 'var(--text-white)',
+                      background: reportTimeframe === tf.id ? 'var(--gold)' : 'var(--bg-card)',
+                      border: reportTimeframe === tf.id ? '1px solid var(--gold)' : '1px solid var(--border)',
+                      color: reportTimeframe === tf.id ? '#fff' : 'var(--text-dim)',
                       padding: '8px 20px',
                       borderRadius: '30px',
                       fontWeight: '700',
@@ -3668,18 +3709,19 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       letterSpacing: '1px',
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
-                      boxShadow: reportTimeframe === tf.id ? '0 0 15px rgba(201, 168, 76, 0.4)' : 'none'
+                      boxShadow: reportTimeframe === tf.id ? '0 0 15px rgba(241, 42, 89, 0.4)' : 'none'
                     }}
                     onMouseEnter={e => {
                       if (reportTimeframe !== tf.id) {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+                        e.currentTarget.style.borderColor = 'var(--gold)';
+                        e.currentTarget.style.color = 'var(--text)';
                       }
                     }}
                     onMouseLeave={e => {
                       if (reportTimeframe !== tf.id) {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+                        e.currentTarget.style.background = 'var(--bg-card)';
+                        e.currentTarget.style.borderColor = 'var(--border)';
+                        e.currentTarget.style.color = 'var(--text-dim)';
                       }
                     }}
                   >
@@ -3873,19 +3915,19 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         { lbl: 'TOTAL BOOKINGS', val: periodTotal }
                       ].map((card, idx) => (
                         <div key={idx} style={{
-                          background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.45), rgba(15, 15, 15, 0.65))',
+                          background: 'var(--bg-card)',
                           backdropFilter: 'blur(24px)',
-                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          border: '1px solid var(--border)',
                           borderLeft: '5px solid var(--gold)',
                           borderRadius: 20,
                           padding: '32px 28px',
-                          boxShadow: '0 16px 36px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
+                          boxShadow: 'var(--shadow-md)',
                           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                         }}
                         onMouseEnter={e => {
                           e.currentTarget.style.transform = 'translateY(-4px)';
                           e.currentTarget.style.borderColor = 'var(--gold)';
-                          e.currentTarget.style.boxShadow = '0 20px 45px rgba(0,0,0,0.45), 0 0 25px rgba(201, 168, 76, 0.25)';
+                          e.currentTarget.style.boxShadow = '0 20px 45px rgba(0,0,0,0.45), 0 0 25px rgba(241, 42, 89, 0.25)';
                         }}
                         onMouseLeave={e => {
                           e.currentTarget.style.transform = 'translateY(0)';
@@ -3904,14 +3946,14 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     <div className="reports-main-grid">
                       {/* Left: Top Services Distribution */}
                       <div style={{
-                        background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.45), rgba(15, 15, 15, 0.65))',
+                        background: 'var(--bg-card)',
                         backdropFilter: 'blur(24px)',
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        border: '1px solid var(--border)',
                         borderRadius: 20,
                         padding: '28px 24px',
-                        boxShadow: '0 16px 36px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1)'
+                        boxShadow: 'var(--shadow-md)'
                       }}>
-                        <h3 style={{ fontSize: 14, color: 'var(--text-white)', margin: '0 0 20px 0', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <h3 style={{ fontSize: 14, color: 'var(--text)', margin: '0 0 20px 0', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: 8 }}>
                           <ScissorsIcon size={16} style={{ color: 'var(--gold)' }} /> Top Performing Services
                         </h3>
                         {serviceRevBreakdown.length === 0 ? (
@@ -3925,16 +3967,16 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                               return (
                                 <div key={i}>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 6 }}>
-                                    <strong style={{ color: '#fff' }}>{svc.name}</strong>
+                                    <strong style={{ color: 'var(--text)' }}>{svc.name}</strong>
                                     <span style={{ color: 'var(--gold)', fontWeight: '600' }}>₱{svc.revenue.toLocaleString()}</span>
                                   </div>
-                                  <div style={{ height: 8, background: 'rgba(255,255,255,0.03)', borderRadius: 4, overflow: 'hidden' }}>
+                                  <div style={{ height: 8, background: 'var(--border)', borderRadius: 4, overflow: 'hidden' }}>
                                     <div style={{
                                       height: '100%',
                                       width: `${pct}%`,
-                                      background: 'linear-gradient(90deg, var(--gold), #b3924e)',
+                                      background: 'linear-gradient(90deg, var(--gold), #FC68BE)',
                                       borderRadius: 4,
-                                      boxShadow: '0 0 8px rgba(201, 168, 76, 0.5)',
+                                      boxShadow: '0 0 8px rgba(241, 42, 89, 0.5)',
                                       transition: 'width 1s ease'
                                     }} />
                                   </div>
@@ -3950,14 +3992,14 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
                       {/* Right: Revenue Trend Chart */}
                       <div style={{
-                        background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.45), rgba(15, 15, 15, 0.65))',
+                        background: 'var(--bg-card)',
                         backdropFilter: 'blur(24px)',
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        border: '1px solid var(--border)',
                         borderRadius: 20,
                         padding: '28px 24px',
-                        boxShadow: '0 16px 36px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1)'
+                        boxShadow: 'var(--shadow-md)'
                       }}>
-                        <h3 style={{ fontSize: 14, color: 'var(--text-white)', margin: '0 0 20px 0', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <h3 style={{ fontSize: 14, color: 'var(--text)', margin: '0 0 20px 0', fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: 8 }}>
                           <ChartIcon size={16} style={{ color: 'var(--gold)' }} /> {reportTimeframe === 'weekly' ? 'Weekly' : reportTimeframe === 'yearly' ? 'Yearly' : 'Monthly'} Revenue Trend
                         </h3>
                         <div style={{ width: '100%' }}>
@@ -3980,9 +4022,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                             </defs>
 
                             {/* Grid Lines */}
-                            <line x1="60" y1="40" x2="540" y2="40" stroke="rgba(255, 255, 255, 0.03)" strokeWidth="1" />
-                            <line x1="60" y1="110" x2="540" y2="110" stroke="rgba(255, 255, 255, 0.03)" strokeWidth="1" />
-                            <line x1="60" y1="180" x2="540" y2="180" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1.5" />
+                            <line x1="60" y1="40" x2="540" y2="40" stroke="var(--border)" strokeWidth="1" />
+                            <line x1="60" y1="110" x2="540" y2="110" stroke="var(--border)" strokeWidth="1" />
+                            <line x1="60" y1="180" x2="540" y2="180" stroke="var(--border)" strokeWidth="1.5" />
 
                             {/* Y-Axis Labels */}
                             <text x="50" y="44" textAnchor="end" fontSize="9px" fill="var(--text-dim)" fontWeight="600">₱{Math.round(maxReportChartVal * 0.8).toLocaleString()}</text>
@@ -4018,7 +4060,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                   cy={pt.y} 
                                   r="5" 
                                   fill="var(--gold)" 
-                                  stroke="#0e1118" 
+                                  stroke="var(--bg-card)" 
                                   strokeWidth="2" 
                                 />
                                 {/* Values text above node */}
@@ -4028,7 +4070,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                   textAnchor="middle" 
                                   fontSize="9px" 
                                   fontWeight="800" 
-                                  fill="var(--text-white)"
+                                  fill="var(--text)"
                                 >
                                   ₱{pt.val.toLocaleString()}
                                 </text>
@@ -4143,7 +4185,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     </div>
 
                     {showAddStaff && (
-                      <div style={{ background: 'rgba(201,168,76,0.04)', border: '1px solid rgba(201,168,76,0.15)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                      <div style={{ background: 'rgba(241, 42, 89,0.04)', border: '1px solid rgba(241, 42, 89,0.15)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
                         <div className="input-group" style={{ marginBottom: 8 }}>
                           <label>Staff Full Name</label>
                           <input type="text" placeholder="e.g. Maria Santos" value={newStaffName} onChange={e => setNewStaffName(e.target.value)} />
@@ -4172,13 +4214,13 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 440, overflowY: 'auto' }}>
                       {staff.map((member, i) => (
-                        <div key={member.id || i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div key={member.id || i} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--gold)' }}>
+                            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(241, 42, 89,0.15)', border: '1px solid rgba(241, 42, 89,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--gold)' }}>
                               {(member.name || '?')[0].toUpperCase()}
                             </div>
                             <div>
-                              <div style={{ fontWeight: 600, fontSize: 13, color: '#fff' }}>{member.name}</div>
+                              <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)' }}>{member.name}</div>
                               <div style={{ fontSize: 11, color: 'var(--gold)' }}>{member.role}</div>
                             </div>
                           </div>
@@ -4213,15 +4255,15 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               {settingsCategory === 'services' && (() => {
                 const displayServices = svcSearch ? services.filter(s => s.name.toLowerCase().includes(svcSearch.toLowerCase())) : services;
                 return (
-                  <div style={{ background: 'rgba(25,25,25,0.7)', border: '1px solid var(--border)', borderRadius: 16, padding: 24 }}>
+                  <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 24, boxShadow: 'var(--shadow-md)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-                      <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-white)', fontFamily: 'var(--font-display)' }}>
+                      <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text)', fontFamily: 'var(--font-display)' }}>
                         Service Menu Catalog ({services.length} Services)
                       </h3>
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        background: 'rgba(255, 255, 255, 0.04)',
+                        background: 'var(--bg-input, rgba(241, 42, 89, 0.04))',
                         border: '1px solid var(--border)',
                         borderRadius: '8px',
                         padding: '0 10px',
@@ -4240,7 +4282,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                             background: 'transparent',
                             border: 'none',
                             outline: 'none',
-                            color: 'var(--text-white)',
+                            color: 'var(--text)',
                             fontSize: '12px',
                             fontFamily: 'var(--font-body)',
                             padding: 0,
@@ -4253,7 +4295,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     </div>
 
                     {/* Add New Service Form */}
-                    <form className="admin-form-row" onSubmit={handleAddService} style={{ marginBottom: 20, background: 'rgba(201,168,76,0.03)', padding: 16, borderRadius: 12, border: '1px solid rgba(201,168,76,0.1)' }}>
+                    <form className="admin-form-row" onSubmit={handleAddService} style={{ marginBottom: 20, background: 'rgba(241, 42, 89,0.03)', padding: 16, borderRadius: 12, border: '1px solid rgba(241, 42, 89,0.1)' }}>
                       <div className="input-group" style={{ flex: 1, marginBottom: 0 }}>
                         <label>New Service Name</label>
                         <input type="text" placeholder="e.g. Loreal X-Tenso Rebonding" value={newSvcName} onChange={e => setNewSvcName(e.target.value)} />
@@ -4288,7 +4330,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                               <>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                   <div className="service-num">{realIdx + 1}</div>
-                                  <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-white)' }}>{s.name}</div>
+                                  <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{s.name}</div>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                                   <span style={{ color: 'var(--gold)', fontWeight: 700, fontSize: 15 }}>{s.price}</span>
@@ -4324,7 +4366,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 <div style={glassCard}><p style={{ fontSize: 11, color: 'var(--text-dim)', letterSpacing: 1.5, marginBottom: 8 }}>TOTAL REVENUE</p><h2 style={{ fontSize: 32, color: 'var(--gold)', margin: 0, fontFamily: 'var(--font-display)' }}>₱{networkRevenue.toLocaleString()}</h2></div>
                 <div style={glassCard}><p style={{ fontSize: 11, color: 'var(--text-dim)', letterSpacing: 1.5, marginBottom: 8 }}>COMPLETED</p><h2 style={{ fontSize: 32, color: '#4ade80', margin: 0, fontFamily: 'var(--font-display)' }}>{networkCompleted}</h2></div>
                 <div style={glassCard}><p style={{ fontSize: 11, color: 'var(--text-dim)', letterSpacing: 1.5, marginBottom: 8 }}>PENDING</p><h2 style={{ fontSize: 32, color: '#f59e0b', margin: 0, fontFamily: 'var(--font-display)' }}>{networkPending}</h2></div>
-                <div style={glassCard}><p style={{ fontSize: 11, color: 'var(--text-dim)', letterSpacing: 1.5, marginBottom: 8 }}>CUSTOMERS</p><h2 style={{ fontSize: 32, color: 'var(--text-white)', margin: 0, fontFamily: 'var(--font-display)' }}>{allCustomers.length}</h2></div>
+                <div style={glassCard}><p style={{ fontSize: 11, color: 'var(--text-dim)', letterSpacing: 1.5, marginBottom: 8 }}>CUSTOMERS</p><h2 style={{ fontSize: 32, color: 'var(--text)', margin: 0, fontFamily: 'var(--font-display)' }}>{allCustomers.length}</h2></div>
               </div>
 
               {/* Grid 2 Columns for Revenue by Branch and Risk / Status Distributions */}
@@ -4332,7 +4374,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 
                 {/* Left: Revenue by Branch */}
                 <div style={panelCard}>
-                  <h3 style={{ fontSize: 16, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Revenue by Branch</h3>
+                  <h3 style={{ fontSize: 16, color: 'var(--text)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Revenue by Branch</h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {allSalons.map(s => {
                       const sb = networkBookings.filter(b => b.salonId === s.id);
@@ -4342,13 +4384,13 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         <div key={s.id}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                             <div>
-                              <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-white)' }}>{s.name}</div>
+                              <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{s.name}</div>
                               <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>{sb.length} bookings</div>
                             </div>
                             <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--gold)', fontFamily: 'var(--font-display)' }}>₱{sr.toLocaleString()}</span>
                           </div>
                           <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${(sr / maxRev) * 100}%`, background: 'linear-gradient(90deg, var(--gold), rgba(201,168,76,0.3))', borderRadius: 3, transition: 'width 1s ease' }} />
+                            <div style={{ height: '100%', width: `${(sr / maxRev) * 100}%`, background: 'linear-gradient(90deg, var(--gold), rgba(241, 42, 89,0.3))', borderRadius: 3, transition: 'width 1s ease' }} />
                           </div>
                         </div>
                       );
@@ -4361,7 +4403,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   
                   {/* Franchise Risk Distribution */}
                   <div style={panelCard}>
-                    <h3 style={{ fontSize: 16, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Franchise Risk Distribution</h3>
+                    <h3 style={{ fontSize: 16, color: 'var(--text)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Franchise Risk Distribution</h3>
                     <div className="admin-hq-kpi-grid">
                       <div style={{ textAlign: 'center', padding: 12, background: 'rgba(74, 222, 128, 0.05)', border: '1px solid rgba(74, 222, 128, 0.15)', borderRadius: 8 }}>
                         <div style={{ fontSize: 24, fontWeight: 700, color: '#4ade80', fontFamily: 'var(--font-display)' }}>{riskDistribution.stable}</div>
@@ -4380,7 +4422,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
                   {/* Booking Status Distribution */}
                   <div style={panelCard}>
-                    <h3 style={{ fontSize: 16, color: 'var(--text-white)', marginBottom: 12, fontFamily: 'var(--font-display)' }}>Booking Status Distribution</h3>
+                    <h3 style={{ fontSize: 16, color: 'var(--text)', marginBottom: 12, fontFamily: 'var(--font-display)' }}>Booking Status Distribution</h3>
                     <div style={{ display: 'flex', height: 16, borderRadius: 8, overflow: 'hidden', marginBottom: 16 }}>
                       <div style={{ width: `${bookingDistribution.completedPct}%`, background: '#4ade80', transition: 'width 1s ease' }} />
                       <div style={{ width: `${bookingDistribution.approvedPct}%`, background: '#3b82f6', transition: 'width 1s ease' }} />
@@ -4410,7 +4452,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 
                 {/* Left: Top Services */}
                 <div style={panelCard}>
-                  <h3 style={{ fontSize: 16, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Top Franchise Services</h3>
+                  <h3 style={{ fontSize: 16, color: 'var(--text)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Top Franchise Services</h3>
                   {networkServicePopularity.length === 0 ? (
                     <div style={{ color: 'var(--text-dim)', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>
                       No service data recorded yet.
@@ -4420,7 +4462,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     return networkServicePopularity.map(s => (
                       <div key={s.name} style={{ marginBottom: 14 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
-                          <span style={{ color: 'var(--text-white)', fontWeight: 500 }}>{s.name}</span>
+                          <span style={{ color: 'var(--text)', fontWeight: 500 }}>{s.name}</span>
                           <span style={{ color: 'var(--gold)', fontWeight: 600 }}>{s.count} bookings</span>
                         </div>
                         <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
@@ -4433,7 +4475,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
 
                 {/* Right: Executive Warning Flags */}
                 <div style={panelCard}>
-                  <h3 style={{ fontSize: 16, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Executive Attention Flags</h3>
+                  <h3 style={{ fontSize: 16, color: 'var(--text)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Executive Attention Flags</h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 260, overflowY: 'auto' }}>
                     {networkAlerts.length === 0 ? (
                       <div style={{ color: 'var(--text-dim)', fontSize: 13, textAlign: 'center', padding: '40px 0' }}>
@@ -4444,7 +4486,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: s.riskPercentage >= 75 ? 'rgba(239, 68, 68, 0.08)' : 'rgba(245, 158, 11, 0.08)', border: s.riskPercentage >= 75 ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(245, 158, 11, 0.2)', borderRadius: 8 }}>
                           <AlertCircleIcon size={18} style={{ color: s.riskPercentage >= 75 ? '#f87171' : '#f59e0b', flexShrink: 0 }} />
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-white)' }}>{s.name}</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{s.name}</div>
                             <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>
                               {s.riskPercentage >= 75 ? `Critical Bankruptcy Risk (${s.riskPercentage}%)` : (s.riskPercentage >= 40 ? `Operational Distress (${s.riskPercentage}%)` : 'Nominal Risk')}
                               {s.isAlertActive && ' • No recent bookings in 48 hours'}
@@ -4470,13 +4512,13 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               </div>
 
               <div style={{
-                background: 'rgba(25, 25, 25, 0.6)',
+                background: 'var(--bg-card)',
                 backdropFilter: 'blur(12px)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                border: '1px solid var(--border)',
                 borderRadius: '16px',
                 padding: '24px',
                 overflowX: 'auto',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
+                boxShadow: 'var(--shadow-md)'
               }}>
                 <style>{`
                   .leaderboard-row:hover {
@@ -4555,7 +4597,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                             borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
                             transition: 'background 0.2s ease',
                             borderLeft: isRank1 ? '4px solid var(--gold)' : '4px solid transparent',
-                            background: isRank1 ? 'rgba(201, 168, 76, 0.08)' : 'transparent'
+                            background: isRank1 ? 'rgba(241, 42, 89, 0.08)' : 'transparent'
                           }}
                           className="leaderboard-row"
                         >
@@ -4563,7 +4605,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                           <td style={{ padding: '18px 12px', verticalAlign: 'middle', fontWeight: 700 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               {isRank1 && <SparklesIcon size={12} style={{ color: 'var(--gold)' }} />}
-                              <span style={{ color: isRank1 ? 'var(--gold)' : 'var(--text-white)' }}>#{s.rank}</span>
+                              <span style={{ color: isRank1 ? 'var(--gold)' : 'var(--text)' }}>#{s.rank}</span>
                             </div>
                           </td>
 
@@ -4577,12 +4619,12 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                 backgroundImage: `url(${s.image})`, 
                                 backgroundSize: 'cover', 
                                 backgroundPosition: 'center',
-                                border: isRank1 ? '1px solid var(--gold)' : '1px solid rgba(255, 255, 255, 0.1)'
+                                border: isRank1 ? '1px solid var(--gold)' : '1px solid var(--border)'
                               }} />
                               <div>
                                 <div style={{ 
                                   fontWeight: 600, 
-                                  color: isRank1 ? 'var(--gold)' : 'var(--text-white)',
+                                  color: isRank1 ? 'var(--gold)' : 'var(--text)',
                                   fontSize: '14px' 
                                 }}>
                                   {s.name}
@@ -4595,7 +4637,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                           </td>
 
                           {/* Revenue */}
-                          <td style={{ padding: '18px 12px', verticalAlign: 'middle', textAlign: 'right', fontWeight: 700, fontFamily: 'var(--font-display)', fontSize: '15px', color: isRank1 ? 'var(--gold)' : 'var(--text-white)' }}>
+                          <td style={{ padding: '18px 12px', verticalAlign: 'middle', textAlign: 'right', fontWeight: 700, fontFamily: 'var(--font-display)', fontSize: '15px', color: isRank1 ? 'var(--gold)' : 'var(--text)' }}>
                             ₱{s.totalRevenue.toLocaleString()}
                           </td>
 
@@ -4655,7 +4697,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                           </td>
 
                           {/* Completed Bookings */}
-                          <td style={{ padding: '18px 12px', verticalAlign: 'middle', textAlign: 'right', fontWeight: 600, fontSize: '14px', color: 'var(--text-white)' }}>
+                          <td style={{ padding: '18px 12px', verticalAlign: 'middle', textAlign: 'right', fontWeight: 600, fontSize: '14px', color: 'var(--text)' }}>
                             {s.totalCompleted}
                           </td>
 
@@ -4664,9 +4706,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                             <span style={{ 
                               fontSize: '12px', 
                               fontWeight: 500, 
-                              color: 'var(--text-white)',
-                              background: 'rgba(255, 255, 255, 0.05)',
-                              border: '1px solid rgba(255, 255, 255, 0.08)',
+                              color: 'var(--text)',
+                              background: 'var(--bg-card)',
+                              border: '1px solid var(--border)',
                               padding: '4px 10px',
                               borderRadius: '6px'
                             }}>
@@ -4785,7 +4827,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     <div key={b.id} style={{ ...panelCard, marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px' }}>
                       <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
                         <div>
-                          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-white)' }}>{b.customer}</div>
+                          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{b.customer}</div>
                           <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>{b.service} · {b.date} · {format12Hour(b.time)}</div>
                           <div style={{ fontSize: 11, color: 'var(--gold)', marginTop: 2 }}>{allSalons.find(s => s.id === b.salonId)?.name || 'Unknown'}</div>
                         </div>
@@ -4803,7 +4845,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             <section className="content-section" style={{ animation: 'fadeUp .4s ease' }}>
               <div className="section-header"><p className="section-label">COOPERATIVE</p><h2 className="section-heading">Manage Salons</h2></div>
               <div style={panelCard}>
-                <h3 style={{ fontSize: 15, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Register New Salon</h3>
+                <h3 style={{ fontSize: 15, color: 'var(--text)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Register New Salon</h3>
                 <form onSubmit={handleAddSalon} className="admin-hq-add-salon-form">
                   <div className="input-group" style={{ marginBottom: 0 }}><label>Salon Name *</label><input type="text" placeholder="e.g. Luxe Studio" value={ns.name} onChange={e => setNs({ ...ns, name: e.target.value })} /></div>
                   <div className="input-group" style={{ marginBottom: 0 }}><label>Description</label><input type="text" placeholder="Tagline" value={ns.desc} onChange={e => setNs({ ...ns, desc: e.target.value })} /></div>
@@ -4819,7 +4861,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     <div key={s.id} style={{ ...panelCard, display: 'flex', gap: 16, alignItems: 'center' }}>
                       <div style={{ width: 56, height: 56, borderRadius: 12, backgroundImage: `url(${s.image})`, backgroundSize: 'cover', backgroundPosition: 'center', flexShrink: 0 }} />
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-white)' }}>{s.name}</div>
+                        <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text)' }}>{s.name}</div>
                         <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>{s.services?.length || 0} services · {sb.length} bookings</div>
                       </div>
                       <button type="button" className="btn small danger" onClick={() => handleRemoveSalon(s.id)}>Remove</button>
@@ -4844,17 +4886,17 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   return (
                     <div key={admin.user} style={{ ...panelCard, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px' }}>
                       <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(241, 42, 89, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <ShieldIcon size={18} style={{ color: 'var(--text-dim)' }} />
                         </div>
                         <div>
-                          <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-white)' }}>{admin.name} <span style={{ color: 'var(--gold)', fontSize: 11, marginLeft: 6 }}>@{admin.user}</span></div>
+                          <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text)' }}>{admin.name} <span style={{ color: 'var(--gold)', fontSize: 11, marginLeft: 6 }}>@{admin.user}</span></div>
                           <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>{admin.salonId === 'all' ? 'Network Overseer' : (managedSalon ? managedSalon.name : 'Unassigned')}</div>
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
                         {admin.user === currentUser.user ? (
-                          <span className="status approved" style={{ background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.2)' }}>Current Session</span>
+                          <span className="status approved" style={{ background: 'rgba(241, 42, 89,0.1)', border: '1px solid rgba(241, 42, 89,0.2)' }}>Current Session</span>
                         ) : (<>
                           <button type="button" className="btn small outline" onClick={() => handleResetPassword(admin.user)}>Reset PW</button>
                           <button type="button" className="btn small danger" onClick={() => handleRemoveAdmin(admin.user)}>Revoke</button>
@@ -4873,13 +4915,13 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               <div className="section-header"><p className="section-label">COMMUNICATION</p><h2 className="section-heading">Network Broadcasts</h2></div>
               <div className="admin-hq-broadcasts-grid">
                 <div style={panelCard}>
-                  <h3 style={{ fontSize: 16, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>New Broadcast</h3>
+                  <h3 style={{ fontSize: 16, color: 'var(--text)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>New Broadcast</h3>
                   <form onSubmit={handleSetAnnouncement} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <div>
                       <label className="form-label">Broadcast Type</label>
                       <div style={{ display: 'flex', gap: 8 }}>
                         {['info', 'warning', 'promo'].map(t => (
-                          <button key={t} type="button" onClick={() => setBType(t)} style={{ flex: 1, padding: '8px', borderRadius: 8, background: bType === t ? 'rgba(255,255,255,0.1)' : 'transparent', border: bType === t ? '1px solid rgba(255,255,255,0.2)' : '1px solid transparent', color: 'var(--text-white)', fontSize: 13, textTransform: 'capitalize' }}>{t}</button>
+                          <button key={t} type="button" onClick={() => setBType(t)} style={{ flex: 1, padding: '8px', borderRadius: 8, background: bType === t ? 'rgba(241, 42, 89, 0.12)' : 'transparent', border: bType === t ? '1px solid var(--border-light)' : '1px solid var(--border)', color: bType === t ? 'var(--gold)' : 'var(--text-dim)', fontSize: 13, textTransform: 'capitalize' }}>{t}</button>
                         ))}
                       </div>
                     </div>
@@ -4889,18 +4931,18 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   </form>
                 </div>
                 <div style={panelCard}>
-                  <h3 style={{ fontSize: 16, color: 'var(--text-white)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Active Broadcasts</h3>
+                  <h3 style={{ fontSize: 16, color: 'var(--text)', marginBottom: 16, fontFamily: 'var(--font-display)' }}>Active Broadcasts</h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {getAnnouncements().length === 0 ? <p style={{ color: 'var(--text-dim)', fontSize: 13 }}>No active broadcasts.</p> : getAnnouncements().map(a => (
                       <div key={a.id} style={{
-                        background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.65), rgba(15, 15, 15, 0.85))',
+                        background: 'var(--bg-card)',
                         backdropFilter: 'blur(24px)',
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        border: '1px solid var(--border)',
                         borderRadius: '16px',
                         padding: '16px 20px',
                         marginBottom: '12px',
                         position: 'relative',
-                        boxShadow: '0 12px 24px rgba(0, 0, 0, 0.25)',
+                        boxShadow: 'var(--shadow-md)',
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '10px',
@@ -4921,14 +4963,14 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <div style={{
                               color: a.type === 'promo' ? 'var(--gold)' : a.type === 'warning' ? '#f87171' : '#38bdf8',
-                              background: a.type === 'promo' ? 'rgba(201, 168, 76, 0.1)' : a.type === 'warning' ? 'rgba(248, 113, 113, 0.1)' : 'rgba(56, 189, 248, 0.1)',
+                              background: a.type === 'promo' ? 'rgba(241, 42, 89, 0.1)' : a.type === 'warning' ? 'rgba(248, 113, 113, 0.1)' : 'rgba(56, 189, 248, 0.1)',
                               borderRadius: '50%',
                               width: '28px',
                               height: '28px',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              boxShadow: `0 0 10px ${a.type === 'promo' ? 'rgba(201, 168, 76, 0.2)' : a.type === 'warning' ? 'rgba(248, 113, 113, 0.2)' : 'rgba(56, 189, 248, 0.2)'}`
+                              boxShadow: `0 0 10px ${a.type === 'promo' ? 'rgba(241, 42, 89, 0.2)' : a.type === 'warning' ? 'rgba(248, 113, 113, 0.2)' : 'rgba(56, 189, 248, 0.2)'}`
                             }}>
                               <AlertCircleIcon size={16} />
                             </div>
@@ -4936,7 +4978,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                               fontFamily: 'var(--font-display)',
                               fontSize: '14px',
                               fontWeight: '700',
-                              color: '#fff',
+                              color: 'var(--text)',
                               letterSpacing: '0.5px'
                             }}>
                               {a.title}
@@ -4946,11 +4988,11 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                               textTransform: 'uppercase',
                               fontWeight: '800',
                               letterSpacing: '1px',
-                              background: a.type === 'promo' ? 'rgba(201, 168, 76, 0.15)' : a.type === 'warning' ? 'rgba(248, 113, 113, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+                              background: a.type === 'promo' ? 'rgba(241, 42, 89, 0.15)' : a.type === 'warning' ? 'rgba(248, 113, 113, 0.15)' : 'rgba(56, 189, 248, 0.15)',
                               color: a.type === 'promo' ? 'var(--gold)' : a.type === 'warning' ? '#f87171' : '#38bdf8',
                               padding: '3px 8px',
                               borderRadius: '10px',
-                              border: `1px solid ${a.type === 'promo' ? 'rgba(201,168,76,0.3)' : a.type === 'warning' ? 'rgba(248,113,113,0.3)' : 'rgba(56,189,248,0.3)'}`
+                              border: `1px solid ${a.type === 'promo' ? 'rgba(241, 42, 89,0.3)' : a.type === 'warning' ? 'rgba(248,113,113,0.3)' : 'rgba(56,189,248,0.3)'}`
                             }}>
                               {a.type === 'promo' ? 'Promotion' : a.type === 'warning' ? 'Notice' : 'Update'}
                             </span>
@@ -5020,7 +5062,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
                           <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
                           <div>
-                            <div style={{ fontSize: 13, color: 'var(--text-white)' }}>
+                            <div style={{ fontSize: 13, color: 'var(--text)' }}>
                               <span style={{ color, fontWeight: 700, fontSize: 11, letterSpacing: 0.5, marginRight: 8, padding: '2px 8px', background: `${color}15`, borderRadius: 4 }}>{log.action}</span>
                               by <strong>@{log.user}</strong>
                             </div>
@@ -5059,15 +5101,15 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             width: '94vw', 
             display: 'flex', 
             flexDirection: 'column', 
-            background: '#0e1118', 
-            border: '1px solid rgba(201, 168, 76, 0.3)',
+            background: 'var(--bg-card)', 
+            border: '1px solid var(--border-light)',
             gridTemplateColumns: 'none', /* Bypasses CSS grid */
             gap: 0,
             padding: '28px',
-            boxShadow: '0 24px 48px rgba(0, 0, 0, 0.6)'
+            boxShadow: 'var(--shadow-lg)'
           }}>
-            <div className="modal-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 14, width: '100%', marginBottom: 20 }}>
-              <h2 style={{ fontSize: 16, color: 'var(--text-white)', margin: 0, fontFamily: 'var(--font-display)', letterSpacing: '0.3px' }}>
+            <div className="modal-header" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 14, width: '100%', marginBottom: 20 }}>
+              <h2 style={{ fontSize: 16, color: 'var(--text)', margin: 0, fontFamily: 'var(--font-display)', letterSpacing: '0.3px', fontWeight: 700 }}>
                 Add Walk-in Booking
               </h2>
               <button className="close-btn" onClick={() => setShowWalkInModal(false)}>
@@ -5103,9 +5145,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 style={{ 
                   width: '100%', 
                   marginTop: 24, 
-                  background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)',
+                  background: 'linear-gradient(135deg, var(--pink-primary) 0%, var(--pink-accent) 100%)',
                   border: 'none',
-                  color: '#0e1118',
+                  color: '#ffffff',
                   padding: '12px 20px',
                   borderRadius: '10px',
                   fontWeight: '700',
@@ -5113,15 +5155,15 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   cursor: 'pointer',
                   fontFamily: 'var(--font-body)',
                   transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 12px rgba(201, 168, 76, 0.2)'
+                  boxShadow: '0 4px 12px rgba(241, 42, 89, 0.28)'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = '0 6px 18px rgba(201, 168, 76, 0.35)';
+                  e.currentTarget.style.boxShadow = '0 6px 18px rgba(241, 42, 89, 0.42)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(201, 168, 76, 0.2)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(241, 42, 89, 0.28)';
                 }}
               >
                 Confirm Walk-in
@@ -5165,7 +5207,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   flexDirection: 'column', 
                   alignItems: 'center', 
                   justifyContent: 'center',
-                  background: 'rgba(0,0,0,0.4)',
+                  background: theme === 'cyber-pink' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.75)',
                   boxShadow: `inset 0 0 20px ${riskColor}20, 0 0 25px ${riskColor}15`,
                   animation: riskPercentage >= 70 ? 'riskCritPulse 2s infinite' : 'none'
                 }}>
@@ -5199,26 +5241,26 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   </h4>
                   
                   <div style={{ 
-                    background: 'rgba(255,255,255,0.02)', 
+                    background: 'var(--bg-input, var(--bg-card))', 
                     padding: '12px 16px', 
                     borderRadius: 8, 
-                    border: '1px solid rgba(255,255,255,0.04)',
+                    border: '1px solid var(--border)',
                     borderLeft: '4px solid var(--gold)',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center'
                   }}>
                     <span style={{ fontSize: 10, color: 'var(--text-dim)', letterSpacing: 0.5 }}>CASH RUNWAY</span>
-                    <strong style={{ fontSize: 14, color: 'var(--text-white)' }}>
+                    <strong style={{ fontSize: 14, color: 'var(--text)' }}>
                       {netIncome >= 0 ? 'Indefinite' : `${runwayMonths.toFixed(1)} months`}
                     </strong>
                   </div>
 
                   <div style={{ 
-                    background: 'rgba(255,255,255,0.02)', 
+                    background: 'var(--bg-input, var(--bg-card))', 
                     padding: '12px 16px', 
                     borderRadius: 8, 
-                    border: '1px solid rgba(255,255,255,0.04)',
+                    border: '1px solid var(--border)',
                     borderLeft: `4px solid ${netIncome >= 0 ? '#4ade80' : '#f87171'}`,
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -5231,17 +5273,17 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   </div>
 
                   <div style={{ 
-                    background: 'rgba(255,255,255,0.02)', 
+                    background: 'var(--bg-input, var(--bg-card))', 
                     padding: '12px 16px', 
                     borderRadius: 8, 
-                    border: '1px solid rgba(255,255,255,0.04)',
-                    borderLeft: '4px solid #ffffff',
+                    border: '1px solid var(--border)',
+                    borderLeft: '4px solid var(--pink-crimson, var(--gold))',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center'
                   }}>
                     <span style={{ fontSize: 10, color: 'var(--text-dim)', letterSpacing: 0.5 }}>BREAK-EVEN</span>
-                    <strong style={{ fontSize: 14, color: 'var(--text-white)' }}>
+                    <strong style={{ fontSize: 14, color: 'var(--text)' }}>
                       ₱{monthlyOverheadVal.toLocaleString()}
                     </strong>
                   </div>
@@ -5256,7 +5298,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       width: 24, height: 24, borderRadius: '50%', background: 'var(--gold)',
                       animation: 'pulse 1.5s infinite', marginBottom: 16 
                     }} />
-                    <strong style={{ color: 'var(--text-white)', fontSize: 14 }}>Synthesizing predictions...</strong>
+                    <strong style={{ color: 'var(--text)', fontSize: 14 }}>Synthesizing predictions...</strong>
                     <span style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4, textAlign: 'center' }}>
                       Analyzing overhead coefficients, burn runways, and roster utilization indexes.
                     </span>
@@ -5287,7 +5329,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             </div>
 
             <div style={{ 
-              borderTop: '1px solid rgba(255,255,255,0.06)', 
+              borderTop: '1px solid var(--border)', 
               paddingTop: 16, 
               marginTop: 12,
               display: 'flex', 
@@ -5299,7 +5341,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 onClick={() => setShowAuditModal(false)}
                 style={{
                   background: 'transparent',
-                  border: '1px solid rgba(201, 168, 76, 0.4)',
+                  border: '1px solid rgba(241, 42, 89, 0.4)',
                   color: 'var(--gold)',
                   padding: '10px 22px',
                   borderRadius: '10px',
@@ -5313,12 +5355,12 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   justifyContent: 'center'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(201, 168, 76, 0.08)';
+                  e.currentTarget.style.background = 'rgba(241, 42, 89, 0.08)';
                   e.currentTarget.style.borderColor = 'var(--gold)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.borderColor = 'rgba(201, 168, 76, 0.4)';
+                  e.currentTarget.style.borderColor = 'rgba(241, 42, 89, 0.4)';
                 }}
               >
                 Dismiss Audit
@@ -5327,9 +5369,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 onClick={runAIFinancialAudit} 
                 disabled={isAuditing}
                 style={{
-                  background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)',
+                  background: 'linear-gradient(135deg, var(--gold) 0%, #FC68BE 100%)',
                   border: 'none',
-                  color: '#0e1118',
+                  color: '#ffffff',
                   padding: '10px 26px',
                   borderRadius: '10px',
                   fontWeight: '700',
@@ -5340,19 +5382,19 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(201, 168, 76, 0.2)',
+                  boxShadow: '0 4px 12px rgba(241, 42, 89, 0.2)',
                   opacity: isAuditing ? 0.6 : 1
                 }}
                 onMouseEnter={(e) => {
                   if (!isAuditing) {
                     e.currentTarget.style.transform = 'translateY(-1px)';
-                    e.currentTarget.style.boxShadow = '0 6px 18px rgba(201, 168, 76, 0.35)';
+                    e.currentTarget.style.boxShadow = '0 6px 18px rgba(241, 42, 89, 0.35)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!isAuditing) {
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(201, 168, 76, 0.2)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(241, 42, 89, 0.2)';
                   }
                 }}
               >
@@ -5375,7 +5417,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             </div>
 
             <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 16, lineHeight: 1.5 }}>
-              Rejecting appointment for <strong style={{ color: '#fff' }}>{rejectionModalBooking.customer}</strong> ({rejectionModalBooking.service} on {rejectionModalBooking.date} at {format12Hour(rejectionModalBooking.time)}).
+              Rejecting appointment for <strong style={{ color: 'var(--text)' }}>{rejectionModalBooking.customer}</strong> ({rejectionModalBooking.service} on {rejectionModalBooking.date} at {format12Hour(rejectionModalBooking.time)}).
             </p>
 
             <div className="input-group" style={{ marginBottom: 14 }}>
@@ -5383,10 +5425,10 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               <select 
                 value={selectedPresetReason} 
                 onChange={e => { setSelectedPresetReason(e.target.value); setManualRejectionReason(''); }}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--border)' }}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: 8, background: 'var(--bg-input, var(--bg-card))', color: 'var(--text)', border: '1px solid var(--border)' }}
               >
                 {PRESET_REJECTION_REASONS.map((r, idx) => (
-                  <option key={idx} value={r} style={{ background: '#111', color: '#fff' }}>{r}</option>
+                  <option key={idx} value={r} style={{ background: 'var(--bg-card)', color: 'var(--text)' }}>{r}</option>
                 ))}
               </select>
             </div>
@@ -5398,7 +5440,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 placeholder="e.g. Salon is undergoing emergency maintenance or stylist called in sick..."
                 value={manualRejectionReason}
                 onChange={e => setManualRejectionReason(e.target.value)}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--border)', fontFamily: 'var(--font-body)', fontSize: 13 }}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: 8, background: 'var(--bg-input, var(--bg-card))', color: 'var(--text)', border: '1px solid var(--border)', fontFamily: 'var(--font-body)', fontSize: 13 }}
               />
             </div>
 
@@ -5420,10 +5462,10 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
               maxWidth: '720px',
               width: '95%',
               padding: '0',
-              background: '#0e1118',
-              border: '1px solid rgba(201, 168, 76, 0.3)',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
               borderRadius: '16px',
-              boxShadow: '0 24px 64px rgba(0,0,0,0.85)',
+              boxShadow: 'var(--shadow-lg)',
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
@@ -5433,21 +5475,21 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             {/* Modal Header with Month Controls & Operational Intelligence */}
             <div style={{
               padding: '16px 24px',
-              borderBottom: '1px solid rgba(255,255,255,0.08)',
+              borderBottom: '1px solid var(--border)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              background: 'rgba(255,255,255,0.02)',
+              background: 'var(--bg-card)',
               flexWrap: 'wrap',
               gap: 12
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{
                   width: 34, height: 34, borderRadius: 8,
-                  background: 'rgba(201, 168, 76, 0.15)',
+                  background: 'rgba(241, 42, 89, 0.15)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: 'var(--gold)',
-                  border: '1px solid rgba(201, 168, 76, 0.3)'
+                  border: '1px solid rgba(241, 42, 89, 0.3)'
                 }}>
                   <CalendarIcon size={17} />
                 </div>
@@ -5460,7 +5502,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                       {calendarMonthSummary.total} Bookings ({calendarMonthSummary.approved} Confirmed)
                     </span>
                   </div>
-                  <h3 style={{ margin: '2px 0 0', fontSize: '17px', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+                  <h3 style={{ margin: '2px 0 0', fontSize: '17px', color: 'var(--text)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
                     Monthly Booking Calendar
                   </h3>
                 </div>
@@ -5472,7 +5514,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   <button className="calendar-nav-btn" onClick={handlePrevMonth} title="Previous Month">
                     <ChevronLeftIcon size={14} />
                   </button>
-                  <span className="calendar-month-title" style={{ minWidth: 130, textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--text-white)' }}>
+                  <span className="calendar-month-title" style={{ minWidth: 130, textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
                     {calendarMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
                   </span>
                   <button className="calendar-nav-btn" onClick={handleNextMonth} title="Next Month">
@@ -5538,7 +5580,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     Today
                   </span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--gold)', fontWeight: 600 }}>
-                    <span style={{ width: 7, height: 7, borderRadius: 2, background: 'rgba(201,168,76,0.3)', border: '1px solid var(--gold)' }} />
+                    <span style={{ width: 7, height: 7, borderRadius: 2, background: 'rgba(241, 42, 89,0.3)', border: '1px solid var(--gold)' }} />
                     Booked
                   </span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#f87171', fontWeight: 600 }}>
@@ -5553,7 +5595,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 {/* 1. Weekday Header Row */}
                 <div className="calendar-weekdays-row">
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, idx) => (
-                    <div key={d} className="calendar-weekday-col" style={{ color: (idx === 0 || idx === 6) ? '#d4af37' : 'var(--gold)' }}>
+                    <div key={d} className="calendar-weekday-col" style={{ color: (idx === 0 || idx === 6) ? 'var(--pink-crimson, var(--gold))' : 'var(--gold)' }}>
                       {d}
                     </div>
                   ))}
@@ -5570,7 +5612,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                         className={`calendar-real-cell ${item.isOtherMonth ? 'is-other-month' : ''} ${item.isWeekend ? 'is-weekend' : ''} ${item.isToday ? 'is-today-cell' : ''} ${isSelected ? 'is-selected' : ''}`}
                         style={{
                           boxShadow: isRangeStart ? 'inset 0 0 0 2px #38bdf8' : isSelected ? 'inset 0 0 0 2px var(--gold)' : 'none',
-                          background: isSelected ? 'rgba(201, 168, 76, 0.2)' : isRangeStart ? 'rgba(56,189,248,0.18)' : undefined
+                          background: isSelected ? 'rgba(241, 42, 89, 0.2)' : isRangeStart ? 'rgba(56,189,248,0.18)' : undefined
                         }}
                         onClick={() => {
                           const dateStr = item.dateStr;
@@ -5618,7 +5660,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                             <span style={{ 
                               fontSize: 12, 
                               fontWeight: item.isOtherMonth ? 500 : 700, 
-                              color: item.isOtherMonth ? 'rgba(255,255,255,0.3)' : item.isWeekend ? '#cbd5e1' : '#f8fafc' 
+                              color: item.isOtherMonth ? 'var(--text-dim)' : item.isWeekend ? 'var(--pink-crimson, var(--gold))' : 'var(--text)' 
                             }}>
                               {item.day}
                             </span>
@@ -5656,11 +5698,11 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             {/* Modal Footer with Status & Quick Actions */}
             <div style={{
               padding: '12px 24px',
-              borderTop: '1px solid rgba(255,255,255,0.06)',
+              borderTop: '1px solid var(--border)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              background: 'rgba(255,255,255,0.01)',
+              background: 'var(--bg-card)',
               flexWrap: 'wrap',
               gap: 8
             }}>
@@ -5728,10 +5770,10 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             style={{
               maxWidth: '480px',
               padding: '0',
-              background: '#0e1118',
-              border: '1px solid rgba(201, 168, 76, 0.3)',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
               borderRadius: '16px',
-              boxShadow: '0 24px 64px rgba(0,0,0,0.8)',
+              boxShadow: 'var(--shadow-lg)',
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column'
@@ -5739,7 +5781,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
           >
             <div style={{
               padding: '24px 28px',
-              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              borderBottom: '1px solid var(--border)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
@@ -5748,7 +5790,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 <p style={{ margin: 0, fontSize: '11px', color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>
                   EXPORT & ANALYTICS
                 </p>
-                <h3 style={{ margin: '4px 0 0', fontSize: '18px', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+                <h3 style={{ margin: '4px 0 0', fontSize: '18px', color: 'var(--text)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
                   Generate Report
                 </h3>
               </div>
@@ -5771,8 +5813,8 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 <div 
                   onClick={handleExportExcel}
                   style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
                     borderRadius: '12px',
                     padding: '20px 16px',
                     textAlign: 'center',
@@ -5789,8 +5831,8 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     e.currentTarget.style.transform = 'translateY(-2px)';
                   }}
                   onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                    e.currentTarget.style.background = 'var(--bg-card)';
                     e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >
@@ -5813,13 +5855,13 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     </svg>
                   </div>
                   <div>
-                    <h4 style={{ margin: '0 0 4px', fontSize: '14px', color: '#fff', fontWeight: 600 }}>Excel (.CSV)</h4>
+                    <h4 style={{ margin: '0 0 4px', fontSize: '14px', color: 'var(--text)', fontWeight: 600 }}>Excel (.CSV)</h4>
                     <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Spreadsheet data for Excel & Sheets</span>
                   </div>
                   <button 
                     type="button" 
                     className="btn small" 
-                    style={{ marginTop: 'auto', width: '100%', background: '#10b981', color: '#000', fontWeight: 700, fontSize: '12px', border: 'none' }}
+                    style={{ marginTop: 'auto', width: '100%', background: '#10b981', color: '#fff', fontWeight: 700, fontSize: '12px', border: 'none' }}
                   >
                     Export Excel
                   </button>
@@ -5829,8 +5871,8 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 <div 
                   onClick={handleGeneratePDF}
                   style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
                     borderRadius: '12px',
                     padding: '20px 16px',
                     textAlign: 'center',
@@ -5843,12 +5885,12 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.borderColor = 'var(--gold)';
-                    e.currentTarget.style.background = 'rgba(201, 168, 76, 0.08)';
+                    e.currentTarget.style.background = 'rgba(241, 42, 89, 0.08)';
                     e.currentTarget.style.transform = 'translateY(-2px)';
                   }}
                   onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                    e.currentTarget.style.background = 'var(--bg-card)';
                     e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >
@@ -5856,7 +5898,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     width: '44px',
                     height: '44px',
                     borderRadius: '10px',
-                    background: 'rgba(201, 168, 76, 0.15)',
+                    background: 'rgba(241, 42, 89, 0.15)',
                     color: 'var(--gold)',
                     display: 'flex',
                     alignItems: 'center',
@@ -5871,13 +5913,13 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                     </svg>
                   </div>
                   <div>
-                    <h4 style={{ margin: '0 0 4px', fontSize: '14px', color: '#fff', fontWeight: 600 }}>PDF Document</h4>
+                    <h4 style={{ margin: '0 0 4px', fontSize: '14px', color: 'var(--text)', fontWeight: 600 }}>PDF Document</h4>
                     <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Formatted print & PDF report</span>
                   </div>
                   <button 
                     type="button" 
                     className="btn small" 
-                    style={{ marginTop: 'auto', width: '100%', background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)', color: '#000', fontWeight: 700, fontSize: '12px', border: 'none' }}
+                    style={{ marginTop: 'auto', width: '100%', background: 'linear-gradient(135deg, var(--gold) 0%, #FC68BE 100%)', color: '#fff', fontWeight: 700, fontSize: '12px', border: 'none' }}
                   >
                     Generate PDF
                   </button>
@@ -5906,28 +5948,28 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
             style={{
               maxWidth: '420px',
               padding: '32px 28px',
-              background: 'linear-gradient(135deg, #18181c 0%, #111114 100%)',
-              border: `1px solid ${confirmDialog.danger ? 'rgba(239, 68, 68, 0.3)' : 'rgba(201, 168, 76, 0.3)'}`,
+              background: 'var(--bg-card)',
+              border: `1px solid ${confirmDialog.danger ? 'rgba(239, 68, 68, 0.3)' : 'var(--border-light)'}`,
               borderRadius: '16px',
-              boxShadow: '0 24px 64px rgba(0,0,0,0.8)',
+              boxShadow: 'var(--shadow-lg)',
               textAlign: 'center'
             }}
           >
             <div style={{
               width: '56px', height: '56px', borderRadius: '50%',
-              background: confirmDialog.danger ? 'rgba(239, 68, 68, 0.12)' : 'rgba(201, 168, 76, 0.12)',
-              border: `1px solid ${confirmDialog.danger ? 'rgba(239, 68, 68, 0.3)' : 'rgba(201, 168, 76, 0.3)'}`,
+              background: confirmDialog.danger ? 'rgba(239, 68, 68, 0.12)' : 'rgba(241, 42, 89, 0.12)',
+              border: `1px solid ${confirmDialog.danger ? 'rgba(239, 68, 68, 0.3)' : 'rgba(241, 42, 89, 0.25)'}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px',
-              color: confirmDialog.danger ? '#ef4444' : 'var(--gold)'
+              color: confirmDialog.danger ? '#ef4444' : 'var(--pink-primary)'
             }}>
               {confirmDialog.danger ? <AlertTriangleIcon size={28} /> : <AlertCircleIcon size={28} />}
             </div>
 
-            <h3 style={{ color: '#fff', fontSize: '19px', fontWeight: 700, margin: '0 0 8px', fontFamily: 'var(--font-display)' }}>
+            <h3 style={{ color: 'var(--text)', fontSize: '19px', fontWeight: 700, margin: '0 0 8px', fontFamily: 'var(--font-display)' }}>
               {confirmDialog.title}
             </h3>
             
-            <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '13px', lineHeight: 1.6, margin: '0 0 24px' }}>
+            <p style={{ color: 'var(--text-dim)', fontSize: '13px', lineHeight: 1.6, margin: '0 0 24px' }}>
               {confirmDialog.message}
             </p>
 
@@ -5948,9 +5990,9 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                 }}
                 style={{
                   flex: 1, padding: '12px', borderRadius: '8px', border: 'none',
-                  background: confirmDialog.danger ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, var(--gold), #b3924e)',
-                  color: confirmDialog.danger ? '#fff' : '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
-                  boxShadow: confirmDialog.danger ? '0 4px 14px rgba(239, 68, 68, 0.4)' : '0 4px 14px rgba(201, 168, 76, 0.4)'
+                  background: confirmDialog.danger ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, var(--pink-primary), var(--pink-accent))',
+                  color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                  boxShadow: confirmDialog.danger ? '0 4px 14px rgba(239, 68, 68, 0.4)' : '0 4px 14px rgba(241, 42, 89, 0.3)'
                 }}
               >
                 {confirmDialog.confirmText || 'Confirm'}

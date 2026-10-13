@@ -148,7 +148,7 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser, onLogou
                 onClick={() => setIsEditingProfile(true)} 
                 style={{ 
                   background: 'transparent',
-                  border: '1px solid rgba(201, 168, 76, 0.4)',
+                  border: '1px solid rgba(241, 42, 89, 0.4)',
                   color: 'var(--gold)',
                   padding: '6px 16px', 
                   fontSize: '12px', 
@@ -159,12 +159,12 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser, onLogou
                   fontFamily: 'var(--font-body)'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(201, 168, 76, 0.08)';
+                  e.currentTarget.style.background = 'rgba(241, 42, 89, 0.08)';
                   e.currentTarget.style.borderColor = 'var(--gold)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.borderColor = 'rgba(201, 168, 76, 0.4)';
+                  e.currentTarget.style.borderColor = 'rgba(241, 42, 89, 0.4)';
                 }}
               >
                 Edit Profile
@@ -189,9 +189,9 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser, onLogou
                   className="btn"
                   disabled={isSaving}
                   style={{
-                    background: isSaving ? 'rgba(201, 168, 76, 0.4)' : 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)',
+                    background: isSaving ? 'rgba(241, 42, 89, 0.4)' : 'linear-gradient(135deg, var(--gold, #F12A59) 0%, var(--pink-accent, #FC68BE) 100%)',
                     border: 'none',
-                    color: '#0e1118',
+                    color: '#ffffff',
                     padding: '10px 20px',
                     borderRadius: '10px',
                     fontWeight: '700',
@@ -199,17 +199,17 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser, onLogou
                     cursor: isSaving ? 'wait' : 'pointer',
                     fontFamily: 'var(--font-body)',
                     transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 12px rgba(201, 168, 76, 0.15)',
+                    boxShadow: '0 4px 12px rgba(241, 42, 89, 0.25)',
                     flex: 1,
                     opacity: isSaving ? 0.7 : 1
                   }}
                   onMouseEnter={(e) => {
                     if (!isSaving) e.currentTarget.style.transform = 'translateY(-1px)';
-                    if (!isSaving) e.currentTarget.style.boxShadow = '0 6px 18px rgba(201, 168, 76, 0.3)';
+                    if (!isSaving) e.currentTarget.style.boxShadow = '0 6px 18px rgba(241, 42, 89, 0.3)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(201, 168, 76, 0.15)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(241, 42, 89, 0.15)';
                   }}
                 >
                   {isSaving ? 'Saving...' : 'Save Changes'}
@@ -232,14 +232,14 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser, onLogou
                     flex: 1
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
-                    e.currentTarget.style.color = 'var(--text-white)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                    e.currentTarget.style.background = 'rgba(241, 42, 89, 0.08)';
+                    e.currentTarget.style.color = 'var(--text)';
+                    e.currentTarget.style.borderColor = 'var(--border-light)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = 'transparent';
                     e.currentTarget.style.color = 'var(--text-dim)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+                    e.currentTarget.style.borderColor = 'var(--border)';
                   }}
                 >
                   Cancel
@@ -278,7 +278,7 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser, onLogou
                   marginTop: 12,
                   width: '100%',
                   background: 'transparent',
-                  border: '1px solid rgba(201, 168, 76, 0.4)',
+                  border: '1px solid rgba(241, 42, 89, 0.4)',
                   color: 'var(--gold)',
                   padding: '10px 20px',
                   borderRadius: '10px',
@@ -293,12 +293,12 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser, onLogou
                   gap: '8px'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(201, 168, 76, 0.08)';
+                  e.currentTarget.style.background = 'rgba(241, 42, 89, 0.08)';
                   e.currentTarget.style.borderColor = 'var(--gold)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.borderColor = 'rgba(201, 168, 76, 0.4)';
+                  e.currentTarget.style.borderColor = 'rgba(241, 42, 89, 0.4)';
                 }}
               >
                 <LockIcon size={15} /> Change Password
@@ -360,9 +360,9 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser, onLogou
                   type="submit" 
                   className="btn"
                   style={{
-                    background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)',
+                    background: 'linear-gradient(135deg, var(--gold, #F12A59) 0%, var(--pink-accent, #FC68BE) 100%)',
                     border: 'none',
-                    color: '#0e1118',
+                    color: '#ffffff',
                     padding: '10px 20px',
                     borderRadius: '10px',
                     fontWeight: '700',
@@ -370,16 +370,16 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser, onLogou
                     cursor: 'pointer',
                     fontFamily: 'var(--font-body)',
                     transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 12px rgba(201, 168, 76, 0.15)',
+                    boxShadow: '0 4px 12px rgba(241, 42, 89, 0.25)',
                     flex: 1
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-1px)';
-                    e.currentTarget.style.boxShadow = '0 6px 18px rgba(201, 168, 76, 0.3)';
+                    e.currentTarget.style.boxShadow = '0 6px 18px rgba(241, 42, 89, 0.3)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(201, 168, 76, 0.15)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(241, 42, 89, 0.15)';
                   }}
                 >
                   Save Password
@@ -402,14 +402,14 @@ function ProfileModal({ currentUser, onClose, onShowToast, onUpdateUser, onLogou
                     flex: 1
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
-                    e.currentTarget.style.color = 'var(--text-white)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                    e.currentTarget.style.background = 'rgba(241, 42, 89, 0.08)';
+                    e.currentTarget.style.color = 'var(--text)';
+                    e.currentTarget.style.borderColor = 'var(--border-light)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = 'transparent';
                     e.currentTarget.style.color = 'var(--text-dim)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+                    e.currentTarget.style.borderColor = 'var(--border)';
                   }}
                 >
                   Cancel

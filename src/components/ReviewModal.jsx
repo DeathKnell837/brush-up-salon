@@ -26,12 +26,12 @@ export default function ReviewModal({ booking, salonName, onClose, onSubmit, onD
         display: 'flex',
         flexDirection: 'column',
         gridTemplateColumns: 'none', /* Bypasses App.css grid layout */
-        background: '#0e1118',
-        border: '1px solid rgba(201, 168, 76, 0.3)',
-        boxShadow: '0 24px 48px rgba(0, 0, 0, 0.6)'
+        background: 'var(--bg-card, #ffffff)',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-lg)'
       }} onClick={e => e.stopPropagation()}>
-        <div style={{ padding: '24px 30px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: 18, color: 'var(--text-white)', margin: 0, fontFamily: 'var(--font-display)', letterSpacing: '0.3px' }}>
+        <div style={{ padding: '24px 30px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ fontSize: 18, color: 'var(--text, #25191B)', margin: 0, fontFamily: 'var(--font-display)', letterSpacing: '0.3px' }}>
             {isEditing ? 'Edit Your Review' : 'Rate Your Experience'}
           </h2>
           <button className="close-btn" onClick={onClose}><CloseIcon size={20} /></button>
@@ -61,7 +61,7 @@ export default function ReviewModal({ booking, salonName, onClose, onSubmit, onD
                   key={star} type="button" 
                   style={{ 
                     background: 'none', border: 'none', fontSize: 40, cursor: 'pointer', 
-                    color: (hoverRating || rating) >= star ? 'var(--gold)' : 'rgba(255,255,255,0.1)',
+                    color: (hoverRating || rating) >= star ? 'var(--gold, #F12A59)' : 'var(--border-light, rgba(241, 42, 89, 0.2))',
                     transition: 'all 0.2s ease',
                     transform: (hoverRating || rating) >= star ? 'scale(1.15)' : 'scale(1)'
                   }}
@@ -80,7 +80,7 @@ export default function ReviewModal({ booking, salonName, onClose, onSubmit, onD
             <textarea 
               placeholder="Tell us what you loved..." 
               value={comment} onChange={e => setComment(e.target.value)} 
-              style={{ width: '100%', minHeight: 100, background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', borderRadius: 8, padding: 16, color: 'var(--text-white)', fontSize: 14, resize: 'vertical' }} 
+              style={{ width: '100%', minHeight: 100, background: 'var(--bg-soft, rgba(255, 255, 255, 0.9))', border: '1px solid var(--border)', borderRadius: 8, padding: 16, color: 'var(--text, #25191B)', fontSize: 14, resize: 'vertical' }} 
             />
           </div>
           
@@ -92,9 +92,9 @@ export default function ReviewModal({ booking, salonName, onClose, onSubmit, onD
               display: 'flex', 
               justifyContent: 'center', 
               alignItems: 'center',
-              background: rating < 1 ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)',
+              background: rating < 1 ? 'rgba(241, 42, 89, 0.15)' : 'linear-gradient(135deg, var(--gold, #F12A59) 0%, var(--pink-accent, #FC68BE) 100%)',
               border: 'none',
-              color: rating < 1 ? 'var(--text-dim)' : '#0e1118',
+              color: rating < 1 ? 'var(--text-dim)' : '#ffffff',
               padding: '12px 20px',
               borderRadius: '10px',
               fontWeight: '700',
@@ -102,19 +102,19 @@ export default function ReviewModal({ booking, salonName, onClose, onSubmit, onD
               cursor: rating < 1 ? 'not-allowed' : 'pointer',
               fontFamily: 'var(--font-body)',
               transition: 'all 0.3s ease',
-              boxShadow: rating < 1 ? 'none' : '0 4px 12px rgba(201, 168, 76, 0.2)',
+              boxShadow: rating < 1 ? 'none' : '0 4px 12px rgba(241, 42, 89, 0.25)',
               opacity: rating < 1 ? 0.6 : 1
             }}
             onMouseEnter={(e) => {
               if (rating >= 1) {
                 e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 6px 18px rgba(201, 168, 76, 0.35)';
+                e.currentTarget.style.boxShadow = '0 6px 18px rgba(241, 42, 89, 0.35)';
               }
             }}
             onMouseLeave={(e) => {
               if (rating >= 1) {
                 e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(201, 168, 76, 0.2)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(241, 42, 89, 0.2)';
               }
             }}
             disabled={rating < 1}

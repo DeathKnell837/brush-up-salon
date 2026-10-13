@@ -6,7 +6,7 @@ import {
   ScissorsIcon, CalendarIcon, CloseIcon, StoreIcon, CashIcon, GcashIcon
 } from './Icons';
 
-function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, showToast }) {
+function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, showToast, onBackToDemo, theme, onToggleTheme }) {
   const [selectedServices, setSelectedServices] = useState([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [bookName, setBookName] = useState(currentUser?.name || '');
@@ -206,8 +206,38 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
     <div className="app-shell customer-shell">
       {/* ─── Navbar ─── */}
       <nav className="navbar">
-        <div className="brand" style={{ cursor: 'pointer' }} onClick={onBack}><BrushUpLogo size="small" /></div>
+        <div className="brand" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }} onClick={onBack}>
+          <BrushUpLogo size="small" />
+          {onBackToDemo && (
+            <button 
+              className="demo-return-pill-btn" 
+              onClick={(e) => { e.stopPropagation(); onBackToDemo(); }}
+            >
+              ← 🌸 Demo Showcase
+            </button>
+          )}
+        </div>
         <div className="navbar-right">
+          {onToggleTheme && (
+            <button
+              className="demo-theme-toggle-btn"
+              onClick={onToggleTheme}
+              style={{ padding: '6px 14px', fontSize: '11px' }}
+              title="Toggle Theme"
+            >
+              {theme === 'blossom-light' ? (
+                <>
+                  <span className="theme-dot pink" />
+                  <span>🌸 Light</span>
+                </>
+              ) : (
+                <>
+                  <span className="theme-dot neon" />
+                  <span>🔮 Cyber</span>
+                </>
+              )}
+            </button>
+          )}
           <button className="btn small outline" onClick={onBack} style={{ gap: 6 }}>← Back</button>
           <button className="profile-btn" onClick={onOpenProfile}>
             {(currentUser?.name || 'U')[0].toUpperCase()}
@@ -218,7 +248,9 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
 
       {/* ═══ HERO ═══ */}
       <section className="sdp-hero" style={{
-        backgroundImage: `linear-gradient(to top, rgba(15,15,15,1) 0%, rgba(15,15,15,0.6) 50%, rgba(15,15,15,0.3) 100%), url(${salon.image})`,
+        backgroundImage: theme === 'cyber-pink'
+          ? `linear-gradient(to top, rgba(37,25,27,0.95) 0%, rgba(24,13,19,0.6) 50%, rgba(24,13,19,0.3) 100%), url(${salon.image})`
+          : `linear-gradient(to top, rgba(254, 240, 243, 0.96) 0%, rgba(255, 245, 247, 0.82) 50%, rgba(255, 245, 247, 0.45) 100%), url(${salon.image})`,
       }}>
         <div className="sdp-hero-content">
           <div className="sdp-hero-badge"><StoreIcon size={12} /> Partner Salon</div>
@@ -357,6 +389,7 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
               mode="single"
               height="320px"
               showDirectionsBtn={true}
+              theme={theme}
             />
           </section>
         </div>
@@ -400,13 +433,13 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     padding: '8px 12px',
-                    background: 'rgba(201,168,76,0.12)',
-                    border: '1px solid rgba(201,168,76,0.3)',
+                    background: 'rgba(241,42,89,0.08)',
+                    border: '1px solid rgba(241,42,89,0.22)',
                     borderRadius: 'var(--r)',
                     marginTop: 4
                   }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-white)' }}>Estimated Total</span>
-                    <strong style={{ fontSize: 14, color: 'var(--gold)', fontFamily: 'var(--font-display)' }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Estimated Total</span>
+                    <strong style={{ fontSize: 14, color: 'var(--pink-primary)', fontFamily: 'var(--font-display)' }}>
                       PHP {totalPrice.toLocaleString()}
                     </strong>
                   </div>

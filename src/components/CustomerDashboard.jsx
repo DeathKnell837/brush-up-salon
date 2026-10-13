@@ -84,16 +84,16 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload, isUploading }) {
         display: 'flex',
         flexDirection: 'column',
         gridTemplateColumns: 'none',
-        background: '#0e1118',
-        border: '1px solid rgba(201, 168, 76, 0.3)',
-        boxShadow: '0 24px 48px rgba(0, 0, 0, 0.6)',
+        background: 'var(--bg-card, #ffffff)',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-lg, 0 24px 48px rgba(0, 0, 0, 0.6))',
         borderRadius: '16px',
         animation: 'fadeUp 0.3s ease',
         width: 'min(450px, 94vw)'
       }} onClick={e => e.stopPropagation()}>
         
         {/* Header */}
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {/* GCash Pure CSS Brand Logo */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -102,7 +102,7 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload, isUploading }) {
                 GCash
               </span>
             </div>
-            <h2 style={{ fontSize: 15, color: 'var(--text-white)', margin: 0, fontFamily: 'var(--font-display)', fontWeight: 600 }}>
+            <h2 style={{ fontSize: 15, color: 'var(--text, #25191B)', margin: 0, fontFamily: 'var(--font-display)', fontWeight: 600 }}>
               Payment Details
             </h2>
           </div>
@@ -133,7 +133,7 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload, isUploading }) {
 
           {/* Salon Info */}
           <div style={{ marginBottom: 20, textAlign: 'center', width: '100%' }}>
-            <h3 style={{ fontSize: 18, color: 'var(--text-white)', margin: '0 0 4px 0', fontFamily: 'var(--font-display)' }}>
+            <h3 style={{ fontSize: 18, color: 'var(--text, #25191B)', margin: '0 0 4px 0', fontFamily: 'var(--font-display)' }}>
               {salon?.name}
             </h3>
             <p style={{ fontSize: 13, color: 'var(--text-dim)', margin: 0 }}>
@@ -266,8 +266,8 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload, isUploading }) {
           {/* Amount Box */}
           <div style={{
             width: '100%',
-            background: 'rgba(255, 255, 255, 0.02)',
-            border: '1px solid rgba(255, 255, 255, 0.06)',
+            background: 'var(--gold-dim, rgba(241, 42, 89, 0.08))',
+            border: '1px solid var(--border)',
             borderRadius: '12px',
             padding: '12px 16px',
             display: 'flex',
@@ -276,7 +276,7 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload, isUploading }) {
             marginBottom: 20
           }}>
             <span style={{ color: 'var(--text-dim)', fontSize: 13, fontWeight: 500 }}>Total Amount to Pay</span>
-            <span style={{ color: 'var(--gold)', fontSize: 18, fontWeight: 700 }}>₱{(booking.servicePrice || 0).toLocaleString()}</span>
+            <span style={{ color: 'var(--pink-primary, #F12A59)', fontSize: 18, fontWeight: 700 }}>₱{(booking.servicePrice || 0).toLocaleString()}</span>
           </div>
 
           {/* Proof Upload / Submitted Image */}
@@ -290,12 +290,12 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload, isUploading }) {
                 <img 
                   src={booking.paymentProof} 
                   alt="Proof" 
-                  style={{ width: '100%', maxHeight: 180, objectFit: 'contain', borderRadius: 8, border: '1px solid rgba(255, 255, 255, 0.1)', background: 'rgba(0,0,0,0.2)', padding: 4 }} 
+                  style={{ width: '100%', maxHeight: 180, objectFit: 'contain', borderRadius: 8, border: '1px solid var(--border)', background: 'rgba(0,0,0,0.05)', padding: 4 }} 
                 />
                 <button 
                   className="btn small outline" 
                   onClick={() => onUpload(booking.id)}
-                  style={{ marginTop: 4, width: '100%', border: '1px solid rgba(251, 191, 36, 0.3)', color: 'var(--gold)' }}
+                  style={{ marginTop: 4, width: '100%', border: '1px solid var(--border-light)', color: 'var(--gold, #F12A59)' }}
                 >
                   Change Proof Screenshot
                 </button>
@@ -306,11 +306,11 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload, isUploading }) {
                 style={{ pointerEvents: 'none', opacity: 0.7 }}
               >
                 <div style={{ 
-                  width: 28, height: 28, border: '3px solid rgba(201,168,76,0.3)', 
-                  borderTopColor: 'var(--gold)', borderRadius: '50%', 
+                  width: 28, height: 28, border: '3px solid rgba(241,42,89,0.3)', 
+                  borderTopColor: 'var(--pink-primary, #F12A59)', borderRadius: '50%', 
                   animation: 'spin 0.8s linear infinite', marginBottom: 8 
                 }} />
-                <div style={{ color: 'var(--text-white)', fontSize: 13, fontWeight: 600 }}>Uploading proof...</div>
+                <div style={{ color: 'var(--text, #25191B)', fontSize: 13, fontWeight: 600 }}>Uploading proof...</div>
                 <div style={{ color: 'var(--text-dim)', fontSize: 11, marginTop: 4 }}>Please wait, do not close this window</div>
               </div>
             ) : (
@@ -328,12 +328,12 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload, isUploading }) {
                   accept="image/*"
                   onChange={handleFileChange}
                 />
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--gold)', marginBottom: 8, display: 'inline-block' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--pink-primary, #F12A59)', marginBottom: 8, display: 'inline-block' }}>
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="17 8 12 3 7 8"></polyline>
                   <line x1="12" y1="3" x2="12" y2="15"></line>
                 </svg>
-                <div style={{ color: 'var(--text-white)', fontSize: 13, fontWeight: 600 }}>Drag & Drop Receipt</div>
+                <div style={{ color: 'var(--text, #25191B)', fontSize: 13, fontWeight: 600 }}>Drag & Drop Receipt</div>
                 <div style={{ color: 'var(--text-dim)', fontSize: 11, marginTop: 4 }}>or click to browse from device (Max 5MB)</div>
               </div>
             )}
@@ -345,7 +345,7 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload, isUploading }) {
 }
 
 
-function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, onOpenModal, onOpenProfile, syncTick, showToast }) {
+function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, onOpenModal, onOpenProfile, syncTick, showToast, onBackToDemo, onOpenAuth, theme, onToggleTheme }) {
   const [tab, setTab] = useState('salons');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'map'
   const [search, setSearch] = useState('');
@@ -424,7 +424,11 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
 
 
   const allBookings = getBookings();
-  const bookings = allBookings.filter(b => b.userId === currentUser?.user || (currentUser?.uid && b.userId === currentUser?.uid));
+  const bookings = allBookings.filter(b => 
+    b.userId === currentUser?.user || 
+    (currentUser?.uid && b.userId === currentUser?.uid) ||
+    (currentUser?.user === 'samantham' && (b.userId === 'demo_guest' || b.userId === 'samantham'))
+  );
   const paymentBooking = bookings.find(b => b.id === paymentBookingId);
 
   // Calculate customer statistics
@@ -644,13 +648,60 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
     <div className="app-shell customer-shell">
       {/* ─── Navbar ─── */}
       <nav className="navbar">
-        <div className="brand"><BrushUpLogo size="small" /></div>
+        <div className="brand" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <BrushUpLogo size="small" />
+          {onBackToDemo && (
+            <button 
+              className="demo-return-pill-btn"
+              onClick={onBackToDemo}
+              style={{ marginLeft: '8px' }}
+              title="Preview Marketing Demo Showcase"
+            >
+              🌸 Preview Demo Showcase
+            </button>
+          )}
+        </div>
         <div className="navbar-right" style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
-          <span className="pill">Welcome, {customerSurname}</span>
-          <button className="profile-btn" onClick={onOpenProfile}>
-            {(currentUser?.name || 'U')[0].toUpperCase()}
-          </button>
-          <button className="logout-btn" onClick={onLogout}>Logout</button>
+          {onToggleTheme && (
+            <button
+              className="demo-theme-toggle-btn"
+              onClick={onToggleTheme}
+              style={{ padding: '6px 14px', fontSize: '11px' }}
+              title="Toggle Theme"
+            >
+              {theme === 'blossom-light' ? (
+                <>
+                  <span className="theme-dot pink" />
+                  <span>🌸 Light</span>
+                </>
+              ) : (
+                <>
+                  <span className="theme-dot neon" />
+                  <span>🔮 Cyber</span>
+                </>
+              )}
+            </button>
+          )}
+          {currentUser ? (
+            <>
+              <span className="pill">Welcome, {customerSurname}</span>
+              <button className="profile-btn" onClick={onOpenProfile} title="Profile">
+                {(currentUser?.name || 'U')[0].toUpperCase()}
+              </button>
+              <button className="logout-btn" onClick={onLogout}>Logout</button>
+            </>
+          ) : (
+            <>
+              <span className="pill">Welcome, Guest</span>
+              <button 
+                className="btn small" 
+                onClick={onOpenAuth}
+                style={{ borderRadius: '999px', padding: '7px 18px', background: 'linear-gradient(135deg, #F12A59, #FC68BE)', color: '#fff', border: 'none', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}
+              >
+                Sign In
+              </button>
+            </>
+          )}
         </div>
       </nav>
 
@@ -659,9 +710,9 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
         const upSalon = salons.find(s => s.id === upcomingBooking.salonId);
         const salonLoc = upSalon?.address ? ` (${upSalon.address})` : '';
         return (
-          <div style={{ background: 'var(--gold-dim)', padding: '12px 24px', borderBottom: '1px solid rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-            <CalendarIcon size={16} style={{ color: 'var(--gold)' }} />
-            <span style={{ fontSize: 13, color: 'var(--gold)', fontWeight: 500 }}>
+          <div style={{ background: 'var(--gold-dim)', padding: '12px 24px', borderBottom: '1px solid rgba(241,42,89,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+            <CalendarIcon size={16} style={{ color: 'var(--pink-primary)' }} />
+            <span style={{ fontSize: 13, color: 'var(--pink-deep)', fontWeight: 600 }}>
               Reminder: You have an upcoming appointment at <strong>{upSalon?.name || 'Salon'}{salonLoc}</strong> on <strong>{upcomingBooking.date}</strong> at <strong>{format12Hour(upcomingBooking.time)}</strong>.
             </span>
           </div>
@@ -670,26 +721,37 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
 
       {/* ─── Hero Section ─── */}
       <section className="hero" style={{
-        backgroundImage: 'linear-gradient(to right, rgba(15,15,15,0.92), rgba(15,15,15,0.5)), url(/images/elegant.webp)',
-        backgroundSize: 'cover', backgroundPosition: 'center'
+        backgroundImage: theme === 'cyber-pink'
+          ? 'linear-gradient(to right, rgba(37,25,27,0.85), rgba(24,13,19,0.5)), url(/images/elegant.webp)'
+          : 'linear-gradient(to right, rgba(254, 240, 243, 0.94) 0%, rgba(255, 245, 247, 0.82) 55%, rgba(255, 245, 247, 0.45) 100%), url(/images/elegant.webp)',
+        backgroundSize: 'cover', 
+        backgroundPosition: 'center',
+        borderBottom: theme === 'cyber-pink' ? '1px solid rgba(241,42,89,0.2)' : '1px solid rgba(241,42,89,0.12)'
       }}>
         <div className="hero-content">
-          <h1 className="hero-title">Discover Your <em>Perfect</em> Salon Experience</h1>
-          <p className="hero-desc" style={{ fontSize: '15px', fontWeight: 600, color: 'var(--gold)', letterSpacing: '0.5px' }}>Book Now</p>
+          <h1 className="hero-title" style={{ color: theme === 'cyber-pink' ? '#FFFFFF' : 'var(--text, #25191B)' }}>
+            Discover Your <em>Perfect</em> Salon Experience
+          </h1>
+          <p className="hero-desc" style={{ fontSize: '15px', fontWeight: 600, color: 'var(--gold, #F12A59)', letterSpacing: '0.5px' }}>Book Now</p>
           <div className="hero-stats">
             <div className="hero-stat">
-              <strong>{salons.length}</strong>
-              <span>Partner Salons</span>
+              <strong style={{ color: theme === 'cyber-pink' ? '#FFFFFF' : 'var(--pink-primary, #F12A59)' }}>{salons.length || 7}</strong>
+              <span style={{ color: theme === 'cyber-pink' ? 'var(--text-dim)' : 'var(--text-dim, #7A5B64)' }}>Salons</span>
             </div>
-            <div className="hero-stat-divider" />
+            <div className="hero-stat-divider" style={{ background: theme === 'cyber-pink' ? 'rgba(255,255,255,0.1)' : 'rgba(241,42,89,0.18)' }} />
             <div className="hero-stat">
-              <strong>{totalServicesCount}</strong>
-              <span>Services</span>
+              <strong style={{ color: theme === 'cyber-pink' ? '#FFFFFF' : 'var(--pink-primary, #F12A59)' }}>{totalServicesCount || 147}</strong>
+              <span style={{ color: theme === 'cyber-pink' ? 'var(--text-dim)' : 'var(--text-dim, #7A5B64)' }}>Services</span>
             </div>
-            <div className="hero-stat-divider" />
+            <div className="hero-stat-divider" style={{ background: theme === 'cyber-pink' ? 'rgba(255,255,255,0.1)' : 'rgba(241,42,89,0.18)' }} />
             <div className="hero-stat">
-              <strong>{bookings.length}</strong>
-              <span>Your Bookings</span>
+              <strong style={{ color: theme === 'cyber-pink' ? '#FFFFFF' : 'var(--pink-primary, #F12A59)' }}>4.8★</strong>
+              <span style={{ color: theme === 'cyber-pink' ? 'var(--text-dim)' : 'var(--text-dim, #7A5B64)' }}>Rating</span>
+            </div>
+            <div className="hero-stat-divider" style={{ background: theme === 'cyber-pink' ? 'rgba(255,255,255,0.1)' : 'rgba(241,42,89,0.18)' }} />
+            <div className="hero-stat">
+              <strong style={{ color: theme === 'cyber-pink' ? '#FFFFFF' : 'var(--pink-primary, #F12A59)' }}>0m</strong>
+              <span style={{ color: theme === 'cyber-pink' ? 'var(--text-dim)' : 'var(--text-dim, #7A5B64)' }}>Wait Time</span>
             </div>
           </div>
         </div>
@@ -722,7 +784,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                 position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
-                background: 'rgba(255, 255, 255, 0.03)',
+                background: 'var(--bg-card, rgba(255, 255, 255, 0.85))',
                 border: '1px solid var(--border)',
                 borderRadius: '12px',
                 padding: '0 16px',
@@ -741,7 +803,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                     background: 'transparent',
                     border: 'none',
                     outline: 'none',
-                    color: 'var(--text-white)',
+                    color: 'var(--text, #25191B)',
                     fontSize: '14px',
                     fontFamily: 'var(--font-body)',
                     padding: 0,
@@ -822,7 +884,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                 <p className="section-label">INTERACTIVE DIRECTORY</p>
                 <h2 className="section-heading">Salons in Midsayap, Cotabato</h2>
                 <p style={{ color: 'var(--text-dim)', fontSize: '13px', margin: '4px 0 0' }}>
-                  Explore salon locations across Midsayap. Click on any gold pin to view details and book an appointment.
+                  Explore salon locations across Midsayap. Click on any studio pin to view details and book an appointment.
                 </p>
               </div>
               <SalonMap 
@@ -830,6 +892,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                 selectedSalonId={filterLoc !== 'All' ? filtered[0]?.id : null}
                 onSelectSalon={onSelectSalon}
                 height="480px"
+                theme={theme}
               />
             </section>
           )}
@@ -908,7 +971,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
             {bookings.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon"><InboxIcon size={48} /></div>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--text-white)', marginBottom: 8 }}>No Bookings Yet</h3>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--text, #25191B)', marginBottom: 8 }}>No Bookings Yet</h3>
                 <p>Browse our salon collection and book your first appointment.</p>
                 <button className="btn secondary" style={{ width: 'auto', marginTop: 20 }} onClick={() => setTab('salons')}>
                   <StoreIcon size={14} /> Explore Salons
@@ -917,18 +980,30 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
             ) : (
               <>
                 {/* Visual Analytics / Stats Panel */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                  <div style={{ background: 'var(--bg-card, rgba(255,255,255,0.85))', border: '1px solid var(--border)', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px', boxShadow: 'var(--shadow)' }}>
                     <span style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>Total Bookings</span>
-                    <span style={{ fontSize: '24px', fontWeight: 700, color: '#fff', fontFamily: 'var(--font-display)' }}>{bookings.length}</span>
+                    <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text, #25191B)', fontFamily: 'var(--font-display)' }}>{bookings.length}</span>
                   </div>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+                  <div style={{ background: 'var(--bg-card, rgba(255,255,255,0.85))', border: '1px solid var(--border)', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px', boxShadow: 'var(--shadow)' }}>
+                    <span style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>Completed</span>
+                    <span style={{ fontSize: '24px', fontWeight: 700, color: '#10B981', fontFamily: 'var(--font-display)' }}>{completedBookings.length}</span>
+                  </div>
+                  <div style={{ background: 'var(--bg-card, rgba(255,255,255,0.85))', border: '1px solid var(--border)', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px', boxShadow: 'var(--shadow)' }}>
+                    <span style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>Pending</span>
+                    <span style={{ fontSize: '24px', fontWeight: 700, color: '#F59E0B', fontFamily: 'var(--font-display)' }}>{bookings.filter(b => b.status === 'Pending').length}</span>
+                  </div>
+                  <div style={{ background: 'var(--bg-card, rgba(255,255,255,0.85))', border: '1px solid var(--border)', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px', boxShadow: 'var(--shadow)' }}>
+                    <span style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>Total Spent</span>
+                    <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--pink-primary, #F12A59)', fontFamily: 'var(--font-display)' }}>₱{totalSpent.toLocaleString()}</span>
+                  </div>
+                  <div style={{ background: 'var(--bg-card, rgba(255,255,255,0.85))', border: '1px solid var(--border)', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0, boxShadow: 'var(--shadow)' }}>
                     <span style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>Favorite Salon</span>
-                    <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={favoriteSalonName}>{favoriteSalonName}</span>
+                    <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text, #25191B)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={favoriteSalonName}>{favoriteSalonName}</span>
                   </div>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+                  <div style={{ background: 'var(--bg-card, rgba(255,255,255,0.85))', border: '1px solid var(--border)', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0, boxShadow: 'var(--shadow)' }}>
                     <span style={{ fontSize: '10px', color: 'var(--text-dim)', letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>Availed Services</span>
-                    <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={favoriteService}>{favoriteService}</span>
+                    <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text, #25191B)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={favoriteService}>{favoriteService}</span>
                   </div>
                 </div>
 
@@ -1026,7 +1101,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                             {/* 1. Pending Status banner */}
                             {b.status === 'Pending' && (
                               <>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center', padding: '0 12px', height: 38, minHeight: 38, maxHeight: 38, background: 'rgba(201, 168, 76, 0.05)', border: '1px solid rgba(201, 168, 76, 0.15)', borderRadius: 8, fontSize: 12, color: 'var(--gold)', fontWeight: 500, boxSizing: 'border-box', width: '100%' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center', padding: '0 12px', height: 38, minHeight: 38, maxHeight: 38, background: 'rgba(241, 42, 89, 0.05)', border: '1px solid rgba(241, 42, 89, 0.15)', borderRadius: 8, fontSize: 12, color: 'var(--gold)', fontWeight: 500, boxSizing: 'border-box', width: '100%' }}>
                                   <HourglassIcon size={13} />
                                   <span>Awaiting salon approval</span>
                                 </div>
@@ -1130,14 +1205,14 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                                           padding: '0 8px', 
                                           fontSize: 11.5, 
                                           fontWeight: 700, 
-                                          background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)', 
-                                          color: '#0e1118', 
+                                          background: 'linear-gradient(135deg, var(--gold, #F12A59) 0%, var(--pink-accent, #FC68BE) 100%)', 
+                                          color: '#ffffff', 
                                           display: 'flex', 
                                           alignItems: 'center', 
                                           justifyContent: 'center', 
                                           gap: 5,
                                           border: 'none',
-                                          boxShadow: '0 4px 10px rgba(201, 168, 76, 0.15)',
+                                          boxShadow: '0 4px 12px rgba(241, 42, 89, 0.25)',
                                           whiteSpace: 'nowrap',
                                           boxSizing: 'border-box',
                                           width: '100%'
@@ -1196,7 +1271,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
             {approvedBookings.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon"><InboxIcon size={48} /></div>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--text-white)', marginBottom: 8 }}>No Active Payments</h3>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--text)', marginBottom: 8 }}>No Active Payments</h3>
                 <p>You have no approved bookings awaiting payment at the moment.</p>
                 <button className="btn secondary" style={{ width: 'auto', marginTop: 20 }} onClick={() => setTab('salons')}>
                   <StoreIcon size={14} /> Explore Salons
@@ -1339,14 +1414,14 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                                     padding: '0 8px', 
                                     fontSize: 11.5, 
                                     fontWeight: 700, 
-                                    background: 'linear-gradient(135deg, var(--gold) 0%, #b3924e 100%)', 
-                                    color: '#0e1118', 
+                                    background: 'linear-gradient(135deg, var(--gold, #F12A59) 0%, var(--pink-accent, #FC68BE) 100%)', 
+                                    color: '#ffffff', 
                                     display: 'flex', 
                                     alignItems: 'center', 
                                     justifyContent: 'center', 
                                     gap: 5,
                                     border: 'none',
-                                    boxShadow: '0 4px 10px rgba(201, 168, 76, 0.15)',
+                                    boxShadow: '0 4px 12px rgba(241, 42, 89, 0.25)',
                                     whiteSpace: 'nowrap',
                                     boxSizing: 'border-box',
                                     width: '100%'

@@ -61,14 +61,14 @@ function BookingModal({ salon, initialDetails, onClose, onSubmit, currentUser })
 
             {reviews.length > 0 && (
               <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-                <h3 style={{ fontSize: 13, color: 'var(--text-white)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <h3 style={{ fontSize: 13, color: 'var(--text)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                   Customer Reviews <span style={{ color: 'var(--text-dim)', fontSize: 11, fontWeight: 400 }}>({reviews.length})</span>
                 </h3>
                 <div className="booking-list" style={{ maxHeight: 180, gap: 8 }}>
                   {reviews.map(r => (
-                    <div key={r.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border)' }}>
+                    <div key={r.id} style={{ background: 'var(--bg-card, rgba(255,255,255,0.03))', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: r.reviewComment ? 6 : 0 }}>
-                        <strong style={{ fontSize: 13, color: 'var(--text-white)' }}>{r.customer.split(' ')[0]}</strong>
+                        <strong style={{ fontSize: 13, color: 'var(--text)' }}>{r.customer.split(' ')[0]}</strong>
                         <span style={{ color: 'var(--gold)', fontSize: 11, letterSpacing: 1 }}>{'★'.repeat(r.review)}{'☆'.repeat(5-r.review)}</span>
                       </div>
                       {r.reviewComment && <p style={{ fontSize: 12, color: 'var(--text-dim)', margin: 0, fontStyle: 'italic', lineHeight: 1.4 }}>"{r.reviewComment}"</p>}

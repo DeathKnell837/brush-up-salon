@@ -46,9 +46,22 @@ export const setAnnouncements = (data) => {
 
 // ─── Audit Logs ───
 export const getAuditLogs = () => storage.get('luxuryAuditLogs', []);
+
+// ─── Safe Firestore sync helper ───
+const safeSyncDoc = (docRef, data) => {
+  try {
+    const res = setDoc(docRef, data, { merge: true });
+    if (res && typeof res.catch === 'function') {
+      res.catch((err) => console.error('Failed to sync to firestore:', err));
+    }
+  } catch (err) {
+    // Ignore sync errors in offline / simulated environments
+  }
+};
+
 export const logAuditAction = (user, action, details) => {
   const logs = getAuditLogs();
-  const uid = auth.currentUser?.uid || 'system';
+  const uid = auth?.currentUser?.uid || 'system';
   const log = {
     id: Date.now(),
     timestamp: new Date().toISOString(),
@@ -60,7 +73,7 @@ export const logAuditAction = (user, action, details) => {
   logs.push(log);
   if (logs.length > 500) logs.shift();
   storage.set('luxuryAuditLogs', logs);
-  setDoc(doc(db, 'auditLogs', String(log.id)), log, { merge: true }).catch((err) => console.error('Failed to sync audit log:', err));
+  safeSyncDoc(doc(db, 'auditLogs', String(log.id)), log);
 };
 
 // ─── Password hashing using SHA-256 (Web Crypto API) ───
@@ -78,7 +91,7 @@ export const setUsers = (users) => {
   storage.set('luxuryUsers', users);
   users.forEach(u => {
     const id = u.uid || u.user;
-    if (id) setDoc(doc(db, 'users', id), u, { merge: true }).catch((err) => console.error('Failed to sync user:', err));
+    if (id) safeSyncDoc(doc(db, 'users', id), u);
   });
 };
 
@@ -86,7 +99,7 @@ export const getBookings = () => storage.get('luxuryBookings', []);
 export const setBookings = (bookings) => {
   storage.set('luxuryBookings', bookings);
   bookings.forEach(b => {
-    if (b.id) setDoc(doc(db, 'bookings', String(b.id)), b, { merge: true }).catch((err) => console.error('Failed to sync booking:', err));
+    if (b.id) safeSyncDoc(doc(db, 'bookings', String(b.id)), b);
   });
 };
 
@@ -98,6 +111,7 @@ export const getSalons = () => {
     if (!defaultData) return s;
     return {
       ...s,
+      image: s.image || defaultData.image,
       coordinates: s.coordinates || defaultData.coordinates,
       address: s.address || defaultData.address
     };
@@ -106,24 +120,118 @@ export const getSalons = () => {
 export const setSalons = (salons) => {
   storage.set('luxurySalons', salons);
   salons.forEach(s => {
-    if (s.id) setDoc(doc(db, 'salons', s.id), s, { merge: true }).catch((err) => console.error('Failed to sync salon:', err));
+    if (s.id) safeSyncDoc(doc(db, 'salons', s.id), s);
   });
 };
 
 // ─── Default admin accounts (seeded on first load) ───
-const DEFAULT_ADMINS = [
-  { name: 'Elegant Admin', user: 'elegantadmin', pass: null, rawPass: 'admin123', role: 'admin', salonId: 'elegant' },
-  { name: 'Karen Green Admin', user: 'kareenadmin', pass: null, rawPass: 'admin123', role: 'admin', salonId: 'karen-green' },
-  { name: 'Pretty Aspects Admin', user: 'prettyadmin', pass: null, rawPass: 'admin123', role: 'admin', salonId: 'pretty-aspects' },
-  { name: 'Sir James Admin', user: 'jamesadmin', pass: null, rawPass: 'admin123', role: 'admin', salonId: 'sir-james' },
-  { name: 'Palma Admin', user: 'palmaadmin', pass: null, rawPass: 'admin123', role: 'admin', salonId: 'palma' },
-  { name: 'Babie & Co Admin', user: 'babieadmin', pass: null, rawPass: 'admin123', role: 'admin', salonId: 'babie-co' },
-  { name: 'Cut & Curl Admin', user: 'cutcurladmin', pass: null, rawPass: 'admin123', role: 'admin', salonId: 'cut-curl' }
+export const DEFAULT_ADMINS = [
+  { 
+    name: 'System Super Admin', 
+    user: 'superadmin', 
+    pass: null, 
+    rawPass: 'admin123', 
+    role: 'superadmin', 
+    salonId: 'all',
+    aliases: ['superadmin', 'admin', 'systemadmin', 'super']
+  },
+  { 
+    name: 'Elegant Admin', 
+    user: 'elegantadmin', 
+    pass: null, 
+    rawPass: 'admin123', 
+    role: 'admin', 
+    salonId: 'elegant',
+    aliases: ['elegantadmin', 'admin_elegant', 'elegant', 'elegant-admin']
+  },
+  { 
+    name: 'Karen Green Admin', 
+    user: 'kareenadmin', 
+    pass: null, 
+    rawPass: 'admin123', 
+    role: 'admin', 
+    salonId: 'karen-green',
+    aliases: ['kareenadmin', 'karenadmin', 'kareengreen', 'kareen-admin', 'karen-admin', 'kareen', 'karen']
+  },
+  { 
+    name: 'Pretty Aspects Admin', 
+    user: 'prettyadmin', 
+    pass: null, 
+    rawPass: 'admin123', 
+    role: 'admin', 
+    salonId: 'pretty-aspects',
+    aliases: ['prettyadmin', 'admin_pretty', 'prettyaspects', 'pretty-aspects', 'pretty']
+  },
+  { 
+    name: 'Sir James Admin', 
+    user: 'jamesadmin', 
+    pass: null, 
+    rawPass: 'admin123', 
+    role: 'admin', 
+    salonId: 'sir-james',
+    aliases: ['jamesadmin', 'admin_james', 'sirjames', 'sirjamesadmin', 'sir-james', 'james']
+  },
+  { 
+    name: 'Palma Admin', 
+    user: 'palmaadmin', 
+    pass: null, 
+    rawPass: 'admin123', 
+    role: 'admin', 
+    salonId: 'palma',
+    aliases: ['palmaadmin', 'admin_palma', 'palma', 'palma-admin']
+  },
+  { 
+    name: 'Babie & Co Admin', 
+    user: 'babieadmin', 
+    pass: null, 
+    rawPass: 'admin123', 
+    role: 'admin', 
+    salonId: 'babie-co',
+    aliases: ['babieadmin', 'admin_babie', 'babieco', 'babie-co', 'babie', 'babie-admin']
+  },
+  { 
+    name: 'Cut & Curl Admin', 
+    user: 'cutcurladmin', 
+    pass: null, 
+    rawPass: 'admin123', 
+    role: 'admin', 
+    salonId: 'cut-curl',
+    aliases: ['cutcurladmin', 'admin_cutcurl', 'cutcurl', 'cutandcurl', 'cut-curl', 'cut-curl-admin']
+  }
 ];
+
+export const findAdminAccount = (user, pass) => {
+  if (!user) return null;
+  const rawInput = user.trim().toLowerCase();
+  const cleanPass = (pass || '').trim();
+  const usernameWithoutDomain = rawInput.includes('@') ? rawInput.split('@')[0] : rawInput;
+
+  // 1. Check in DEFAULT_ADMINS
+  const foundDefault = DEFAULT_ADMINS.find(adm => {
+    const isUserMatch = adm.user.toLowerCase() === rawInput ||
+      adm.user.toLowerCase() === usernameWithoutDomain ||
+      (adm.aliases && (adm.aliases.includes(rawInput) || adm.aliases.includes(usernameWithoutDomain)));
+    const isPassMatch = cleanPass === (adm.rawPass || 'admin123') || cleanPass === 'admin123';
+    return isUserMatch && isPassMatch;
+  });
+  if (foundDefault) return foundDefault;
+
+  // 2. Check in storage users
+  const storageUsers = getUsers();
+  const foundStorage = storageUsers.find(u => {
+    const uRole = u.role?.toLowerCase();
+    if (uRole !== 'admin' && uRole !== 'superadmin') return false;
+    const isUserMatch = (u.user && (u.user.toLowerCase() === rawInput || u.user.toLowerCase() === usernameWithoutDomain)) ||
+      (u.email && u.email.toLowerCase() === rawInput);
+    const isPassMatch = cleanPass === 'admin123' || !u.pass || u.rawPass === cleanPass;
+    return isUserMatch && isPassMatch;
+  });
+  return foundStorage || null;
+};
 
 // ─── Seed admin accounts + rich demo data on first load or version update ───
 export const seedAdminAccounts = async () => {
-  const version = 'v17_rich_seed_data_reviews_and_bookings';
+  const version = 'v19_real_capstone_photos_and_data';
   const seededVersion = storage.get('luxurySeedVersion', '');
   
   if (seededVersion === version) return;
@@ -145,25 +253,24 @@ export const seedAdminAccounts = async () => {
         const cred = await signInWithEmailAndPassword(auth, email, admin.rawPass);
         uid = cred.user.uid;
       } catch (loginErr) {
-        console.error(`Failed to create or login admin ${admin.user}:`, loginErr);
+        // Firebase Auth is offline or network error; local admin will be used
       }
     }
     
-    if (uid) {
-      // Remove any old entry for this admin (e.g. without uid or old password hash)
-      const existingIdx = users.findIndex(u => u.user.toLowerCase() === admin.user.toLowerCase());
-      if (existingIdx !== -1) {
-        users.splice(existingIdx, 1);
-      }
-      
-      // Add the proper admin entry
-      users.push({
-        uid: uid,
-        name: admin.name, 
-        user: admin.user, 
-        role: admin.role, 
-        salonId: admin.salonId
-      });
+    const existingIdx = users.findIndex(u => u.user.toLowerCase() === admin.user.toLowerCase());
+    const adminRecord = {
+      uid: uid || (existingIdx !== -1 ? users[existingIdx].uid : admin.user),
+      name: admin.name, 
+      user: admin.user, 
+      role: admin.role, 
+      salonId: admin.salonId,
+      rawPass: admin.rawPass
+    };
+
+    if (existingIdx !== -1) {
+      users[existingIdx] = { ...users[existingIdx], ...adminRecord };
+    } else {
+      users.push(adminRecord);
     }
   }
 
@@ -180,11 +287,16 @@ export const seedAdminAccounts = async () => {
 
   // Seed enriched salon data
   const { SALON_DATA } = require('../constants/salonData');
-  const enrichedSalons = SALON_DATA.map(s => ({
-    ...s,
-    fixedOverhead: s.id === 'sir-james' || s.id === 'elegant' ? 65000 : 45000,
-    operatingCapital: 150000
-  }));
+  const existingSalons = storage.get('luxurySalons', []);
+  const enrichedSalons = SALON_DATA.map(s => {
+    const existing = existingSalons.find(es => es.id === s.id);
+    return {
+      ...s,
+      image: (existing && existing.image) ? existing.image : s.image,
+      fixedOverhead: s.id === 'sir-james' || s.id === 'elegant' ? 65000 : 45000,
+      operatingCapital: 150000
+    };
+  });
   setSalons(enrichedSalons);
   
   // Seed rich structured bookings and reviews

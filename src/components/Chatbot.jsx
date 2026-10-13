@@ -517,13 +517,13 @@ YOUR REAL CAPABILITIES & COMMANDS:
             <div key={s.id} style={{
               flex: '0 0 190px',
               scrollSnapAlign: 'start',
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(201, 168, 76, 0.25)',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
               borderRadius: 12,
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: '0 8px 20px rgba(0,0,0,0.45)'
+              boxShadow: 'var(--shadow)'
             }}>
               <div style={{ position: 'relative', height: '95px', width: '100%', overflow: 'hidden' }}>
                 <img src={s.image} alt={s.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -531,13 +531,13 @@ YOUR REAL CAPABILITIES & COMMANDS:
                   position: 'absolute', top: 6, right: 6,
                   background: 'rgba(10, 10, 15, 0.85)', backdropFilter: 'blur(4px)',
                   borderRadius: 4, padding: '2px 6px', fontSize: 10, color: 'var(--gold)', fontWeight: 700,
-                  border: '1px solid rgba(201, 168, 76, 0.3)'
+                  border: '1px solid rgba(241, 42, 89, 0.3)'
                 }}>
                   ★ {s.rating || '4.9'}
                 </div>
               </div>
               <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#f8fafc', fontFamily: 'var(--font-display)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-display)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {s.name}
                 </div>
                 <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -597,7 +597,7 @@ YOUR REAL CAPABILITIES & COMMANDS:
         {list.map((item, idx) => (
           <div key={idx} style={{
             background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(201,168,76,0.2)',
+            border: '1px solid rgba(241, 42, 89,0.2)',
             borderRadius: 10,
             padding: '8px 10px',
             display: 'flex',
@@ -605,7 +605,7 @@ YOUR REAL CAPABILITIES & COMMANDS:
             alignItems: 'center'
           }}>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-white)' }}>{item.service.name}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{item.service.name}</div>
               <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>{item.salon.name} · {item.service.duration || '45 mins'}</div>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', marginTop: 2 }}>{item.service.price}</div>
             </div>
@@ -647,14 +647,14 @@ YOUR REAL CAPABILITIES & COMMANDS:
         </div>
         {myBookings.slice(0, 3).map(b => (
           <div key={b.id} style={{
-            background: 'rgba(255, 255, 255, 0.04)',
-            border: '1px solid rgba(201, 168, 76, 0.3)',
+            background: 'var(--bg-card)',
+            border: '1px solid rgba(241, 42, 89, 0.3)',
             borderRadius: 8,
             padding: '8px 10px',
             fontSize: 11
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <strong style={{ color: '#fff' }}>{b.service}</strong>
+              <strong style={{ color: 'var(--text)' }}>{b.service}</strong>
               <span style={{
                 fontSize: 9,
                 fontWeight: 700,
@@ -706,7 +706,7 @@ YOUR REAL CAPABILITIES & COMMANDS:
       <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
         {bookings.slice(0, 3).map(b => (
           <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(229,62,62,0.06)', border: '1px solid rgba(229,62,62,0.15)', borderRadius: 8, padding: '8px 10px' }}>
-            <div><div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-white)' }}>{b.service}</div><div style={{ fontSize: 10, color: 'var(--text-dim)' }}>{b.date} · {b.time}</div></div>
+            <div><div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{b.service}</div><div style={{ fontSize: 10, color: 'var(--text-dim)' }}>{b.date} · {b.time}</div></div>
             <button onClick={() => handleCancelBooking(b.id)} style={{ fontSize: 10, padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(229,62,62,0.3)', background: 'rgba(229,62,62,0.08)', color: '#fc8181', cursor: 'pointer', fontFamily: 'var(--font-body)', fontWeight: 600 }}>Cancel</button>
           </div>
         ))}
@@ -720,7 +720,7 @@ YOUR REAL CAPABILITIES & COMMANDS:
         <strong style={{ fontSize: 11, color: 'var(--gold)', letterSpacing: 0.5 }}>Available Slots (Next 3 Days)</strong>
         <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {['10:00 AM', '1:00 PM', '3:30 PM', '5:00 PM'].map(t => (
-                <span key={t} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 4, background: 'rgba(201,168,76,0.15)', color: 'var(--gold)' }}>{t}</span>
+                <span key={t} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 4, background: 'rgba(241, 42, 89,0.15)', color: 'var(--gold)' }}>{t}</span>
             ))}
         </div>
       </div>
@@ -731,13 +731,13 @@ YOUR REAL CAPABILITIES & COMMANDS:
     const today = new Date().toISOString().split('T')[0];
     const bookings = getBookings().filter(b => b.salonId === currentUser?.salonId && b.date === today && b.status === 'Approved');
     return (
-      <div style={{ marginTop: 10, background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: 10 }}>
+      <div style={{ marginTop: 10, background: 'var(--bg-input, rgba(241, 42, 89, 0.05))', border: '1px solid var(--border)', borderRadius: 8, padding: 10 }}>
         <strong style={{ fontSize: 11, color: 'var(--gold)', letterSpacing: 0.5 }}>TODAY'S SCHEDULE</strong>
         {bookings.length === 0 ? <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4 }}>No approved appointments today.</p> : (
           <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
             {bookings.map(b => (
-              <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <span style={{ color: 'var(--text-white)', fontWeight: 500 }}>{b.time} — {b.customer}</span>
+              <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
+                <span style={{ color: 'var(--text)', fontWeight: 500 }}>{b.time} — {b.customer}</span>
                 <span style={{ color: 'var(--gold)' }}>{b.service}</span>
               </div>
             ))}
@@ -762,8 +762,8 @@ YOUR REAL CAPABILITIES & COMMANDS:
           }, 0);
           const pending = sb.filter(b => b.status === 'Pending').length;
           return (
-            <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', borderRadius: 6, padding: '6px 10px', fontSize: 11 }}>
-              <span style={{ color: 'var(--text-white)', fontWeight: 500 }}>{s.name}</span>
+            <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-input, rgba(241, 42, 89, 0.05))', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 10px', fontSize: 11 }}>
+              <span style={{ color: 'var(--text)', fontWeight: 500 }}>{s.name}</span>
               <span style={{ color: 'var(--gold)' }}>₱{rev.toLocaleString()} · {sb.length}b · {pending}p</span>
             </div>
           );
@@ -785,10 +785,10 @@ YOUR REAL CAPABILITIES & COMMANDS:
       return sum + (svc ? parseFloat(svc.price.replace(/[^0-9.]/g, '') || 0) : 0);
     }, 0);
     return (
-      <div style={{ marginTop: 10, background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: 10 }}>
+      <div style={{ marginTop: 10, background: 'var(--bg-input, rgba(241, 42, 89, 0.05))', border: '1px solid var(--border)', borderRadius: 8, padding: 10 }}>
         <strong style={{ fontSize: 11, color: 'var(--gold)', letterSpacing: 0.5 }}>NETWORK OVERVIEW</strong>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginTop: 8 }}>
-          <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-white)' }}>{total}</div><div style={{ fontSize: 9, color: 'var(--text-dim)' }}>BOOKINGS</div></div>
+          <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{total}</div><div style={{ fontSize: 9, color: 'var(--text-dim)' }}>BOOKINGS</div></div>
           <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, fontWeight: 700, color: '#4ade80' }}>{completed}</div><div style={{ fontSize: 9, color: 'var(--text-dim)' }}>DONE</div></div>
           <div style={{ textAlign: 'center' }}><div style={{ fontSize: 16, fontWeight: 700, color: 'var(--gold)' }}>₱{totalRev.toLocaleString()}</div><div style={{ fontSize: 9, color: 'var(--text-dim)' }}>REVENUE</div></div>
         </div>
@@ -801,20 +801,20 @@ YOUR REAL CAPABILITIES & COMMANDS:
   const uiConfig = {
     container: {
       position: 'fixed', zIndex: 10000, display: 'flex', flexDirection: 'column', overflow: 'hidden',
-      ...(isCustomer ? { bottom: '30px', right: '30px', width: '380px', height: '520px', backgroundColor: 'rgba(20,20,20,0.85)', backdropFilter: 'blur(16px)', borderRadius: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', border: '1px solid rgba(201,168,76,0.2)' } : {}),
-      ...(isAdmin ? { top: 0, right: 0, bottom: 0, width: '400px', height: '100vh', backgroundColor: 'var(--bg-card)', borderRadius: '0', boxShadow: '-10px 0 30px rgba(0,0,0,0.5)', borderLeft: '1px solid var(--border)' } : {}),
+      ...(isCustomer ? { bottom: '30px', right: '30px', width: '380px', height: '520px', backgroundColor: 'var(--bg-card)', backdropFilter: 'blur(16px)', borderRadius: '24px', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--border)' } : {}),
+      ...(isAdmin ? { top: 0, right: 0, bottom: 0, width: '400px', height: '100vh', backgroundColor: 'var(--bg-card)', borderRadius: '0', boxShadow: 'var(--shadow-lg)', borderLeft: '1px solid var(--border)' } : {}),
       ...(isSuperAdmin ? { bottom: '30px', right: '30px', width: '380px', height: '520px', backgroundColor: '#050d1a', borderRadius: '8px', boxShadow: '0 0 20px rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)' } : {})
     },
     header: {
       padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      ...(isCustomer ? { background: 'transparent', borderBottom: '1px solid rgba(255,255,255,0.05)' } : {}),
-      ...(isAdmin ? { background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid var(--border)' } : {}),
+      ...(isCustomer ? { background: 'transparent', borderBottom: '1px solid var(--border)' } : {}),
+      ...(isAdmin ? { background: 'var(--bg-card)', borderBottom: '1px solid var(--border)' } : {}),
       ...(isSuperAdmin ? { background: '#030811', borderBottom: '1px solid rgba(56, 189, 248, 0.3)' } : {})
     },
     headerTitle: {
       margin: 0, fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px',
       ...(isCustomer ? { color: 'var(--gold)' } : {}),
-      ...(isAdmin ? { color: 'var(--text-white)', fontWeight: 'bold' } : {}),
+      ...(isAdmin ? { color: 'var(--text)', fontWeight: 'bold' } : {}),
       ...(isSuperAdmin ? { color: '#ffd700', fontFamily: 'monospace', letterSpacing: '1px' } : {})
     },
     headerSubtitle: {
@@ -833,40 +833,40 @@ YOUR REAL CAPABILITIES & COMMANDS:
     },
     botMessage: {
       padding: '10px 14px', fontSize: '13px', lineHeight: '1.5',
-      ...(isCustomer ? { background: 'rgba(201,168,76,0.1)', color: 'var(--text-white)', borderRadius: '16px 16px 16px 4px', border: '1px solid rgba(201,168,76,0.2)' } : {}),
-      ...(isAdmin ? { background: 'rgba(255,255,255,0.05)', color: 'var(--text-white)', borderRadius: '8px', borderLeft: '3px solid var(--success)' } : {}),
+      ...(isCustomer ? { background: 'rgba(241, 42, 89,0.08)', color: 'var(--text)', borderRadius: '16px 16px 16px 4px', border: '1px solid var(--border)' } : {}),
+      ...(isAdmin ? { background: 'var(--bg-input, rgba(241, 42, 89, 0.04))', color: 'var(--text)', borderRadius: '8px', borderLeft: '3px solid var(--success)' } : {}),
       ...(isSuperAdmin ? { background: '#0a1526', color: '#ffd700', borderRadius: '4px', fontFamily: 'monospace', border: '1px solid rgba(56, 189, 248, 0.2)' } : {})
     },
     userMessage: {
       padding: '10px 14px', fontSize: '13px', lineHeight: '1.5',
-      ...(isCustomer ? { background: 'var(--gold)', color: '#000', borderRadius: '16px 16px 4px 16px', fontWeight: '500' } : {}),
+      ...(isCustomer ? { background: 'var(--gold)', color: '#fff', borderRadius: '16px 16px 4px 16px', fontWeight: '600' } : {}),
       ...(isAdmin ? { background: 'rgba(72,187,120,0.15)', color: 'var(--success)', borderRadius: '8px', fontWeight: '500' } : {}),
       ...(isSuperAdmin ? { background: 'transparent', color: '#ffd700', borderRadius: '4px', border: '1px solid #ffd700', fontFamily: 'monospace' } : {})
     },
     inputArea: {
       padding: '14px', display: 'flex', gap: '8px',
-      ...(isCustomer ? { background: 'transparent', borderTop: '1px solid rgba(255,255,255,0.05)' } : {}),
-      ...(isAdmin ? { background: 'rgba(0,0,0,0.2)', borderTop: '1px solid var(--border)' } : {}),
+      ...(isCustomer ? { background: 'transparent', borderTop: '1px solid var(--border)' } : {}),
+      ...(isAdmin ? { background: 'var(--bg-card)', borderTop: '1px solid var(--border)' } : {}),
       ...(isSuperAdmin ? { background: '#030811', borderTop: '1px solid rgba(56, 189, 248, 0.3)' } : {})
     },
     inputField: {
       flex: 1, padding: '11px 16px', border: 'none', outline: 'none', fontSize: '13px',
-      ...(isCustomer ? { background: 'rgba(0,0,0,0.4)', borderRadius: '20px', color: 'var(--text-white)', fontFamily: 'inherit', border: '1px solid rgba(255,255,255,0.1)' } : {}),
-      ...(isAdmin ? { background: '#0a0a0a', borderRadius: '4px', color: '#fff', fontFamily: 'inherit', border: '1px solid var(--border)' } : {}),
+      ...(isCustomer ? { background: 'var(--bg-input, rgba(241, 42, 89, 0.04))', borderRadius: '20px', color: 'var(--text)', fontFamily: 'inherit', border: '1px solid var(--border)' } : {}),
+      ...(isAdmin ? { background: 'var(--bg-input, rgba(241, 42, 89, 0.04))', borderRadius: '8px', color: 'var(--text)', fontFamily: 'inherit', border: '1px solid var(--border)' } : {}),
       ...(isSuperAdmin ? { background: 'transparent', borderRadius: '0', color: '#ffd700', fontFamily: 'monospace', borderBottom: '1px solid rgba(56, 189, 248, 0.3)' } : {})
     },
     sendBtn: {
       width: '42px', height: '42px', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-      ...(isCustomer ? { background: 'var(--gold)', borderRadius: '50%', color: '#000' } : {}),
-      ...(isAdmin ? { background: 'var(--success)', borderRadius: '4px', color: '#000' } : {}),
+      ...(isCustomer ? { background: 'var(--gold)', borderRadius: '50%', color: '#fff' } : {}),
+      ...(isAdmin ? { background: 'var(--success)', borderRadius: '4px', color: '#fff' } : {}),
       ...(isSuperAdmin ? { background: 'rgba(255, 215, 0, 0.1)', borderRadius: '4px', color: '#ffd700', border: '1px solid #ffd700' } : {})
     },
     fabStyle: {
       position: 'fixed', bottom: '30px', right: '30px', width: '60px', height: '60px',
       borderRadius: '50%', border: 'none', boxShadow: 'var(--shadow-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
       cursor: 'pointer', zIndex: 9999, transition: 'transform 0.3s ease', transform: isOpen ? 'scale(0)' : 'scale(1)',
-      ...(isCustomer ? { backgroundColor: 'var(--gold)', color: '#000' } : {}),
-      ...(isAdmin ? { backgroundColor: 'var(--success)', color: '#000', borderRadius: '8px' } : {}),
+      ...(isCustomer ? { backgroundColor: 'var(--gold)', color: '#fff' } : {}),
+      ...(isAdmin ? { backgroundColor: 'var(--success)', color: '#fff', borderRadius: '8px' } : {}),
       ...(isSuperAdmin ? { backgroundColor: '#050d1a', color: '#ffd700', border: '1px solid #ffd700' } : {})
     },
     motionInitial: isCustomer ? { opacity: 0, y: 50, scale: 0.9 } : isAdmin ? { x: '100%' } : { opacity: 0, y: 50, scale: 0.9 },
@@ -949,7 +949,7 @@ YOUR REAL CAPABILITIES & COMMANDS:
                               }
                             }} 
                             style={{ 
-                              background: 'rgba(201,168,76,0.18)', border: '1px solid var(--gold)',
+                              background: 'rgba(241, 42, 89,0.18)', border: '1px solid var(--gold)',
                               color: 'var(--gold)', padding: '3px 8px', borderRadius: 6,
                               fontSize: 11, fontWeight: 700, cursor: 'pointer', margin: '4px 0',
                               display: 'inline-flex', alignItems: 'center', gap: 4
@@ -991,7 +991,7 @@ YOUR REAL CAPABILITIES & COMMANDS:
               ))}
               
               {isTyping && (
-                <div style={{ alignSelf: 'flex-start', padding: '12px', backgroundColor: '#2a2a2a', borderRadius: '14px 14px 14px 4px' }}>
+                <div style={{ alignSelf: 'flex-start', padding: '12px', backgroundColor: 'var(--bg-input, rgba(241, 42, 89, 0.08))', border: '1px solid var(--border)', borderRadius: '14px 14px 14px 4px' }}>
                   <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.5 }} style={{ display: 'flex', gap: '4px' }}>
                     <div style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: 'var(--text-dim)' }} />
                     <div style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: 'var(--text-dim)' }} />

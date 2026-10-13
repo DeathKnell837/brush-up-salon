@@ -12,11 +12,21 @@ export default function SalonMap({
   onSelectSalon = null,
   height = '460px',
   mode = 'multi', // 'multi' or 'single'
-  showDirectionsBtn = false
+  showDirectionsBtn = false,
+  theme
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
+  const tileLayerRef = useRef(null);
   const markersRef = useRef({});
+
+  // Build a tile layer based on dark/light mode
+  const buildTileLayer = (isDark) =>
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      className: isDark ? 'luxury-dark-map-tiles' : 'luxury-light-map-tiles',
+      attribution: '&copy; <a href="https://openstreetmap.org" target="_blank" rel="noreferrer">OpenStreetMap</a>'
+    });
 
   // Initialize Map
   useEffect(() => {
@@ -32,19 +42,18 @@ export default function SalonMap({
       scrollWheelZoom: true,
     });
 
-    // Add OpenStreetMap tile layer with dark luxury theme filter (100% Free, zero watermark)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      className: 'luxury-dark-map-tiles',
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+    // Add Tile Layer — read the current theme at mount time
+    const isDarkAtMount = theme === 'cyber-pink' ||
+      (typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'cyber-pink');
+    const tileLayer = buildTileLayer(isDarkAtMount).addTo(map);
+    tileLayerRef.current = tileLayer;
 
     // Add luxury zoom control in bottom-right
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     // Add minimal attribution in bottom-left
     L.control.attribution({ position: 'bottomleft', prefix: false })
-      .addAttribution('Map data &copy; <a href="https://openstreetmap.org" target="_blank" rel="noreferrer">OpenStreetMap</a>')
+      .addAttribution('&copy; <a href="https://openstreetmap.org" target="_blank" rel="noreferrer">OpenStreetMap</a>')
       .addTo(map);
 
     mapInstanceRef.current = map;
@@ -64,7 +73,39 @@ export default function SalonMap({
         markersRef.current = {};
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Sync Tile Layer when Theme prop changes — also watches data-theme attribute changes via MutationObserver
+  useEffect(() => {
+    const updateTiles = () => {
+      const map = mapInstanceRef.current;
+      if (!map) return;
+
+      const isDark = theme === 'cyber-pink' ||
+        (typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'cyber-pink');
+
+      if (tileLayerRef.current) {
+        map.removeLayer(tileLayerRef.current);
+      }
+      tileLayerRef.current = buildTileLayer(isDark).addTo(map);
+    };
+
+    updateTiles();
+
+    if (typeof document !== 'undefined') {
+      const observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+            updateTiles();
+          }
+        }
+      });
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+      return () => observer.disconnect();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [theme]);
 
   // Update Markers & Bounds
   useEffect(() => {
@@ -128,7 +169,7 @@ export default function SalonMap({
           <div class="map-popup-meta">
             <div class="map-popup-meta-row">
               <span class="map-popup-rating">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="#c9a84c" stroke="#c9a84c" style="vertical-align: -1px; margin-right: 3px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="#D97706" stroke="#D97706" style="vertical-align: -1px; margin-right: 3px;">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                 </svg>
                 ${salon.avgRating || '5.0'} 
@@ -136,7 +177,7 @@ export default function SalonMap({
               </span>
             </div>
             <div class="map-popup-meta-row">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--pink-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
               </svg>
               <span class="map-popup-address">${salon.address || 'Midsayap, Cotabato'}</span>

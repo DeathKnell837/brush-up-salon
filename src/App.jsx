@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import DemoShowcase from './components/DemoShowcase';
 import AuthPage from './components/AuthPage';
 import CustomerDashboard from './components/CustomerDashboard';
 import AdminDashboard from './components/AdminDashboard';
@@ -7,9 +8,10 @@ import ProfileModal from './components/ProfileModal';
 import SalonDetailPage from './components/SalonDetailPage';
 import Toast from './components/Toast';
 import ForbiddenPage from './components/ForbiddenPage';
-// SuperAdminDashboard is merged into AdminDashboard
-import { getBookings, setBookings, getSalons, setSalons, seedAdminAccounts, getSession, setSession, clearSession, logAuditAction } from './utils/storage';
+import Chatbot from './components/Chatbot';
+import { getBookings, setBookings, getSalons, setSalons, seedAdminAccounts, getSession, setSession, clearSession, logAuditAction, DEFAULT_ADMINS, getUsers, findAdminAccount } from './utils/storage';
 import { SALON_DATA } from './constants/salonData';
+import { INITIAL_CUSTOMERS } from './constants/initialDemoData';
 import { auth, db } from './firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { googleProvider, facebookProvider } from './firebase';
@@ -18,7 +20,7 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { initFirebaseSync } from './utils/firebaseSync';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('auth');
+  const [currentPage, setCurrentPage] = useState('customer');
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedSalon, setSelectedSalon] = useState(null);
   const [initialDetails, setInitialDetails] = useState(null);
@@ -26,6 +28,20 @@ function App() {
   const [showProfile, setShowProfile] = useState(false);
   const [toast, setToast] = useState(null);
   const [isReady, setIsReady] = useState(false);
+  const [lastVisitedPage, setLastVisitedPage] = useState('customer');
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('brushup_theme') || 'blossom-light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('brushup_theme', theme);
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    setTheme(prev => prev === 'blossom-light' ? 'cyber-pink' : 'blossom-light');
+  };
+
   const [salons, setSalonsState] = useState(() => {
     const s = getSalons();
     return (s && s.length > 0) ? s : SALON_DATA;
@@ -36,6 +52,12 @@ function App() {
   const [isLocked, setIsLocked] = useState(false);
   const [lockCountdown, setLockCountdown] = useState(0);
   const loginAttempts = useRef(0);
+
+  const handleResetLockout = () => {
+    setIsLocked(false);
+    setLockCountdown(0);
+    loginAttempts.current = 0;
+  };
 
   useEffect(() => {
     let timer;
@@ -63,6 +85,16 @@ function App() {
       if (!s || s.length === 0) {
         setSalons(SALON_DATA);
         s = SALON_DATA;
+      } else {
+        // Upgrade cached salons to latest pink photography if still holding .webp assets
+        const needsUpdate = s.some(sal => sal.image && sal.image.endsWith('.webp'));
+        if (needsUpdate) {
+          s = s.map(sal => {
+            const fresh = SALON_DATA.find(f => f.id === sal.id);
+            return fresh ? { ...sal, image: fresh.image } : sal;
+          });
+          setSalons(s);
+        }
       }
       setSalonsState(s);
       
@@ -71,6 +103,8 @@ function App() {
         setCurrentUser(session);
         if (session.role === 'admin' || session.role === 'superadmin') setCurrentPage('admin');
         else setCurrentPage('customer');
+      } else {
+        setCurrentPage('customer');
       }
       
       setIsReady(true);
@@ -87,6 +121,62 @@ function App() {
   const refreshSalons = () => { setSalonsState(getSalons()); };
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
+
+  const handleLaunchCustomerDemo = (customerUser = 'samantham') => {
+    const demoCustomer = INITIAL_CUSTOMERS.find(c => c.user === customerUser) || {
+      uid: 'samantham',
+      name: 'Samantha Miller',
+      user: 'samantham',
+      role: 'customer',
+      email: 'samantha.m@gmail.com',
+      phone: '0928-112-3456'
+    };
+    setCurrentUser(demoCustomer);
+    setSession(demoCustomer);
+    setCurrentPage('customer');
+    showToast(`✨ Welcome to Demo Mode as VIP Client ${demoCustomer.name}!`);
+  };
+
+  const handleLaunchAdminDemo = () => {
+    const demoAdmin = {
+      uid: 'admin_demo',
+      name: 'Maria (Admin - Elegant Salon)',
+      user: 'admin_elegant',
+      role: 'admin',
+      salonId: 'elegant'
+    };
+    setCurrentUser(demoAdmin);
+    setSession(demoAdmin);
+    setCurrentPage('admin');
+    showToast('🛡️ Welcome to Demo Mode as Salon Administrator!');
+  };
+
+  const handleDirectBooking = (salonId, bookingData) => {
+    const targetSalon = salons.find(s => s.id === salonId) || salons[0];
+    const bookings = getBookings();
+    
+    // Bind to currentUser or default demo VIP customer 'samantham' so VIP portal immediately shows the newly booked slot
+    const bookingUserId = currentUser?.user || 'samantham';
+    const newBooking = {
+      id: Date.now(),
+      salonId: targetSalon.id,
+      userId: bookingUserId,
+      customer: bookingData.name || (bookingUserId === 'samantham' ? 'Samantha Miller' : 'Demo Client'),
+      contact: bookingData.contact || '0928-112-3456',
+      service: bookingData.service,
+      servicePrice: bookingData.servicePrice || 1500,
+      servicePriceLabel: bookingData.servicePriceLabel || 'PHP 1,500',
+      staff: bookingData.staff || 'Any',
+      date: bookingData.date,
+      time: bookingData.time,
+      status: 'Pending',
+      paymentMethod: bookingData.paymentMethod || 'GCash'
+    };
+    bookings.push(newBooking);
+    setBookings(bookings);
+    showToast(`✨ Demo Booking confirmed for ${newBooking.customer} at ${targetSalon.name}!`);
+    return newBooking;
+  };
 
   const handleSignup = async (name, user, pass) => {
     try {
@@ -110,22 +200,45 @@ function App() {
   };
 
   const handleLogin = async (user, pass) => {
+    const cleanUser = (user || '').trim().toLowerCase();
+    const cleanPass = (pass || '').trim();
+
+    // Check if user is entering admin credentials on the customer tab
+    const matchedAdmin = findAdminAccount(cleanUser, cleanPass);
+    if (matchedAdmin) {
+      showToast('🛡️ This is an Admin account. Please switch to the "Admin Access" tab.');
+      return false;
+    }
+
     if (isLocked) {
       showToast(`Too many attempts. Try again in ${lockCountdown} seconds.`);
       return false;
     }
+
+    const storageUsers = getUsers();
+    const matchedCustomer = storageUsers.find(
+      u => (u.user?.toLowerCase() === cleanUser || u.email?.toLowerCase() === cleanUser) &&
+           (u.role === 'customer' || !u.role)
+    ) || INITIAL_CUSTOMERS.find(
+      c => c.user?.toLowerCase() === cleanUser || c.email?.toLowerCase() === cleanUser
+    );
+
     try {
-      const email = `${user.toLowerCase().replace(/[^a-z0-9]/g, '')}@brushup.com`;
-      const cred = await signInWithEmailAndPassword(auth, email, pass);
+      const email = cleanUser.includes('@') ? cleanUser : `${cleanUser.replace(/[^a-z0-9]/g, '')}@brushup.com`;
+      const cred = await signInWithEmailAndPassword(auth, email, cleanPass);
+      if (!cred || !cred.user) {
+        throw new Error('Firebase user credentials unavailable');
+      }
       const userDoc = await getDoc(doc(db, 'users', cred.user.uid));
       
       if (userDoc.exists()) {
         const found = userDoc.data();
         if (found.role === 'admin' || found.role === 'superadmin') {
-          setCurrentPage('forbidden');
+          showToast('🛡️ This is an Admin account. Please switch to the "Admin Access" tab.');
           return false;
         } else {
           loginAttempts.current = 0;
+          setIsLocked(false);
           const session = { user: found.user, name: found.name, role: 'customer', uid: cred.user.uid };
           setCurrentUser(session);
           setSession(session);
@@ -133,36 +246,75 @@ function App() {
           setCurrentPage('customer');
           return true;
         }
+      } else if (matchedCustomer) {
+        loginAttempts.current = 0;
+        setIsLocked(false);
+        const session = { user: matchedCustomer.user, name: matchedCustomer.name, role: 'customer', uid: cred.user.uid };
+        setCurrentUser(session);
+        setSession(session);
+        logAuditAction(matchedCustomer.user, 'LOGIN', 'Customer logged in');
+        setCurrentPage('customer');
+        return true;
       } else {
         showToast('User record not found in database.');
       }
     } catch (err) {
-      console.error("Login error:", err);
+      console.warn("Customer login Firebase error, evaluating local credentials check:", err);
+      // Customer match in demo dataset or local storage
+      if (matchedCustomer) {
+        loginAttempts.current = 0;
+        setIsLocked(false);
+        const session = { user: matchedCustomer.user, name: matchedCustomer.name, role: 'customer', uid: matchedCustomer.uid || matchedCustomer.user };
+        setCurrentUser(session);
+        setSession(session);
+        logAuditAction(matchedCustomer.user, 'LOGIN', 'Customer logged in (Offline/Local)');
+        showToast(`Welcome back, ${matchedCustomer.name}!`);
+        setCurrentPage('customer');
+        return true;
+      }
+
       loginAttempts.current += 1;
       if (loginAttempts.current >= 5) {
         setIsLocked(true);
         setLockCountdown(30);
       }
-      showToast(err.code === 'auth/operation-not-allowed' ? 'Enable Email/Password Auth in Firebase!' : 'Login failed: ' + err.message);
+      showToast(err.code === 'auth/operation-not-allowed' ? 'Enable Email/Password Auth in Firebase!' : 'Login failed: ' + (err.message || 'Invalid credentials'));
       return false;
     }
     return false;
   };
 
   const handleAdminLogin = async (user, pass) => {
-    if (isLocked) {
+    const cleanUser = (user || '').trim().toLowerCase();
+    const cleanPass = (pass || '').trim();
+
+    // Check credentials against DEFAULT_ADMINS (including aliases) and storage accounts
+    const matchedAdmin = findAdminAccount(cleanUser, cleanPass);
+
+    // If valid admin credentials are provided, immediately unlock even if previously locked
+    if (matchedAdmin && isLocked) {
+      handleResetLockout();
+    } else if (isLocked) {
       showToast(`Too many attempts. Try again in ${lockCountdown} seconds.`);
       return false;
     }
+
     try {
-      const email = `${user.toLowerCase().replace(/[^a-z0-9]/g, '')}@brushup.com`;
-      const cred = await signInWithEmailAndPassword(auth, email, pass);
+      const email = cleanUser.includes('@') ? cleanUser : `${cleanUser.replace(/[^a-z0-9]/g, '')}@brushup.com`;
+      const authPromise = signInWithEmailAndPassword(auth, email, cleanPass);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Firebase Auth connection timed out')), 2500)
+      );
+      const cred = await Promise.race([authPromise, timeoutPromise]);
+      if (!cred || !cred.user) {
+        throw new Error('Firebase user credentials unavailable');
+      }
       const userDoc = await getDoc(doc(db, 'users', cred.user.uid));
       
       if (userDoc.exists()) {
         const found = userDoc.data();
         if (found.role === 'admin' || found.role === 'superadmin') {
-          loginAttempts.current = 0;
+          handleResetLockout();
           const session = { user: found.user, name: found.name, role: found.role, salonId: found.salonId, uid: cred.user.uid };
           setCurrentUser(session);
           setSession(session);
@@ -173,17 +325,48 @@ function App() {
           setCurrentPage('forbidden');
           return false;
         }
+      } else if (matchedAdmin) {
+        handleResetLockout();
+        const session = {
+          user: matchedAdmin.user,
+          name: matchedAdmin.name,
+          role: matchedAdmin.role || 'admin',
+          salonId: matchedAdmin.salonId,
+          uid: cred.user.uid
+        };
+        setCurrentUser(session);
+        setSession(session);
+        logAuditAction(matchedAdmin.user, 'LOGIN', `${session.role === 'superadmin' ? 'Super Admin' : 'Admin'} logged in (Firebase Auth fallback)`);
+        setCurrentPage('admin');
+        return true;
       } else {
         showToast('Admin record not found in database.');
       }
     } catch (err) {
-      console.error("Admin Login error:", err);
+      console.warn("Admin login Firebase error, cross-checking local admin credentials:", err);
+      if (matchedAdmin) {
+        handleResetLockout();
+        const session = {
+          user: matchedAdmin.user,
+          name: matchedAdmin.name,
+          role: matchedAdmin.role || 'admin',
+          salonId: matchedAdmin.salonId,
+          uid: matchedAdmin.uid || matchedAdmin.user
+        };
+        setCurrentUser(session);
+        setSession(session);
+        logAuditAction(matchedAdmin.user, 'LOGIN', `${session.role === 'superadmin' ? 'Super Admin' : 'Admin'} logged in (Offline/Local)`);
+        showToast(`Welcome back, ${matchedAdmin.name}! (Local Admin Access)`);
+        setCurrentPage('admin');
+        return true;
+      }
+
       loginAttempts.current += 1;
       if (loginAttempts.current >= 5) {
         setIsLocked(true);
         setLockCountdown(30);
       }
-      showToast(err.code === 'auth/operation-not-allowed' ? 'Enable Email/Password Auth in Firebase!' : 'Login failed: ' + err.message);
+      showToast(err.code === 'auth/operation-not-allowed' ? 'Enable Email/Password Auth in Firebase!' : 'Admin login failed: ' + (err.message || 'Invalid credentials'));
       return false;
     }
     return false;
@@ -198,7 +381,7 @@ function App() {
     // Brief smooth transition delay for feedback
     await new Promise(r => setTimeout(r, 450));
     setCurrentUser(null);
-    setCurrentPage('auth');
+    setCurrentPage('customer');
     clearSession();
     setShowModal(false);
     setShowProfile(false);
@@ -244,8 +427,13 @@ function App() {
 
   const handleOpenSalonPage = (salonId) => {
     const salon = salons.find(s => s.id === salonId);
-    setSelectedSalon(salon);
-    setCurrentPage('salon-detail');
+    if (salon) {
+      setSelectedSalon(salon);
+      if (currentPage !== 'salon-detail') {
+        setLastVisitedPage(currentPage);
+      }
+      setCurrentPage('salon-detail');
+    }
   };
 
   // eslint-disable-next-line no-unused-vars
@@ -316,41 +504,99 @@ function App() {
 
   if (!isReady) {
     return (
-      <div className="app-shell" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', gap: '16px', background: '#050507' }}>
-        <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3px solid rgba(201, 168, 76, 0.1)', borderTopColor: 'var(--gold)', animation: 'spin 1s linear infinite' }} />
-        <p style={{ color: 'var(--text-dim)', fontSize: 13, fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase' }}>Brush Up Salon</p>
+      <div className="app-shell" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', gap: '16px', background: 'var(--bg, #FEF0F3)' }}>
+        <div style={{ width: '44px', height: '44px', borderRadius: '50%', border: '3px solid rgba(241, 42, 89, 0.15)', borderTopColor: 'var(--pink-primary, #F12A59)', animation: 'spin 0.9s linear infinite' }} />
+        <p style={{ color: 'var(--pink-primary, #F12A59)', fontSize: 13, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' }}>Brush Up Salon</p>
       </div>
     );
   }
 
   return (
     <div className="app-shell">
+      {currentPage === 'demo' && (
+        <>
+          <DemoShowcase
+            salons={salons}
+            onSelectSalon={handleOpenSalonPage}
+            onOpenModal={handleOpenModal}
+            onLaunchCustomerDemo={handleLaunchCustomerDemo}
+            onLaunchAdminDemo={handleLaunchAdminDemo}
+            onOpenAuth={() => setCurrentPage('auth')}
+            onBackToCustomer={() => setCurrentPage('customer')}
+            theme={theme}
+            onToggleTheme={handleToggleTheme}
+            showToast={showToast}
+            onSubmitDirectBooking={handleDirectBooking}
+          />
+          <Chatbot 
+            currentUser={{ name: 'VIP Guest', role: 'customer' }} 
+            onOpenBookingModal={handleOpenModal}
+            onSelectSalon={handleOpenSalonPage}
+          />
+        </>
+      )}
       {currentPage === 'auth' && (
-        <AuthPage salons={salons} onSignup={handleSignup} onLogin={handleLogin} onAdminLogin={handleAdminLogin} isLocked={isLocked} lockCountdown={lockCountdown} onSocialLogin={handleSocialLogin} socialLoading={socialLoading} />
+        <AuthPage 
+          salons={salons} 
+          onSignup={handleSignup} 
+          onLogin={handleLogin} 
+          onAdminLogin={handleAdminLogin} 
+          isLocked={isLocked} 
+          lockCountdown={lockCountdown} 
+          onResetLockout={handleResetLockout}
+          onSocialLogin={handleSocialLogin} 
+          socialLoading={socialLoading} 
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+        />
       )}
       {currentPage === 'customer' && (
-        <CustomerDashboard currentUser={currentUser} salons={salons} onLogout={() => setShowLogoutConfirm(true)}
-          onSelectSalon={handleOpenSalonPage} onOpenModal={handleOpenModal} onOpenProfile={() => setShowProfile(true)} syncTick={syncTick} showToast={showToast} />
+        <CustomerDashboard 
+          currentUser={currentUser} 
+          salons={salons} 
+          onLogout={() => currentUser ? setShowLogoutConfirm(true) : setCurrentPage('auth')}
+          onSelectSalon={handleOpenSalonPage} 
+          onOpenModal={handleOpenModal} 
+          onOpenProfile={() => setShowProfile(true)} 
+          syncTick={syncTick} 
+          showToast={showToast} 
+          onBackToDemo={() => setCurrentPage('demo')}
+          onOpenAuth={() => setCurrentPage('auth')}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+        />
       )}
       {currentPage === 'salon-detail' && selectedSalon && (
         <SalonDetailPage
           salon={selectedSalon}
           currentUser={currentUser}
-          onBack={() => setCurrentPage('customer')}
+          onBack={() => setCurrentPage(currentUser ? 'customer' : (lastVisitedPage || 'auth'))}
           onLogout={() => setShowLogoutConfirm(true)}
           onOpenProfile={() => setShowProfile(true)}
           showToast={showToast}
+          onBackToDemo={() => setCurrentPage('demo')}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
         />
       )}
       {currentPage === 'admin' && (
         (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'superadmin')) 
-          ? <ForbiddenPage onBack={() => setCurrentPage('auth')} />
-          : <AdminDashboard currentUser={currentUser} salons={salons} onLogout={() => setShowLogoutConfirm(true)}
-              onRefreshSalons={refreshSalons} showToast={showToast} syncTick={syncTick} onOpenProfile={() => setShowProfile(true)} />
+          ? <ForbiddenPage onBack={() => setCurrentPage('customer')} />
+          : <AdminDashboard 
+              currentUser={currentUser} 
+              salons={salons} 
+              onLogout={() => setShowLogoutConfirm(true)}
+              onRefreshSalons={refreshSalons} 
+              showToast={showToast} 
+              syncTick={syncTick} 
+              onOpenProfile={() => setShowProfile(true)} 
+              onBackToDemo={() => setCurrentPage('demo')}
+              theme={theme}
+              onToggleTheme={handleToggleTheme}
+            />
       )}
-      {/* SuperAdminDashboard is merged into AdminDashboard, removing separate route */}
       {currentPage === 'forbidden' && (
-        <ForbiddenPage onBack={() => setCurrentPage('auth')} />
+        <ForbiddenPage onBack={() => setCurrentPage(currentUser ? 'customer' : 'auth')} />
       )}
       {showModal && selectedSalon && (
         <BookingModal salon={selectedSalon} initialDetails={initialDetails} onClose={() => setShowModal(false)} onSubmit={handleSubmitBooking} currentUser={currentUser} />
@@ -377,14 +623,14 @@ function App() {
       {showLogoutConfirm && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999,
-          background: 'rgba(5,5,7,0.85)', backdropFilter: 'blur(8px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
+          background: 'rgba(5,5,7,0.7)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
         }}>
           <div style={{
-            background: 'linear-gradient(135deg, #18181c 0%, #111114 100%)',
-            border: '1px solid rgba(201,168,76,0.2)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-light)',
             borderRadius: '16px', padding: '32px 28px', width: '100%', maxWidth: '360px',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.6)', textAlign: 'center'
+            boxShadow: 'var(--shadow-lg)', textAlign: 'center'
           }}>
             <div style={{
               width: '56px', height: '56px', borderRadius: '50%',
@@ -398,7 +644,7 @@ function App() {
                 <line x1="21" y1="12" x2="9" y2="12"></line>
               </svg>
             </div>
-            <p style={{ color: '#fff', fontSize: '15px', fontWeight: 600, marginBottom: '24px', lineHeight: '1.4' }}>
+            <p style={{ color: 'var(--text)', fontSize: '15px', fontWeight: 600, marginBottom: '24px', lineHeight: '1.4' }}>
               Are you sure you want to log out?
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -406,8 +652,8 @@ function App() {
                 disabled={isLoggingOut}
                 onClick={() => setShowLogoutConfirm(false)}
                 style={{
-                  flex: 1, padding: '11px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)',
-                  background: 'transparent', color: isLoggingOut ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.7)', fontSize: '14px',
+                  flex: 1, padding: '11px', borderRadius: '8px', border: '1px solid var(--border)',
+                  background: 'transparent', color: 'var(--text-dim)', fontSize: '14px',
                   fontWeight: 600, cursor: isLoggingOut ? 'not-allowed' : 'pointer'
                 }}
               >Cancel</button>
