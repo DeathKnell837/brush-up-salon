@@ -99,7 +99,8 @@ export const getBookings = () => {
   const list = storage.get('luxuryBookings', []);
   return list.map(b => {
     const isCash = (!b.paymentMethod || b.paymentMethod === 'Cash');
-    if (isCash && (b.appointmentFee === undefined || b.downpaymentAmount === undefined || b.remainingBalance === undefined)) {
+    const isPending = b.status === 'Pending';
+    if ((isCash || isPending) && (b.appointmentFee === undefined || b.downpaymentAmount === undefined || b.remainingBalance === undefined)) {
       const rawPrice = b.servicePrice ?? b.amount ?? 0;
       const price = typeof rawPrice === 'number'
         ? rawPrice

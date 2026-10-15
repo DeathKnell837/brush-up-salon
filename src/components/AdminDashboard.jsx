@@ -83,7 +83,7 @@ const TrustBadge = ({ userId, allBookings }) => {
   );
 };
 
-function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, showToast, syncTick, onOpenProfile, onBackToDemo, theme, onToggleTheme }) {
+function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, showToast = () => {}, syncTick, onOpenProfile, onBackToDemo, theme, onToggleTheme }) {
   const allSalons = getSalons();
   const isSuperAdmin = false;
   
@@ -260,9 +260,25 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
     if (idx !== -1) { all[idx].services = list; setSalons(all); onRefreshSalons(); }
   };
 
+  const handleApprove = (bookingId) => {
+    const all = getBookings();
+    const b = all.find(item => item.id === bookingId);
+    if (!b) return;
+    if (!b.isWalkIn && (!b.paymentProof || !String(b.paymentProof).trim())) {
+      showToast("Cannot approve: Customer must upload proof of payment for the 50% downpayment first.");
+      return;
+    }
+    updateStatus(bookingId, 'Approved');
+  };
+
   const updateStatus = (id, status, reason = '') => {
     const all = getBookings(); const i = all.findIndex(b => b.id === id);
     if (i !== -1) { 
+      const b = all[i];
+      if (status === 'Approved' && !b.isWalkIn && (!b.paymentProof || !String(b.paymentProof).trim())) {
+        showToast("Cannot approve: Customer must upload proof of payment for the 50% downpayment first.");
+        return;
+      } 
       all[i].status = status; 
       if (status === 'Approved') {
         all[i].approvedAt = new Date().toISOString();
@@ -273,14 +289,14 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
       if (status === 'Rejected') {
         all[i].rejectionReason = reason;
         all[i].rejectedAt = new Date().toISOString();
-        logAuditAction(currentUser.user || 'admin', 'REJECT_BOOKING', `Rejected booking ID ${id} (${all[i].customer} - ${all[i].service}): ${reason}`);
+        logAuditAction(currentUser?.user || 'admin', 'REJECT_BOOKING', `Rejected booking ID ${id} (${all[i].customer} - ${all[i].service}): ${reason}`);
       } else {
-        logAuditAction(currentUser.user || 'admin', 'UPDATE_BOOKING', `Marked booking ID ${id} as ${status}`);
+        logAuditAction(currentUser?.user || 'admin', 'UPDATE_BOOKING', `Marked booking ID ${id} as ${status}`);
       }
       setBookings(all); 
       setBookingsState(loadBookings()); 
+      showToast(`Booking ${status.toLowerCase()}.`);
     }
-    showToast(`Booking ${status.toLowerCase()}.`);
   };
 
   const handleConfirmRejection = () => {
@@ -2547,7 +2563,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                             return (
                               <React.Fragment key={b.id}>
                                 <tr 
-                                  className={`compact-booking-row ${isExpanded ? 'is-expanded' : ''}`}
+                                  className={`compact-booking-row compact-row ${isExpanded ? 'is-expanded' : ''}`}
                                   onClick={() => setExpandedBookingRows(p => ({ ...p, [b.id]: !p[b.id] }))}
                                 >
                                   {/* 1. Customer */}
@@ -2647,6 +2663,24 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                         Ref: <span style={{ color: 'var(--gold)' }}>{b.paymentReference}</span>
                                       </div>
                                     )}
+                                    <div style={{ marginTop: 4 }}>
+                                      {b.paymentProof ? (
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(74, 222, 128, 0.08)', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(74, 222, 128, 0.2)' }}>
+                                          <CheckCircleIcon size={10} style={{ color: '#4ade80' }} />
+                                          <span style={{ fontSize: 10, color: '#4ade80', fontWeight: 600 }}>Proof Uploaded</span>
+                                          <img 
+                                            src={b.paymentProof} 
+                                            alt="Proof" 
+                                            onClick={(e) => { e.stopPropagation(); window.open(b.paymentProof, '_blank'); }} 
+                                            style={{ width: 18, height: 18, objectFit: 'cover', borderRadius: 3, cursor: 'pointer', marginLeft: 2 }} 
+                                          />
+                                        </div>
+                                      ) : b.status === 'Pending' ? (
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--pink-primary, #F12A59)', background: 'rgba(241, 42, 89, 0.08)', padding: '2px 6px', borderRadius: 4, border: '1px solid rgba(241, 42, 89, 0.2)', fontWeight: 600 }}>
+                                          <HourglassIcon size={10} /> Awaiting 50% Proof
+                                        </div>
+                                      ) : null}
+                                    </div>
                                   </td>
 
                                   {/* 5. Amount */}
@@ -2654,7 +2688,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                     <strong style={{ color: 'var(--gold)', fontFamily: 'var(--font-display)', fontSize: 14 }}>
                                       {b.servicePriceLabel || (services.find(s => s.name === b.service)?.price || 'PHP 0')}
                                     </strong>
-                                    {(!b.paymentMethod || b.paymentMethod === 'Cash') && (() => {
+                                    {(() => {
                                       const svcPrice = b.servicePrice || 0;
                                       const apptFee = b.appointmentFee !== undefined ? b.appointmentFee : Math.round(svcPrice * 0.5);
                                       const remBal = b.remainingBalance !== undefined ? b.remainingBalance : (svcPrice - apptFee);
@@ -2683,7 +2717,17 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                     <div style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
                                       {b.status === 'Pending' && (
                                         <>
-                                          <button className="btn small" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => updateStatus(b.id, 'Approved')} title="Approve Booking">
+                                          <button 
+                                            className="btn small" 
+                                            style={{ 
+                                              padding: '4px 8px', 
+                                              fontSize: 11,
+                                              ...(!b.paymentProof ? { opacity: 0.5, cursor: 'not-allowed' } : {})
+                                            }} 
+                                            onClick={() => handleApprove(b.id)} 
+                                            title={!b.paymentProof ? "Customer has not uploaded 50% payment proof yet" : "Approve Booking"}
+                                            aria-disabled={!b.paymentProof}
+                                          >
                                             <CheckCircleIcon size={12} /> Approve
                                           </button>
                                           <button 
@@ -2758,7 +2802,7 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                             </div>
                                             <div style={{ fontSize: 12, color: 'var(--text)', lineHeight: 1.6 }}>
                                               <div><strong>Method:</strong> {b.paymentMethod || 'Cash'}</div>
-                                              {(!b.paymentMethod || b.paymentMethod === 'Cash') && (() => {
+                                              {(() => {
                                                 const svcPrice = b.servicePrice || 0;
                                                 const apptFee = b.appointmentFee !== undefined ? b.appointmentFee : Math.round(svcPrice * 0.5);
                                                 const remBal = b.remainingBalance !== undefined ? b.remainingBalance : (svcPrice - apptFee);
@@ -2770,10 +2814,10 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                                 );
                                               })()}
                                               {b.paymentReference && <div><strong>Reference:</strong> {b.paymentReference}</div>}
-                                              {b.paymentProof && (
+                                              {b.paymentProof ? (
                                                 <div style={{ marginTop: 6 }}>
                                                   <span style={{ fontSize: 11, color: '#4ade80', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-                                                    <CheckCircleIcon size={11} /> Proof Attached:
+                                                    <CheckCircleIcon size={11} /> Proof Attached (50% Downpayment):
                                                   </span>
                                                   <img 
                                                     src={b.paymentProof} 
@@ -2782,12 +2826,56 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                                     onClick={() => window.open(b.paymentProof, '_blank')}
                                                   />
                                                 </div>
-                                              )}
+                                              ) : b.status === 'Pending' ? (
+                                                <div style={{ marginTop: 6 }}>
+                                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(241, 42, 89, 0.08)', border: '1px solid rgba(241, 42, 89, 0.2)', padding: '4px 8px', borderRadius: 6, color: 'var(--pink-primary, #F12A59)', fontSize: 11, fontWeight: 600 }}>
+                                                    <HourglassIcon size={12} /> Awaiting 50% Downpayment Proof
+                                                  </span>
+                                                </div>
+                                              ) : null}
                                             </div>
                                           </div>
 
-                                          {/* Rejection / Review info if present */}
+                                          {/* Rejection / Review info if present, plus Quick Actions in Drawer */}
                                           <div>
+                                            {b.status === 'Pending' && (
+                                              <div style={{ marginBottom: 12 }}>
+                                                <div style={{ fontSize: 11, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 700, marginBottom: 6 }}>
+                                                  Quick Actions
+                                                </div>
+                                                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                                                  <button 
+                                                    className="btn small"
+                                                    style={{ 
+                                                      padding: '6px 12px', 
+                                                      fontSize: 12,
+                                                      ...((!b.paymentProof || !String(b.paymentProof).trim()) ? { opacity: 0.5, cursor: 'not-allowed' } : {})
+                                                    }}
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handleApprove(b.id);
+                                                    }}
+                                                    title={(!b.paymentProof || !String(b.paymentProof).trim()) ? "Customer has not uploaded 50% payment proof yet" : "Approve Booking"}
+                                                    aria-disabled={!b.paymentProof || !String(b.paymentProof).trim()}
+                                                  >
+                                                    <CheckCircleIcon size={12} /> Approve
+                                                  </button>
+                                                  <button 
+                                                    className="btn small secondary" 
+                                                    style={{ padding: '6px 12px', fontSize: 12 }}
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setRejectionModalBooking(b);
+                                                      setManualRejectionReason('');
+                                                      setSelectedPresetReason(PRESET_REJECTION_REASONS[0]);
+                                                    }}
+                                                    title="Reject Booking"
+                                                  >
+                                                    <XCircleIcon size={12} /> Reject
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            )}
                                             {b.rejectionReason && (
                                               <div style={{ padding: 10, borderRadius: 8, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
                                                 <div style={{ fontSize: 11, fontWeight: 700, color: '#f87171', marginBottom: 2 }}>
@@ -2938,9 +3026,8 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                                 )}
                               </div>
 
-                              {/* Payment proof indicator */}
-                              {/* Cash Downpayment breakdown */}
-                              {(!b.paymentMethod || b.paymentMethod === 'Cash') && (() => {
+                              {/* 50% Downpayment breakdown */}
+                              {(() => {
                                 const svcPrice = b.servicePrice || 0;
                                 const apptFee = b.appointmentFee !== undefined ? b.appointmentFee : Math.round(svcPrice * 0.5);
                                 const remBal = b.remainingBalance !== undefined ? b.remainingBalance : (svcPrice - apptFee);
@@ -2954,6 +3041,23 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                               })()}
 
                               {/* Payment proof indicator */}
+                              {b.status === 'Pending' && (
+                                <div style={{ marginTop: 8 }}>
+                                  {b.paymentProof ? (
+                                    <div className="payment-proof-admin" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px', background: 'rgba(74,222,128,0.06)', borderRadius: 6, border: '1px solid rgba(74,222,128,0.2)' }}>
+                                      <CheckCircleIcon size={12} style={{ color: '#4ade80' }} />
+                                      <span style={{ color: '#4ade80', fontSize: 11, fontWeight: 600 }}>50% Proof Uploaded</span>
+                                      <img src={b.paymentProof} alt="Payment proof" className="payment-proof-thumb" onClick={() => window.open(b.paymentProof, '_blank')} style={{ width: 24, height: 24, objectFit: 'cover', borderRadius: 4, cursor: 'pointer', marginLeft: 'auto' }} />
+                                    </div>
+                                  ) : (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', background: 'rgba(241,42,89,0.06)', borderRadius: 6, border: '1px solid rgba(241,42,89,0.2)' }}>
+                                      <HourglassIcon size={12} style={{ color: 'var(--pink-primary, #F12A59)' }} />
+                                      <span style={{ color: 'var(--pink-primary, #F12A59)', fontSize: 11, fontWeight: 600 }}>Awaiting 50% Proof</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
                               {b.status === 'Approved' && (
                                 <div style={{ marginTop: 8 }}>
                                   {b.paymentProof ? (
@@ -2998,7 +3102,17 @@ function AdminDashboard({ currentUser, salons = [], onLogout, onRefreshSalons, s
                               <div className="booking-actions" style={{ display: 'flex', gap: 6, margin: 0 }}>
                                 {b.status === 'Pending' && (
                                   <>
-                                    <button className="btn small" style={{ padding: '6px 12px', fontSize: 12 }} onClick={() => updateStatus(b.id, 'Approved')}>
+                                    <button 
+                                      className="btn small" 
+                                      style={{ 
+                                        padding: '6px 12px', 
+                                        fontSize: 12,
+                                        ...(!b.paymentProof ? { opacity: 0.5, cursor: 'not-allowed' } : {})
+                                      }} 
+                                      onClick={() => handleApprove(b.id)}
+                                      title={!b.paymentProof ? "Customer has not uploaded 50% payment proof yet" : "Approve Booking"}
+                                      aria-disabled={!b.paymentProof}
+                                    >
                                       <CheckCircleIcon size={12} /> Approve
                                     </button>
                                     <button 

@@ -767,11 +767,10 @@ export const generateInitialBookings = () => {
   ];
 
   return rawBookings.map(b => {
-    const isCash = (!b.paymentMethod || b.paymentMethod === 'Cash');
     const servicePrice = b.servicePrice || 0;
-    const appointmentFee = isCash ? Math.round(servicePrice * 0.5) : 0;
+    const appointmentFee = Math.round(servicePrice * 0.5);
     const downpaymentAmount = appointmentFee;
-    const remainingBalance = isCash ? (servicePrice - appointmentFee) : 0;
+    const remainingBalance = servicePrice - appointmentFee;
     return {
       ...b,
       appointmentFee: b.appointmentFee !== undefined ? b.appointmentFee : appointmentFee,

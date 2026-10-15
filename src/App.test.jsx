@@ -1218,5 +1218,431 @@ describe('Brush Up Salon — Haute Pink Redesign & Demo Showcase', () => {
 
     expect(container.textContent).toContain('Add Walk-in Booking');
   });
+
+  test('CustomerDashboard enforces 50% downpayment notice and proof status for pending bookings', () => {
+    const testBookings = [
+      {
+        id: 8881,
+        salonId: 'elegant',
+        userId: 'testcustomer',
+        customer: 'Elena Gilbert',
+        service: 'Silk Straight Rebond',
+        servicePrice: 3000,
+        appointmentFee: 1500,
+        remainingBalance: 1500,
+        status: 'Pending',
+        paymentMethod: 'Cash',
+        date: '2026-11-20',
+        time: '14:00'
+      }
+    ];
+    setBookings(testBookings);
+
+    const testUser = {
+      uid: 'testcustomer',
+      user: 'testcustomer',
+      name: 'Elena Gilbert',
+      role: 'customer'
+    };
+
+    act(() => {
+      root.render(
+        <CustomerDashboard 
+          currentUser={testUser} 
+          salons={SALON_DATA} 
+        />
+      );
+    });
+
+    // 1. Check My Bookings tab renders 50% downpayment fee and action button
+    const myBookingsTab = Array.from(container.querySelectorAll('.tab-btn'))
+      .find(btn => btn.textContent.includes('My Bookings'));
+    expect(myBookingsTab).not.toBeNull();
+
+    act(() => {
+      myBookingsTab.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(container.textContent).toContain('50% Downpayment required for approval');
+    expect(container.textContent).toContain('Pay ₱1,500 (50%) & Upload Proof');
+
+    // Click to open GCash modal
+    const payProofBtn = Array.from(container.querySelectorAll('button'))
+      .find(btn => btn.textContent.includes('Pay ₱1,500 (50%) & Upload Proof'));
+    expect(payProofBtn).not.toBeNull();
+
+    act(() => {
+      payProofBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(container.textContent).toContain('50% Appointment Fee / Downpayment');
+    expect(container.textContent).toContain('₱1,500');
+
+    // 2. Now simulate proof uploaded
+    testBookings[0].paymentProof = 'data:image/png;base64,mockPaymentProofData';
+    setBookings(testBookings);
+
+    act(() => {
+      root.render(
+        <CustomerDashboard 
+          currentUser={testUser} 
+          salons={SALON_DATA} 
+        />
+      );
+    });
+
+    expect(container.textContent).toContain('50% Proof Uploaded • Awaiting Admin Approval');
+    expect(container.textContent).toContain('View Proof');
+
+    // Check Payments tab also reflects 50% proof uploaded
+    const paymentsTab = Array.from(container.querySelectorAll('.tab-btn'))
+      .find(btn => btn.textContent.includes('Payments'));
+    expect(paymentsTab).not.toBeNull();
+
+    act(() => {
+      paymentsTab.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(container.textContent).toContain('50% Proof Uploaded • Awaiting Admin Approval');
+  });
+
+  test('Admin cannot approve a pending booking without payment proof and receives toast warning', () => {
+    const testBookings = [
+      {
+        id: 8882,
+        salonId: 'elegant',
+        userId: 'testcustomer',
+        customer: 'Elena Gilbert',
+        service: 'Silk Straight Rebond',
+        servicePrice: 3000,
+        appointmentFee: 1500,
+        remainingBalance: 1500,
+        status: 'Pending',
+        paymentMethod: 'Cash',
+        date: '2026-11-20',
+        time: '14:00'
+      }
+    ];
+    setBookings(testBookings);
+
+    const mockShowToast = jest.fn();
+
+    act(() => {
+      root.render(
+        <AdminDashboard
+          currentUser={{ user: 'elegantadmin', name: 'Elegant Admin', role: 'admin', salonId: 'elegant' }}
+          salons={SALON_DATA}
+          showToast={mockShowToast}
+          onLogout={jest.fn()}
+        />
+      );
+    });
+
+    // Check table displays "Awaiting 50% Proof"
+    expect(container.textContent).toContain('Awaiting 50% Proof');
+
+    // Find Approve button
+    const approveBtn = Array.from(container.querySelectorAll('button'))
+      .find(btn => btn.textContent.includes('Approve'));
+    expect(approveBtn).not.toBeNull();
+    expect(approveBtn.getAttribute('aria-disabled')).toBe('true');
+    expect(approveBtn.getAttribute('title')).toBe('Customer has not uploaded 50% payment proof yet');
+
+    // Attempt clicking approve
+    act(() => {
+      approveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    // Verify toast is triggered with error message
+    expect(mockShowToast).toHaveBeenCalledWith(
+      'Cannot approve: Customer must upload proof of payment for the 50% downpayment first.'
+    );
+
+    // Verify booking is still Pending in storage
+    const stored = getBookings().find(b => b.id === 8882);
+    expect(stored.status).toBe('Pending');
+  });
+
+  test('Admin successfully approves booking once 50% payment proof has been uploaded', () => {
+    const testBookings = [
+      {
+        id: 8883,
+        salonId: 'elegant',
+        userId: 'testcustomer',
+        customer: 'Elena Gilbert',
+        service: 'Silk Straight Rebond',
+        servicePrice: 3000,
+        appointmentFee: 1500,
+        remainingBalance: 1500,
+        status: 'Pending',
+        paymentMethod: 'Cash',
+        paymentProof: 'data:image/png;base64,validProofBase64Data',
+        date: '2026-11-20',
+        time: '14:00'
+      }
+    ];
+    setBookings(testBookings);
+
+    const mockShowToast = jest.fn();
+
+    act(() => {
+      root.render(
+        <AdminDashboard
+          currentUser={{ user: 'elegantadmin', name: 'Elegant Admin', role: 'admin', salonId: 'elegant' }}
+          salons={SALON_DATA}
+          showToast={mockShowToast}
+          onLogout={jest.fn()}
+        />
+      );
+    });
+
+    // Table displays "Proof Uploaded"
+    expect(container.textContent).toContain('Proof Uploaded');
+
+    // Find Approve button
+    const approveBtn = Array.from(container.querySelectorAll('button'))
+      .find(btn => btn.textContent.includes('Approve'));
+    expect(approveBtn).not.toBeNull();
+    expect(approveBtn.getAttribute('aria-disabled')).toBe('false');
+
+    // Click Approve
+    act(() => {
+      approveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    // Verify toast is triggered
+    expect(mockShowToast).toHaveBeenCalledWith('Booking approved.');
+
+    // Verify booking in storage is now Approved
+    const stored = getBookings().find(b => b.id === 8883);
+    expect(stored.status).toBe('Approved');
+    expect(stored.approvedAt).toBeDefined();
+  });
+
+  test('Customer pending GCash booking enforces 50% downpayment proof requirement and opens modal with 50% amount', () => {
+    const testBookings = [
+      {
+        id: 8884,
+        salonId: 'elegant',
+        userId: 'testgcashcustomer',
+        customer: 'Damon Salvatore',
+        service: 'Hair Color Treatment',
+        servicePrice: 2400,
+        appointmentFee: 1200,
+        remainingBalance: 1200,
+        status: 'Pending',
+        paymentMethod: 'GCash',
+        date: '2026-11-25',
+        time: '15:00'
+      }
+    ];
+    setBookings(testBookings);
+
+    const testUser = {
+      uid: 'testgcashcustomer',
+      user: 'testgcashcustomer',
+      name: 'Damon Salvatore',
+      role: 'customer'
+    };
+
+    act(() => {
+      root.render(
+        <CustomerDashboard 
+          currentUser={testUser} 
+          salons={SALON_DATA} 
+        />
+      );
+    });
+
+    // Check Payments tab
+    const paymentsTab = Array.from(container.querySelectorAll('.tab-btn'))
+      .find(btn => btn.textContent.includes('Payments'));
+    expect(paymentsTab).not.toBeNull();
+
+    act(() => {
+      paymentsTab.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(container.textContent).toContain('50% Downpayment required for approval');
+    expect(container.textContent).toContain('Pay ₱1,200 (50%) & Upload Proof');
+
+    // Click pay proof button
+    const payProofBtn = Array.from(container.querySelectorAll('button'))
+      .find(btn => btn.textContent.includes('Pay ₱1,200 (50%) & Upload Proof'));
+    expect(payProofBtn).not.toBeNull();
+
+    act(() => {
+      payProofBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    // Modal opens with 50% downpayment calculation
+    expect(container.textContent).toContain('50% Appointment Fee / Downpayment');
+    expect(container.textContent).toContain('₱1,200');
+    expect(container.textContent).toContain('50% Balance Due at Salon');
+    expect(container.textContent).toContain('₱1,200');
+
+    // Now simulate proof uploaded
+    testBookings[0].paymentProof = 'data:image/png;base64,gcashMockProof';
+    setBookings(testBookings);
+
+    act(() => {
+      root.render(
+        <CustomerDashboard 
+          currentUser={testUser} 
+          salons={SALON_DATA} 
+        />
+      );
+    });
+
+    expect(container.textContent).toContain('50% Proof Uploaded • Awaiting Admin Approval');
+    expect(container.textContent).toContain('View Proof');
+  });
+
+  test('Admin Details Drawer strictly enforces approval rule with proof verification and toast warning', () => {
+    const testBookings = [
+      {
+        id: 8885,
+        salonId: 'elegant',
+        userId: 'testcustomer',
+        customer: 'Caroline Forbes',
+        service: 'Hair Spa',
+        servicePrice: 1600,
+        appointmentFee: 800,
+        remainingBalance: 800,
+        status: 'Pending',
+        paymentMethod: 'GCash',
+        date: '2026-11-26',
+        time: '16:00'
+      }
+    ];
+    setBookings(testBookings);
+
+    const mockShowToast = jest.fn();
+
+    act(() => {
+      root.render(
+        <AdminDashboard
+          currentUser={{ user: 'elegantadmin', name: 'Elegant Admin', role: 'admin', salonId: 'elegant' }}
+          salons={SALON_DATA}
+          showToast={mockShowToast}
+          onLogout={jest.fn()}
+        />
+      );
+    });
+
+    // Open Drawer by clicking the row
+    const bookingRow = container.querySelector('.compact-row');
+    expect(bookingRow).not.toBeNull();
+
+    act(() => {
+      bookingRow.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    // Drawer displays 50% Downpayment info for GCash
+    expect(container.textContent).toContain('50% Downpayment: ₱800');
+    expect(container.textContent).toContain('50% Balance at Salon: ₱800');
+    expect(container.textContent).toContain('Awaiting 50% Downpayment Proof');
+
+    // Drawer contains Quick Actions with disabled Approve button
+    const drawerApproveBtns = Array.from(container.querySelectorAll('.compact-drawer button'))
+      .filter(btn => btn.textContent.includes('Approve'));
+    expect(drawerApproveBtns.length).toBeGreaterThan(0);
+    const drawerApproveBtn = drawerApproveBtns[0];
+    expect(drawerApproveBtn.getAttribute('aria-disabled')).toBe('true');
+
+    // Click Drawer Approve button
+    act(() => {
+      drawerApproveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(mockShowToast).toHaveBeenCalledWith(
+      'Cannot approve: Customer must upload proof of payment for the 50% downpayment first.'
+    );
+
+    // Now attach proof
+    testBookings[0].paymentProof = 'data:image/png;base64,carolineProof';
+    setBookings(testBookings);
+
+    act(() => {
+      root.render(
+        <AdminDashboard
+          currentUser={{ user: 'elegantadmin', name: 'Elegant Admin', role: 'admin', salonId: 'elegant' }}
+          salons={SALON_DATA}
+          showToast={mockShowToast}
+          onLogout={jest.fn()}
+          syncTick={1}
+        />
+      );
+    });
+
+    // Ensure drawer is open
+    let drawer = container.querySelector('.compact-drawer');
+    if (!drawer) {
+      const updatedRow = container.querySelector('.compact-row');
+      act(() => {
+        updatedRow.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      });
+    }
+
+    expect(container.textContent).toContain('Proof Attached (50% Downpayment):');
+
+    const enabledDrawerApproveBtn = Array.from(container.querySelectorAll('.compact-drawer button'))
+      .find(btn => btn.textContent.includes('Approve'));
+    expect(enabledDrawerApproveBtn).not.toBeNull();
+    expect(enabledDrawerApproveBtn.getAttribute('aria-disabled')).toBe('false');
+
+    // Click Drawer Approve button
+    act(() => {
+      enabledDrawerApproveBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(mockShowToast).toHaveBeenCalledWith('Booking approved.');
+    const stored = getBookings().find(b => b.id === 8885);
+    expect(stored.status).toBe('Approved');
+  });
+
+  test('Bookings table preserves Proof Uploaded indicator after booking is approved', () => {
+    const testBookings = [
+      {
+        id: 8886,
+        salonId: 'elegant',
+        userId: 'testcustomer',
+        customer: 'Stefan Salvatore',
+        service: 'Haircut + Styling',
+        servicePrice: 1000,
+        appointmentFee: 500,
+        remainingBalance: 500,
+        status: 'Approved',
+        paymentMethod: 'GCash',
+        paymentProof: 'data:image/png;base64,stefanProofData',
+        date: '2026-11-27',
+        time: '11:00'
+      }
+    ];
+    setBookings(testBookings);
+
+    act(() => {
+      root.render(
+        <AdminDashboard
+          currentUser={{ user: 'elegantadmin', name: 'Elegant Admin', role: 'admin', salonId: 'elegant' }}
+          salons={SALON_DATA}
+          onLogout={jest.fn()}
+        />
+      );
+    });
+
+    // Switch status filter dropdown to "approved" or "all"
+    const statusSelect = container.querySelector('select');
+    if (statusSelect) {
+      act(() => {
+        statusSelect.value = 'approved';
+        statusSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    }
+
+    expect(container.textContent).toContain('Proof Uploaded');
+    expect(container.textContent).toContain('Fee: ₱500');
+    expect(container.textContent).toContain('Bal: ₱500');
+  });
 });
 

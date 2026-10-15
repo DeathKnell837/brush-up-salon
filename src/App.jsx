@@ -512,16 +512,15 @@ function App() {
       servicePriceLabel = matchedService.price;
     }
 
-    const isCash = (bookingData.paymentMethod || 'Cash') === 'Cash';
     const appointmentFee = bookingData.appointmentFee !== undefined
       ? bookingData.appointmentFee
-      : (isCash ? Math.round(servicePrice * 0.5) : 0);
+      : Math.round(servicePrice * 0.5);
     const downpaymentAmount = bookingData.downpaymentAmount !== undefined
       ? bookingData.downpaymentAmount
       : appointmentFee;
     const remainingBalance = bookingData.remainingBalance !== undefined
       ? bookingData.remainingBalance
-      : (isCash ? (servicePrice - appointmentFee) : 0);
+      : (servicePrice - appointmentFee);
 
     bookings.push({
       id: Date.now(), salonId: selectedSalon.id,
@@ -537,7 +536,7 @@ function App() {
       remainingBalance
     });
     setBookings(bookings);
-    showToast('Booking submitted. Await approval.');
+    showToast('Booking submitted! Please upload your 50% downpayment proof to get approved.');
     setShowModal(false);
     setInitialDetails(null);
   };

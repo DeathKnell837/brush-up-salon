@@ -132,9 +132,9 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
     const serviceNames = selectedServices.map(s => s.name).join(' + ');
     const combinedPriceLabels = selectedServices.map(s => s.price || 'PHP 0').join(' + ');
 
-    const appointmentFee = bookPaymentMethod === 'Cash' ? Math.round(totalPrice * 0.5) : 0;
+    const appointmentFee = Math.round(totalPrice * 0.5);
     const downpaymentAmount = appointmentFee;
-    const remainingBalance = bookPaymentMethod === 'Cash' ? (totalPrice - appointmentFee) : 0;
+    const remainingBalance = totalPrice - appointmentFee;
 
     bookings.push({
       id: Date.now(),
@@ -155,7 +155,7 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
       remainingBalance
     });
     setBookings(bookings);
-    showToast(`${selectedServices.length} service${selectedServices.length > 1 ? 's' : ''} booked! Awaiting salon approval.`);
+    showToast('Booking submitted! Please upload your 50% downpayment proof to get approved.');
     setSelectedServices([]);
     setBookDate('');
     setBookTime('');
@@ -551,6 +551,52 @@ function SalonDetailPage({ salon, currentUser, onBack, onLogout, onOpenProfile, 
                         borderLeft: '3px solid var(--pink-primary, #F12A59)'
                       }}>
                         💡 A 50% Appointment Fee (downpayment) of ₱{(Math.round(totalPrice * 0.5)).toLocaleString()} is required to secure your booking. The remaining 50% balance of ₱{(totalPrice - Math.round(totalPrice * 0.5)).toLocaleString()} is payable in cash upon arrival at the salon.
+                      </div>
+                      <div style={{
+                        fontSize: '11.5px',
+                        color: 'var(--pink-primary, #F12A59)',
+                        fontWeight: 600,
+                        lineHeight: 1.45,
+                        background: 'rgba(241, 42, 89, 0.08)',
+                        padding: '8px 10px',
+                        borderRadius: '6px',
+                        borderLeft: '3px solid var(--pink-primary, #F12A59)'
+                      }}>
+                        📌 Note: To get your appointment approved by the salon, you must upload proof of payment for the 50% downpayment in 'My Bookings'.
+                      </div>
+                    </div>
+                  )}
+
+                  {bookPaymentMethod === 'GCash' && (
+                    <div className="appointment-fee-breakdown" style={{
+                      background: 'rgba(241, 42, 89, 0.06)',
+                      border: '1px solid rgba(241, 42, 89, 0.22)',
+                      borderRadius: '10px',
+                      padding: '12px 14px',
+                      marginBottom: '16px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-dim)' }}>
+                        <span>Total Service Price:</span>
+                        <strong style={{ color: 'var(--text)' }}>₱{totalPrice.toLocaleString()}</strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--pink-primary, #F12A59)' }}>
+                        <span>50% Downpayment Required:</span>
+                        <strong>₱{(Math.round(totalPrice * 0.5)).toLocaleString()}</strong>
+                      </div>
+                      <div style={{
+                        fontSize: '11.5px',
+                        color: 'var(--pink-primary, #F12A59)',
+                        fontWeight: 600,
+                        lineHeight: 1.45,
+                        background: 'rgba(241, 42, 89, 0.08)',
+                        padding: '8px 10px',
+                        borderRadius: '6px',
+                        borderLeft: '3px solid var(--pink-primary, #F12A59)'
+                      }}>
+                        📌 Note: To get your appointment approved by the salon, you must upload proof of payment for the 50% downpayment in 'My Bookings'.
                       </div>
                     </div>
                   )}

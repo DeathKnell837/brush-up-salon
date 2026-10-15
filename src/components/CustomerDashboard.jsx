@@ -14,7 +14,7 @@ import {
 } from './Icons';
 
 function GCashPaymentModal({ booking, salon, onClose, onUpload, isUploading }) {
-  const gcashNumber = salon?.gcashNumber;
+  const gcashNumber = salon?.gcashNumber || '09512042379';
   const approvedMinutesAgo = booking.approvedAt ? Math.floor((Date.now() - new Date(booking.approvedAt).getTime()) / 60000) : 0;
   const isPaymentOverdue = booking.approvedAt && approvedMinutesAgo >= 30 && !booking.paymentProof;
   const minutesRemaining = booking.approvedAt && !booking.paymentProof ? Math.max(0, 30 - approvedMinutesAgo) : 0;
@@ -115,10 +115,27 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload, isUploading }) {
         {/* Content */}
         <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           
-          {/* Payment countdown or overdue banner */}
+          {/* Payment countdown, overdue banner, or Pending 50% downpayment banner */}
           {!booking.paymentProof && (
             <div style={{ width: '100%', marginBottom: 20 }}>
-              {isPaymentOverdue ? (
+              {booking.status === 'Pending' ? (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  background: 'rgba(241, 42, 89, 0.08)',
+                  border: '1px solid rgba(241, 42, 89, 0.25)',
+                  color: 'var(--pink-primary, #F12A59)',
+                  padding: '10px 14px',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  lineHeight: 1.4,
+                  textAlign: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <AlertCircleIcon size={14} style={{ color: 'var(--pink-primary, #F12A59)', flexShrink: 0 }} />
+                  <span>Upload 50% payment proof to get your appointment approved by the salon!</span>
+                </div>
+              ) : isPaymentOverdue ? (
                 <div className="payment-reminder-banner" style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#fca5a5' }}>
                   <AlertCircleIcon size={14} style={{ color: '#f87171' }} />
                   <span>Payment overdue! Please upload your GCash proof now.</span>
@@ -268,9 +285,10 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload, isUploading }) {
           {(() => {
             const isCashBooking = (!booking.paymentMethod || booking.paymentMethod === 'Cash');
             const svcPrice = booking.servicePrice || 0;
-            const apptFee = booking.appointmentFee !== undefined ? booking.appointmentFee : Math.round(svcPrice * 0.5);
+            const apptFee = booking.appointmentFee !== undefined && booking.appointmentFee > 0 ? booking.appointmentFee : Math.round(svcPrice * 0.5);
             const remBalance = booking.remainingBalance !== undefined ? booking.remainingBalance : (svcPrice - apptFee);
-            const amountToPay = isCashBooking ? apptFee : svcPrice;
+            const is50PercentDownpayment = isCashBooking || booking.status === 'Pending';
+            const amountToPay = is50PercentDownpayment ? apptFee : svcPrice;
 
             return (
               <div style={{
@@ -286,13 +304,13 @@ function GCashPaymentModal({ booking, salon, onClose, onUpload, isUploading }) {
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: 'var(--text-dim)', fontSize: 13, fontWeight: 500 }}>
-                    {isCashBooking ? '50% Appointment Fee / Downpayment' : 'Total Amount to Pay'}
+                    {is50PercentDownpayment ? '50% Appointment Fee / Downpayment' : 'Total Amount to Pay'}
                   </span>
                   <span style={{ color: 'var(--pink-primary, #F12A59)', fontSize: 18, fontWeight: 700 }}>
                     ₱{amountToPay.toLocaleString()}
                   </span>
                 </div>
-                {isCashBooking && (
+                {is50PercentDownpayment && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: 'var(--text-dim)', paddingTop: 4, borderTop: '1px dashed var(--border)' }}>
                     <span>50% Balance Due at Salon:</span>
                     <strong style={{ color: 'var(--text)' }}>₱{remBalance.toLocaleString()}</strong>
@@ -459,7 +477,8 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
   const activeBookings = bookings.filter(b => b.status === 'Approved' || b.status === 'Pending');
   const cancelledBookings = bookings.filter(b => b.status === 'Cancelled' || b.status === 'Rejected');
   const approvedBookings = bookings.filter(b => b.status === 'Approved');
-  const pendingPaymentsCount = approvedBookings.filter(b => !b.paymentProof).length;
+  const paymentBookings = bookings.filter(b => b.status === 'Pending' || b.status === 'Approved');
+  const pendingPaymentsCount = bookings.filter(b => (b.status === 'Pending' || b.status === 'Approved') && !b.paymentProof).length;
 
   const totalSpent = completedBookings.reduce((sum, b) => {
     if (b.paidAmount !== undefined && b.paidAmount !== null) return sum + b.paidAmount;
@@ -1102,10 +1121,12 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                           <span style={{ fontSize: 16, color: 'var(--gold)', fontWeight: 700 }}>₱{(b.servicePrice || 0).toLocaleString()}</span>
                         </div>
 
-                        {/* Cash Appointment Fee / Downpayment breakdown badge */}
-                        {(!b.paymentMethod || b.paymentMethod === 'Cash') && (() => {
-                          const apptFee = b.appointmentFee !== undefined ? b.appointmentFee : Math.round((b.servicePrice || 0) * 0.5);
-                          const remBalance = b.remainingBalance !== undefined ? b.remainingBalance : ((b.servicePrice || 0) - apptFee);
+                        {/* 50% Appointment Fee / Downpayment breakdown badge */}
+                        {(() => {
+                          const isCash = (!b.paymentMethod || b.paymentMethod === 'Cash');
+                          const svcPrice = b.servicePrice || 0;
+                          const apptFee = b.appointmentFee !== undefined && b.appointmentFee > 0 ? b.appointmentFee : Math.round(svcPrice * 0.5);
+                          const remBalance = b.remainingBalance !== undefined ? b.remainingBalance : (svcPrice - apptFee);
                           return (
                             <div className="cash-fee-breakdown-badge" style={{
                               background: 'rgba(241, 42, 89, 0.06)',
@@ -1119,7 +1140,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                             }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px' }}>
                                 <span style={{ color: 'var(--pink-primary, #F12A59)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                  <CashIcon size={12} /> Appointment Fee: ₱{apptFee.toLocaleString()} (50% Downpayment)
+                                  {isCash ? <CashIcon size={12} /> : <GcashIcon size={12} />} Appointment Fee: ₱{apptFee.toLocaleString()} (50% Downpayment)
                                 </span>
                                 {b.paymentProof ? (
                                   <span style={{ color: '#4ade80', fontWeight: 600, fontSize: '10px' }}>Deposit Paid ✓</span>
@@ -1129,7 +1150,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                               </div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-dim)' }}>
                                 <span>Balance at Salon: ₱{remBalance.toLocaleString()} (50%)</span>
-                                <span style={{ fontSize: '10px' }}>(Payable in cash upon arrival)</span>
+                                <span style={{ fontSize: '10px' }}>({isCash ? 'Payable in cash upon arrival' : 'Payable upon arrival'})</span>
                               </div>
                             </div>
                           );
@@ -1138,16 +1159,92 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                         {/* Action Area wrapped in a bottom-aligned section */}
                         {(b.status === 'Pending' || b.status === 'Approved' || b.status === 'Completed' || b.status === 'Cancelled' || b.status === 'Rejected') && (
                           <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                            {/* 1. Pending Status banner */}
-                            {b.status === 'Pending' && (
-                              <>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center', padding: '0 12px', height: 38, minHeight: 38, maxHeight: 38, background: 'rgba(241, 42, 89, 0.05)', border: '1px solid rgba(241, 42, 89, 0.15)', borderRadius: 8, fontSize: 12, color: 'var(--gold)', fontWeight: 500, boxSizing: 'border-box', width: '100%' }}>
-                                  <HourglassIcon size={13} />
-                                  <span>Awaiting salon approval</span>
-                                </div>
-                                <button className="btn small outline danger" style={{ width: '100%', height: 38, minHeight: 38, maxHeight: 38, borderRadius: 8, padding: '0 12px', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }} onClick={() => handleCancelBooking(b.id)}>Cancel Appointment</button>
-                              </>
-                            )}
+                            {/* 1. Pending Status */}
+                            {b.status === 'Pending' && (() => {
+                              const isCash = (!b.paymentMethod || b.paymentMethod === 'Cash');
+                              const svcPrice = b.servicePrice || 0;
+                              const apptFee = b.appointmentFee !== undefined && b.appointmentFee > 0 ? b.appointmentFee : Math.round(svcPrice * 0.5);
+
+                              return (
+                                <>
+                                  {!b.paymentProof ? (
+                                    <>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center', padding: '0 12px', height: 38, minHeight: 38, maxHeight: 38, background: 'rgba(241, 42, 89, 0.06)', border: '1px solid rgba(241, 42, 89, 0.2)', borderRadius: 8, fontSize: 11.5, color: 'var(--pink-primary, #F12A59)', fontWeight: 600, boxSizing: 'border-box', width: '100%' }}>
+                                        <AlertCircleIcon size={13} style={{ flexShrink: 0 }} />
+                                        <span>50% Downpayment required for approval</span>
+                                      </div>
+                                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, width: '100%' }}>
+                                        <button 
+                                          className="btn small outline danger" 
+                                          style={{ 
+                                            height: 38, minHeight: 38, maxHeight: 38, borderRadius: 8, 
+                                            padding: '0 8px', fontSize: 12, fontWeight: 600, 
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                            boxSizing: 'border-box', width: '100%' 
+                                          }} 
+                                          onClick={() => handleCancelBooking(b.id)}
+                                        >
+                                          Cancel
+                                        </button>
+                                        <button 
+                                          className="btn small" 
+                                          onClick={() => setPaymentBookingId(b.id)}
+                                          style={{ 
+                                            height: 38, minHeight: 38, maxHeight: 38, borderRadius: 8, 
+                                            padding: '0 8px', fontSize: 11.5, fontWeight: 700, 
+                                            background: 'linear-gradient(135deg, var(--gold, #F12A59) 0%, var(--pink-accent, #FC68BE) 100%)', 
+                                            color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                            gap: 5, border: 'none', boxShadow: '0 4px 12px rgba(241, 42, 89, 0.25)', 
+                                            whiteSpace: 'nowrap', boxSizing: 'border-box', width: '100%' 
+                                          }}
+                                        >
+                                          <GcashIcon size={13} /> Pay ₱{apptFee.toLocaleString()} (50%) & Upload Proof
+                                        </button>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center', padding: '0 12px', height: 38, minHeight: 38, maxHeight: 38, background: 'rgba(74, 222, 128, 0.08)', border: '1px solid rgba(74, 222, 128, 0.25)', borderRadius: 8, fontSize: 11.5, color: '#4ade80', fontWeight: 600, boxSizing: 'border-box', width: '100%' }}>
+                                        <CheckCircleIcon size={13} />
+                                        <span>50% Proof Uploaded • Awaiting Admin Approval</span>
+                                      </div>
+                                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, width: '100%' }}>
+                                        <button 
+                                          className="btn small outline danger" 
+                                          style={{ 
+                                            height: 38, minHeight: 38, maxHeight: 38, borderRadius: 8, 
+                                            padding: '0 8px', fontSize: 12, fontWeight: 600, 
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                            boxSizing: 'border-box', width: '100%' 
+                                          }} 
+                                          onClick={() => handleCancelBooking(b.id)}
+                                        >
+                                          Cancel
+                                        </button>
+                                        <button 
+                                          className="btn small outline" 
+                                          onClick={() => setPaymentBookingId(b.id)}
+                                          style={{ 
+                                            height: 38, minHeight: 38, maxHeight: 38, borderRadius: 8, 
+                                            padding: '0 8px', fontSize: 11.5, fontWeight: 600, 
+                                            border: '1px solid rgba(74, 222, 128, 0.3)', color: '#4ade80', 
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                            gap: 5, whiteSpace: 'nowrap', boxSizing: 'border-box', width: '100%' 
+                                          }}
+                                        >
+                                          <img
+                                            src={b.paymentProof}
+                                            alt="Proof"
+                                            style={{ width: 16, height: 16, objectFit: 'cover', borderRadius: 3 }}
+                                          />
+                                          <span>View Proof</span>
+                                        </button>
+                                      </div>
+                                    </>
+                                  )}
+                                </>
+                              );
+                            })()}
 
                             {/* 2. Approved Status */}
                             {b.status === 'Approved' && (() => {
@@ -1316,18 +1413,18 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
               <h2 className="section-heading">Payment Transaction</h2>
             </div>
 
-            {approvedBookings.length === 0 ? (
+            {paymentBookings.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon"><InboxIcon size={48} /></div>
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--text)', marginBottom: 8 }}>No Active Payments</h3>
-                <p>You have no approved bookings awaiting payment at the moment.</p>
+                <p>You have no bookings awaiting payment at the moment.</p>
                 <button className="btn secondary" style={{ width: 'auto', marginTop: 20 }} onClick={() => setTab('salons')}>
                   <StoreIcon size={14} /> Explore Salons
                 </button>
               </div>
             ) : (
               <div className="history-grid">
-                {approvedBookings.map((b, i) => {
+                {paymentBookings.map((b, i) => {
                   const salon = salons.find(s => s.id === b.salonId);
                   const salonGcash = salonDataWithGcash.find(s => s.id === b.salonId);
                   const gcashNumber = salonGcash?.gcashNumber;
@@ -1344,7 +1441,8 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
                           <div className="history-salon">{salon?.name || 'Unknown Salon'}</div>
                           <span className={`status ${b.status.toLowerCase()}`} style={{ flexShrink: 0 }}>
-                            <CheckCircleIcon size={10} />
+                            {b.status === 'Pending' && <HourglassIcon size={10} />}
+                            {b.status === 'Approved' && <CheckCircleIcon size={10} />}
                             {b.status}
                           </span>
                         </div>
@@ -1365,52 +1463,134 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                         {(() => {
                           const isCash = (!b.paymentMethod || b.paymentMethod === 'Cash');
                           const svcPrice = b.servicePrice || 0;
-                          const apptFee = b.appointmentFee !== undefined ? b.appointmentFee : Math.round(svcPrice * 0.5);
+                          const apptFee = b.appointmentFee !== undefined && b.appointmentFee > 0 ? b.appointmentFee : Math.round(svcPrice * 0.5);
                           const remBalance = b.remainingBalance !== undefined ? b.remainingBalance : (svcPrice - apptFee);
+                          const is50PercentDownpayment = isCash || b.status === 'Pending';
+
                           return (
                             <>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, marginBottom: 4 }}>
                                 <span style={{ fontSize: 13, color: 'var(--text-dim)', fontWeight: 500 }}>
-                                  {isCash ? '50% Downpayment Fee' : 'Amount to Pay'}
+                                  {is50PercentDownpayment ? '50% Downpayment Fee' : 'Amount to Pay'}
                                 </span>
                                 <span style={{ fontSize: 16, color: 'var(--gold)', fontWeight: 700 }}>
-                                  ₱{(isCash ? apptFee : svcPrice).toLocaleString()}
+                                  ₱{(is50PercentDownpayment ? apptFee : svcPrice).toLocaleString()}
                                 </span>
                               </div>
 
-                              {isCash && (
-                                <div className="cash-fee-breakdown-badge" style={{
-                                  background: 'rgba(241, 42, 89, 0.06)',
-                                  border: '1px solid rgba(241, 42, 89, 0.22)',
-                                  borderRadius: '8px',
-                                  padding: '8px 10px',
-                                  margin: '6px 0',
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: '4px'
-                                }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px' }}>
-                                    <span style={{ color: 'var(--pink-primary, #F12A59)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                      <CashIcon size={12} /> Appointment Fee: ₱{apptFee.toLocaleString()} (50% Downpayment)
-                                    </span>
-                                    {b.paymentProof ? (
-                                      <span style={{ color: '#4ade80', fontWeight: 600, fontSize: '10px' }}>Deposit Paid ✓</span>
-                                    ) : (
-                                      <span style={{ color: 'var(--gold)', fontWeight: 600, fontSize: '10px' }}>50% Deposit Due</span>
-                                    )}
-                                  </div>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-dim)' }}>
-                                    <span>Balance at Salon: ₱{remBalance.toLocaleString()} (50%)</span>
-                                    <span style={{ fontSize: '10px' }}>(Payable in cash upon arrival)</span>
-                                  </div>
+                              <div className="cash-fee-breakdown-badge" style={{
+                                background: 'rgba(241, 42, 89, 0.06)',
+                                border: '1px solid rgba(241, 42, 89, 0.22)',
+                                borderRadius: '8px',
+                                padding: '8px 10px',
+                                margin: '6px 0',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '4px'
+                              }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px' }}>
+                                  <span style={{ color: 'var(--pink-primary, #F12A59)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    {isCash ? <CashIcon size={12} /> : <GcashIcon size={12} />} Appointment Fee: ₱{apptFee.toLocaleString()} (50% Downpayment)
+                                  </span>
+                                  {b.paymentProof ? (
+                                    <span style={{ color: '#4ade80', fontWeight: 600, fontSize: '10px' }}>Deposit Paid ✓</span>
+                                  ) : (
+                                    <span style={{ color: 'var(--gold)', fontWeight: 600, fontSize: '10px' }}>50% Deposit Due</span>
+                                  )}
                                 </div>
-                              )}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-dim)' }}>
+                                  <span>Balance at Salon: ₱{remBalance.toLocaleString()} (50%)</span>
+                                  <span style={{ fontSize: '10px' }}>({isCash ? 'Payable in cash upon arrival' : 'Payable upon arrival'})</span>
+                                </div>
+                              </div>
                             </>
                           );
                         })()}
 
                         {/* Action Area wrapped in a bottom-aligned section */}
                         <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                          {b.status === 'Pending' ? (() => {
+                            const isCash = (!b.paymentMethod || b.paymentMethod === 'Cash');
+                            const svcPrice = b.servicePrice || 0;
+                            const apptFee = b.appointmentFee !== undefined && b.appointmentFee > 0 ? b.appointmentFee : Math.round(svcPrice * 0.5);
+
+                            return !b.paymentProof ? (
+                              <>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center', padding: '0 12px', height: 38, minHeight: 38, maxHeight: 38, background: 'rgba(241, 42, 89, 0.06)', border: '1px solid rgba(241, 42, 89, 0.2)', borderRadius: 8, fontSize: 11.5, color: 'var(--pink-primary, #F12A59)', fontWeight: 600, boxSizing: 'border-box', width: '100%' }}>
+                                  <AlertCircleIcon size={13} style={{ flexShrink: 0 }} />
+                                  <span>50% Downpayment required for approval</span>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, width: '100%' }}>
+                                  <button 
+                                    className="btn small outline danger" 
+                                    style={{ 
+                                      height: 38, minHeight: 38, maxHeight: 38, borderRadius: 8, 
+                                      padding: '0 8px', fontSize: 12, fontWeight: 600, 
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                      boxSizing: 'border-box', width: '100%' 
+                                    }} 
+                                    onClick={() => handleCancelBooking(b.id)}
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button 
+                                    className="btn small" 
+                                    onClick={() => setPaymentBookingId(b.id)}
+                                    style={{ 
+                                      height: 38, minHeight: 38, maxHeight: 38, borderRadius: 8, 
+                                      padding: '0 8px', fontSize: 11.5, fontWeight: 700, 
+                                      background: 'linear-gradient(135deg, var(--gold, #F12A59) 0%, var(--pink-accent, #FC68BE) 100%)', 
+                                      color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                      gap: 5, border: 'none', boxShadow: '0 4px 12px rgba(241, 42, 89, 0.25)', 
+                                      whiteSpace: 'nowrap', boxSizing: 'border-box', width: '100%' 
+                                    }} 
+                                  >
+                                    <GcashIcon size={13} /> Pay ₱{apptFee.toLocaleString()} (50%) & Upload Proof
+                                  </button>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center', padding: '0 12px', height: 38, minHeight: 38, maxHeight: 38, background: 'rgba(74, 222, 128, 0.08)', border: '1px solid rgba(74, 222, 128, 0.25)', borderRadius: 8, fontSize: 11.5, color: '#4ade80', fontWeight: 600, boxSizing: 'border-box', width: '100%' }}>
+                                  <CheckCircleIcon size={13} />
+                                  <span>50% Proof Uploaded • Awaiting Admin Approval</span>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, width: '100%' }}>
+                                  <button 
+                                    className="btn small outline danger" 
+                                    style={{ 
+                                      height: 38, minHeight: 38, maxHeight: 38, borderRadius: 8, 
+                                      padding: '0 8px', fontSize: 12, fontWeight: 600, 
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                      boxSizing: 'border-box', width: '100%' 
+                                    }} 
+                                    onClick={() => handleCancelBooking(b.id)}
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button 
+                                    className="btn small outline" 
+                                    onClick={() => setPaymentBookingId(b.id)}
+                                    style={{ 
+                                      height: 38, minHeight: 38, maxHeight: 38, borderRadius: 8, 
+                                      padding: '0 8px', fontSize: 11.5, fontWeight: 600, 
+                                      border: '1px solid rgba(74, 222, 128, 0.3)', color: '#4ade80', 
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                      gap: 5, whiteSpace: 'nowrap', boxSizing: 'border-box', width: '100%' 
+                                    }} 
+                                  >
+                                    <img
+                                      src={b.paymentProof}
+                                      alt="Proof"
+                                      style={{ width: 16, height: 16, objectFit: 'cover', borderRadius: 3 }}
+                                    />
+                                    <span>View Proof</span>
+                                  </button>
+                                </div>
+                              </>
+                            );
+                          })() : (
+                            <>
                           {/* GCash Payment Trigger & Countdown */}
                           {b.paymentMethod === 'GCash' && gcashNumber && (
                             <>
@@ -1525,7 +1705,9 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
                               );
                             })()}
                           </div>
-                        </div>
+                        </>
+                      )}
+                    </div>
                       </div>
                     </div>
                   );
@@ -1557,7 +1739,7 @@ function CustomerDashboard({ currentUser, salons = [], onLogout, onSelectSalon, 
       {paymentBooking && (
         <GCashPaymentModal 
           booking={paymentBooking}
-          salon={salons.find(s => s.id === paymentBooking.salonId)}
+          salon={salons.find(s => s.id === paymentBooking.salonId) || getSalons().find(s => s.id === paymentBooking.salonId)}
           onClose={() => setPaymentBookingId(null)}
           onUpload={handlePaymentProofUpload}
           isUploading={isUploadingProof}
